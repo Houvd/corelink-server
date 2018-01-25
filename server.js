@@ -10,7 +10,7 @@ server.on('error', (err) => {
 
 server.on('message', (msg, rinfo) => {
   console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
-  server.send(Buffer.from('hello back'),rinfo.port,rinfo.address, (err) => {
+  server.send(msg,rinfo.port,rinfo.address, (err) => {
     if(err) {
       console.lof('socket error', err);
     }
