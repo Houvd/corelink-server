@@ -1,0 +1,12 @@
+version: '2.1'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: "networktest:latest"
+    restart: always
+    ports:
+      - "20000:20000/udp"
+
