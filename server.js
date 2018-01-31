@@ -1,7 +1,8 @@
+var PORT = 20000;
+
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
-
-console.log('trying to bind ports');
+console.log(`trying to bind port ${PORT}`);
 
 server.on('error', (err) => {
   console.log(`server error:\n${err.stack}`);
@@ -22,4 +23,4 @@ server.on('listening', () => {
   console.log(`server listening ${address.address}:${address.port}`);
 });
 
-server.bind(20000);
+server.bind(PORT);
