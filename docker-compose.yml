@@ -6,7 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile
     image: "networktest:latest"
-    restart: always
+    restart: "no"
+    network_mode: "bridge"
     ports:
       - "20000:20000/udp"
 
+networks:
+  default:
+    external:
+      name: bridge
