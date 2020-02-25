@@ -1,0 +1,9 @@
+{
+    "ControlPort": 20010,
+    "ControlIP": "127.0.0.1",
+    "workspace": "Holodeck",
+    "protocol": "udp",
+    "receiverType": ["objsend"],
+    "senderType": "objrecv",
+    "token": "!gfhdgh"
+}
