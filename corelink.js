@@ -26,7 +26,7 @@
 /* eslint-disable object-shorthand */
 /* eslint-disable func-names */
 /* eslint-disable no-shadow */
-
+/* eslint-disable no-param-reassign */
 
 
 /**
