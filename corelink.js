@@ -15,7 +15,7 @@
 /* eslint-disable prefer-template */
 /* eslint-disable vars-on-top */
 /* eslint-disable no-redeclare */
-/* eslint-disable no-use-before-define */
+
 /* eslint-disable consistent-return */
 /* eslint-disable no-lonely-if */
 /* eslint-disable import/newline-after-import */
