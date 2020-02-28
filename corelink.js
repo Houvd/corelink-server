@@ -152,22 +152,22 @@ users['17']['password'] = 'Testpassword';
 // users can have several tokens that are in use
 // tokens time out separately
 var tokens = []; // holds all token related information
-// tokens[token] = [] //information for specific token
-// tokens[token]['time'] = 342523; //holds the timeout time stamp for the tokens
-// tokens[token]['user'] = 1; //holds the user id for the token
-// tokens[token]['streams'] = []; //stream id of the stream that the token was used for
-// tokens[token]['conn'] = %Socket; //control connection for the tcp control channel
+// tokens[token] = [] // information for specific token
+// tokens[token]['time'] = 342523; // holds the timeout time stamp for the tokens
+// tokens[token]['user'] = 1; // holds the user id for the token
+// tokens[token]['streams'] = []; // stream id of the stream that the token was used for
+// tokens[token]['conn'] = %Socket; // control connection for the tcp control channel
 // we can expand other token information with
 // tokens[token]['other'] = [];
 
 // app can work as a app (e.g. user is the app)
 // app can work as a user (e.g. user is the user)
 var apps = [] // holds all tokens and related information for apps
-// apps[atoken] = [] //information for a specific pre shared app token, always starts with an !
+// apps[atoken] = [] // information for a specific pre shared app token, always starts with an !
 // apps[atoken]['time'] = 0 // holds timeout time stamp for token, 0 for no timeout
-// apps[atoken]['name'] = '' //holds app name for the app
-// apps[atoken]['streams'] = [] //stream ids of the stream that the app was used for
-// apps[atoken]['conn'] = %Socket //control connection for the tcp control channel
+// apps[atoken]['name'] = '' // holds app name for the app
+// apps[atoken]['streams'] = [] // stream ids of the stream that the app was used for
+// apps[atoken]['conn'] = %Socket // control connection for the tcp control channel
 // additional information 
 // apps[atoken]['other'] = []
 apps['!dfshdgs'] = []
@@ -191,8 +191,8 @@ var connections = [];
 // all source and target streams information is stored in source and target
 var source = [];
 /*
-source = [] //holds all source stream information
-source[id] =  [] //stream ID
+source = [] // holds all source stream information
+source[id] =  [] // stream ID
 source[id]['ip'] = source ip address
 source[id]['port'] = source port
 source[id]['proto'] = ws or tcp or ws
@@ -209,8 +209,8 @@ source[id]['from'] = if derived from other stream
 
 var target =[];
 /*
-target = [] //holds all target stream information
-target[id] =  [] //stream ID
+target = [] // holds all target stream information
+target[id] =  [] // stream ID
 target[id]['ip'] = source ip address
 target[id]['port'] = source port
 target[id]['proto'] = udp or tcp or ws
@@ -227,7 +227,7 @@ target[id]['conn'] = for tcp/ws connections the connection information
 var streamrelay = []; // holds all information to relay data from source to targets most effectively
 /*
 streamrelay[ids] = [] // source stream id
-streamrelay[ids][idt] = conn //connection to send data to
+streamrelay[ids][idt] = conn // connection to send data to
 */
 
 var debug = false;
@@ -239,8 +239,8 @@ stdin.setEncoding( 'utf8' );
 
 function listStreams() {
 	console.log('Listing Streams');
-	//		console.log(tokens);
-	//		console.log(source);
+	// 		console.log(tokens);
+	// 		console.log(source);
 	for(var token in tokens)
 		console.log('Token: '+token+', user: '+users[tokens[token]['user']]['username']+', streams: '+tokens[token]['streams'].toString()+', time: '+tokens[token]['time']);
 	for(var token in apps)
@@ -267,10 +267,10 @@ function listStreams() {
 }
 
 stdin.on( 'data', function Debugonoff ( key ){
-//	console.log(key.charCodeAt(0));
-//	console.log(key.charCodeAt(1));
-//	console.log(key.charCodeAt(2));
-//	console.log(key.charCodeAt(3));
+// 	console.log(key.charCodeAt(0));
+// 	console.log(key.charCodeAt(1));
+// 	console.log(key.charCodeAt(2));
+// 	console.log(key.charCodeAt(3));
 	if ( key === '\u0003' )
 		process.exit();
 
@@ -334,7 +334,7 @@ functions['auth'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -424,7 +424,7 @@ functions['functionlist'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -475,7 +475,7 @@ functions['info'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -536,7 +536,7 @@ functions['listworkspace'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -586,7 +586,7 @@ functions['addworkspace'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -643,7 +643,7 @@ functions['rmworkspace'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -699,7 +699,7 @@ functions['sender'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -866,7 +866,7 @@ functions['liststream'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -967,7 +967,7 @@ functions['streaminfo'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -1085,7 +1085,7 @@ functions['receiver'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -1195,8 +1195,8 @@ functions['receiver'] = new Object({
 			console.log('*** receiver ***');
 			if(('workspace' in message)) {
 
-//				if(('receiverid' in message) && (message['receiverid']!='') && (typeof target[message['receiverid']]!='undefined'))
-//				process.exit();
+// 				if(('receiverid' in message) && (message['receiverid']!='') && (typeof target[message['receiverid']]!='undefined'))
+// 				process.exit();
 
 				// get appropriate streamids
 				if(!('streamid' in message) || (message['streamid'].length == 0)) {
@@ -1247,7 +1247,7 @@ functions['receiver'] = new Object({
 				if(('receiverid' in message) && (message['receiverid']!='') && (typeof target[message['receiverid']]!='undefined')) {
 					streamid = message['receiverid']
 					console.log('used existing receiver streamid: '+streamid);
-//					console.log(target[streamid]);
+// 					console.log(target[streamid]);
 				}
 				else {
 					// create a new target streamID
@@ -1274,7 +1274,7 @@ functions['receiver'] = new Object({
 					target[streamid]['port'] = message['port'];
 					target[streamid]['proto'] = message['proto'];
 					target[streamid]['room'] = message['workspace'];
-//					console.log(target[streamid]);
+// 					console.log(target[streamid]);
 
 					if(('alert' in message) && (message['alert']==true))
 						target[streamid]['alert'] = true;
@@ -1334,8 +1334,8 @@ functions['receiver'] = new Object({
 				response['streamid'] = streamid;
 				response['streamlist'] = message['streamlist'];
 				response['MTU'] = MTU;
-//				console.log(message['proto'],port[message['proto']],response);
-//				console.log(port);
+// 				console.log(message['proto'],port[message['proto']],response);
+// 				console.log(port);
 				return(response);
 			} 
 				return getErrorMessage(3);
@@ -1351,7 +1351,7 @@ functions['subscribe'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -1464,7 +1464,7 @@ functions['unsubscribe'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -1559,7 +1559,7 @@ functions['disconnect'] = new Object({
 		version: '1.2.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'function': {
 				'description': 'function to select and run',
@@ -1733,7 +1733,7 @@ functions['expire'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		arguments: {
 			'token': {
 				'description': 'token of the user session to expire',
@@ -1778,9 +1778,9 @@ functions['expire'] = new Object({
 					.digest('hex');
 				response['ip'] = ip;
 				tokens[response['token']] = [];
-				tokens[response['token']]['time'] = Date.now(); //timeout data
-				tokens[response['token']]['user'] = authenticated; //holds the user id for the token
-				tokens[response['token']]['streams'] = [] //provision for streams that get added
+				tokens[response['token']]['time'] = Date.now(); // timeout data
+				tokens[response['token']]['user'] = authenticated; // holds the user id for the token
+				tokens[response['token']]['streams'] = [] // provision for streams that get added
 				tokens[response['token']]['conn'] = conn;
 			} else
 				response = getErrorMessage(4);
@@ -1789,7 +1789,7 @@ functions['expire'] = new Object({
 				if(typeof apps[message['token']] != 'undefined') {
 					response['token'] = message['token']
 					response['ip'] = ip;
-					apps[response['token']]['time'] = Date.now(); //timeout data
+					apps[response['token']]['time'] = Date.now(); // timeout data
 					apps[response['token']]['conn'] = conn;
 				} else
 					response = getErrorMessage(8);
@@ -1812,7 +1812,7 @@ serverfunctions['update'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		responses: {
 			'function': {
 				'description': 'function that was triggered',
@@ -1918,7 +1918,7 @@ serverfunctions['subscriber'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		responses: {
 			'function': {
 				'description': 'function that was triggered',
@@ -1964,7 +1964,7 @@ serverfunctions['subscriber'] = new Object({
 		response['receiverid']	= receiverid;
 		response['senderid']	= senderid;
 
-		//	get user or app name
+		// 	get user or app name
 		for(token in tokens) {
 			if(tokens[token]['streams'].includes(senderid)) {
 				var usertoken = token;
@@ -2028,7 +2028,7 @@ serverfunctions['stale'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		responses: {
 			'function': {
 				'description': 'function that was triggered',
@@ -2058,7 +2058,7 @@ serverfunctions['stale'] = new Object({
 		// get correct room information
 		var room = source[streamid]['room'];
 
-		//get subscribed targets and send update (only if receiver wants updates)
+		// get subscribed targets and send update (only if receiver wants updates)
 		var t = [];
 		for(var u in target) {
 			if(target[u]['alert'] && (target[u]['room']==room) && ((target[u]['type'].length == 0) || (target[u]['type'].includes(source[streamid]['type'])))) {
@@ -2100,7 +2100,7 @@ serverfunctions['dropped'] = new Object({
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
 		email: 'robert.pahle@gmail.com',
-		doc_href: 'https://dev.nyu-x.org/networktest',
+		doc_href: 'https:// dev.nyu-x.org/networktest',
 		responses: {
 			'function': {
 				'description': 'function that was triggered',
@@ -2127,7 +2127,7 @@ serverfunctions['dropped'] = new Object({
 		var update = JSON.stringify(response);
 		console.log('trying to send dropped update ', update);
 
-		//	get tokens for this stream
+		// 	get tokens for this stream
 		for(token in tokens)
 			if(tokens[token]['streams'].includes(sourceid)) {
 				var usertoken = token;
@@ -2157,7 +2157,7 @@ serverfunctions['dropped'] = new Object({
 	}
 });
 
-//fill data list with available objects
+// fill data list with available objects
 functions['functionlist'].info['responses']['functions']['sample'] = Object.keys(functions);
 functions['listworkspace'].info['responses']['workspacelist']['sample'] = Object.keys(rooms);
 var userlist = [];
@@ -2186,12 +2186,12 @@ function handleControlConnection(conn) {
 	var remoteAddress = conn.remoteAddress.replace(/^.*:/, '');
 	var remotePort = conn.remotePort;
 	var send = '';
-//	console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
-//	controlConnection[remoteAddress] = [];
-//	controlConnection[remoteAddress][remotePort]=conn;
-//	console.log(controlConnection[remoteAddress][remotePort]);
+// 	console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
+// 	controlConnection[remoteAddress] = [];
+// 	controlConnection[remoteAddress][remotePort]=conn;
+// 	console.log(controlConnection[remoteAddress][remotePort]);
 
-	//at this point we have a new connection that is not yet authenticated
+	// at this point we have a new connection that is not yet authenticated
 	console.log('new client TCP control connection from %s :%s', remoteAddress, remotePort);
 	conn.setNoDelay(true)
 	
@@ -2215,12 +2215,12 @@ function handleControlConnection(conn) {
 	});
 
 	conn.once('close', function() {
-//todo: unset the array element for the connection
+// todo: unset the array element for the connection
 		console.log('TCP control connection from %s closed', remoteAddress);
 	});
 
 	conn.on('error', function(err){
-//todo: unset the array element for the connection
+// todo: unset the array element for the connection
 		console.log('TCP control connection %s error: %s', remoteAddress, err.message);
 	});
 }
@@ -2232,16 +2232,16 @@ var Ws = require("ws").Server;
 var wsControlServer = new Ws({ port: WSControl });
 
 wsControlServer.on('connection', function connection(conn, req) {
-//	const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+// 	const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 	const remoteAddress = req.connection.remoteAddress;
 	const remotePort = req.connection.remotePort;
 	var send = '';
-//	console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
-//	controlConnection[remoteAddress] = [];
-//	controlConnection[remoteAddress][remotePort]=conn;
-//	console.log(controlConnection[remoteAddress][remotePort]);
+// 	console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
+// 	controlConnection[remoteAddress] = [];
+// 	controlConnection[remoteAddress][remotePort]=conn;
+// 	console.log(controlConnection[remoteAddress][remotePort]);
 
-	//at this point we have a new connection that is not yet authenticated
+	// at this point we have a new connection that is not yet authenticated
 	console.log('new client WS control connection from %s:%s', remoteAddress, remotePort);
 
 	conn.on('message', function(data) {
@@ -2264,12 +2264,12 @@ wsControlServer.on('connection', function connection(conn, req) {
 	});
 
 	conn.once('close', function() {
-//todo: unset the array element for the connection
+// todo: unset the array element for the connection
 		console.log('WS control connection from %s closed', remoteAddress);
 	});
 
 	conn.on('error', function(err){
-//todo: unset the array element for the connection
+// todo: unset the array element for the connection
 		console.log('WS control connection %s error: %s', remoteAddress, err.message);
 	});
 });
@@ -2302,7 +2302,7 @@ UDPDataServer.on('listening', () => {
 
 UDPDataServer.bind(port['udp']);
 
-//TCP data transfer setup
+// TCP data transfer setup
 console.log(`trying to bind TCP port ${port['tcp']}`);
 
 var TCPDataServer = net.createServer();
@@ -2322,7 +2322,7 @@ function handleDataConnection(conn) {
 	connections[remoteAddress][remotePort]['conn'] = conn;
 	connections[remoteAddress][remotePort]['time'] = Date.now();
 
-	//at this point we have a new connection that is not yet authenticated
+	// at this point we have a new connection that is not yet authenticated
 	console.log('new TCP data connection from %s', remoteAddress);
 	conn.setNoDelay(true);
 
@@ -2331,23 +2331,23 @@ function handleDataConnection(conn) {
 	});
 
 	conn.once('close', function() {
-//todo: unset the array element for the connection
+// todo: unset the array element for the connection
 		console.log('TCP data connection from %s closed', remoteAddress);
 	});
 
 	conn.on('error', function(err){
-//todo: unset the array element for the connection
+// todo: unset the array element for the connection
 		console.log('TCP data connection %s error: %s', remoteAddress, err.message);
 	});
 }
 
-//WS data transfer setup
+// WS data transfer setup
 console.log(`trying to bind WS port ${port['ws']}`);
 
 var WSDataServer = new Ws({ port: port['ws'] });
 
 WSDataServer.on('connection', function connection(conn, req) {
-//	const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+// 	const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
 	const remoteAddress = req.connection.remoteAddress;
 	const remotePort = req.connection.remotePort;
@@ -2364,7 +2364,7 @@ WSDataServer.on('connection', function connection(conn, req) {
 	});
 
 	conn.once('close', function() {
-		//todo: unset the array element for the connection
+		// todo: unset the array element for the connection
 		delete connections[remoteAddress][remotePort];
 		if(connections[remoteAddress].length == 0)
 			delete connections[remoteAddress];
@@ -2372,7 +2372,7 @@ WSDataServer.on('connection', function connection(conn, req) {
 	});
 		
 	conn.on('error', function(err){
-		//todo: unset the array element for the connection
+		// todo: unset the array element for the connection
 		delete connections[remoteAddress][remotePort];
 		if(connections[remoteAddress].length == 0)
 			delete connections[remoteAddress];
@@ -2389,7 +2389,7 @@ function timeoutConnections() {
 	var currentTime = Date.now();
 	for(var ip in connections)
 		for(var port in connections[ip]) {
-//			console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime,connections[ip][port]['time'] + connectTimeout - currentTime);
+// 			console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime,connections[ip][port]['time'] + connectTimeout - currentTime);
 			if(connections[ip][port]['time']+connectTimeout < currentTime) {
 				delete connections[ip][port]
 				if(connections[ip].length == 0)
@@ -2402,13 +2402,13 @@ function timeoutConnections() {
 
 	// Test if sources have timed out
 	for(var id in source) {
-//		console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time'] + streamTimeout - currentTime);
+// 		console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time'] + streamTimeout - currentTime);
 		if(source[id]['time']+streamTimeout < currentTime) {
 
 			// notify clients of stale streams
 			serverfunctions['stale'].process(streamid);
 
-			//remove stream information from the relay
+			// remove stream information from the relay
 			delete streamrelay[id];
 			delete source[id];
 		}
@@ -2416,7 +2416,7 @@ function timeoutConnections() {
 
 	// Test if targets have timed out
 	for(var id in target) {
-//		console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']+streamTimeout - currentTime);
+// 		console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']+streamTimeout - currentTime);
 		if(target[id]['time']+streamTimeout < currentTime) {
 			for(var sid in streamrelay) {
 				for(var tid in streamrelay) 
@@ -2434,10 +2434,10 @@ timeoutConnections();
 
 function relayData(msg, remoteAddress, remotePort) {
 	var last = Date.now();
-	//*** ToDo: validate that this message is ttruely a sender message that is authenticated
-		//console.log(`server got from ${rinfo.address}:${rinfo.port}`);
+	// *** ToDo: validate that this message is ttruely a sender message that is authenticated
+		// console.log(`server got from ${rinfo.address}:${rinfo.port}`);
 	// decoding header
-//	console.log('message: ',msg);
+// 	console.log('message: ',msg);
 	if(msg.length>6) {
 		var header_size = msg.readUInt16LE(0);
 		var data_size = msg.readUInt32LE(2);
@@ -2446,10 +2446,10 @@ function relayData(msg, remoteAddress, remotePort) {
 			return ;
 		}
 		var header = msg.toString('ascii',6,header_size+6);
-	//	var data = Buffer.allocUnsafe(data_size);
-	//	msg.copy(data,0,6+header_size);
-	//	console.log('header:', header_size, '>'+header+'<');
-	//	console.log('data:', data_size, data);
+	// 	var data = Buffer.allocUnsafe(data_size);
+	// 	msg.copy(data,0,6+header_size);
+	// 	console.log('header:', header_size, '>'+header+'<');
+	// 	console.log('data:', data_size, data);
 	} else {
 		console.log('Packet is too small');
 		return;
@@ -2465,11 +2465,11 @@ function relayData(msg, remoteAddress, remotePort) {
 		var data_size = msg.readUInt32LE(2);
 		var data = Buffer.allocUnsafe(data_size);
 		msg.copy(data,0,6+header_size);
-		//console.log('Receiving '+header['id']+` b${msg.length} h${header_size} d${data_size}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
+		// console.log('Receiving '+header['id']+` b${msg.length} h${header_size} d${data_size}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
 		console.log('Receiving '+header['id']+` b${msg.length} h${header_size} d${data_size}, header: ${JSON.stringify(header)} to `);
-		//console.log(data)
+		// console.log(data)
 	}
-	//if we see the 'stamp' variable we will return a ping with the server stamped time
+	// if we see the 'stamp' variable we will return a ping with the server stamped time
 	if(('stamp' in header) && ((header['id'] in source) || (header['id'] in target ))) {
 		if(header['id'] in source) 
 			var stream = source[header['id']];
@@ -2508,7 +2508,7 @@ function relayData(msg, remoteAddress, remotePort) {
 			console.log('sending back '+stream['proto']+' ping:'+JSON.stringify(header)+', ip:'+remoteAddress+', port'+remotePort)
 			
 	} else {
-		//console.log(header['id']);
+		// console.log(header['id']);
 		if(header['id'] in streamrelay) {
 			source[header['id']]['time'] = last;
 			for(targetid in streamrelay[header['id']])
@@ -2516,7 +2516,7 @@ function relayData(msg, remoteAddress, remotePort) {
 					if((typeof target[targetid] !='undefined') && (typeof target[targetid]['port'] !='undefined') && (target[targetid]['port']!=0)) {
 						if(debug) {
 							console.log('Sending '+header['id']+` b${msg.length} h${header_size} d${data_size}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
-							//console.log(data)
+							// console.log(data)
 						}
 						target[targetid]['time'] = last;
 						if(target[targetid]['proto']=='udp')
@@ -2574,4 +2574,4 @@ function relayData(msg, remoteAddress, remotePort) {
 }
 
 
-//process.on('SIGINT', process.exit());
+// process.on('SIGINT', process.exit());
