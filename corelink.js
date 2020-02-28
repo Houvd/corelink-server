@@ -568,7 +568,7 @@ functions['listworkspace'] = new Object({
 	},
 	process: function(message){
 		var data = checkAuth(message);
-//**** ToDo: list only workspaces that user has access to.
+// **** ToDo: list only workspaces that user has access to.
 		if(typeof data == "string") {
 			var response = {};
 			response['workspacelist'] = Object.keys(rooms);
@@ -678,7 +678,7 @@ functions['rmworkspace'] = new Object({
 		if(typeof data == "string") {
 			if('workspace' in message) {
 				if(typeof rooms[message['workspace']] != 'undefined') {
-//**** ToDo: make sure that all existing connections to this workspace will be terminated
+// **** ToDo: make sure that all existing connections to this workspace will be terminated
 					delete rooms[message['workspace']];
 					var response = {};
 					response['statuscode'] = 0;
@@ -808,7 +808,7 @@ functions['sender'] = new Object({
 					source[streamid]['type'] = message['type'];
 					source[streamid]['time'] = Date.now();
 					source[streamid]['from'] = '';
-					//allow from only if app token, otherwise users could post as another user
+					// allow from only if app token, otherwise users could post as another user
 					if((typeof message['from']!== 'undefined') &&
 						(typeof apps[message['token']]!== 'undefined'))
 						source[streamid]['from'] = message['from'];
@@ -823,23 +823,23 @@ functions['sender'] = new Object({
 						source[streamid]['meta'] = message['meta'];
 				}
 
-				//if exists, remove streamid from streams in this tokens streamlist
+				// if exists, remove streamid from streams in this tokens streamlist
 				for(var token in tokens)
 					for(var i in tokens[token]['streams'])
 						if(tokens[token]['streams'][i]==streamid)
 							tokens[token]['streams'].splice(i,1);
 
-				//if exists, remove streamid from streams in this apps streamlist
+				// if exists, remove streamid from streams in this apps streamlist
 				for(var token in apps)
 					for(var i in apps[token]['streams'])
 						if(apps[token]['streams'][i]==streamid)
 							apps[token]['streams'].splice(i,1);
 
-				//make sure stream is allowed and not rejected
+				// make sure stream is allowed and not rejected
 				if(typeof tokens[message['token']] != 'undefined')
 					tokens[message['token']]['streams'].push(streamid);
 
-				//make sure stream is allowed and not rejected in case of an app
+				// make sure stream is allowed and not rejected in case of an app
 				if(typeof apps[message['token']] != 'undefined')
 					apps[message['token']]['streams'].push(streamid);
 
@@ -909,7 +909,7 @@ functions['liststream'] = new Object({
 	},
 	process: function(message){
 		var data = checkAuth(message);
-//**** ToDo: list only streams that user has access to
+// **** ToDo: list only streams that user has access to
 		if(typeof data == "string") {
 			if(!('workspace' in message))
 				message['workspace'] = []
@@ -1161,7 +1161,7 @@ functions['receiver'] = new Object({
 				'description': 'array of streamid/user/apps/type/meta of the streams that will be sent',
 				'type':'array',
 			},
-/*** ToDo:	IP is not returned at the moment, because the detection of the localhost IP is not working perfectly. 
+/* ** ToDo:	IP is not returned at the moment, because the detection of the localhost IP is not working perfectly. 
 			It will be important for load balanced connections with several masters.
 		
 			'ip': {
@@ -1206,12 +1206,12 @@ functions['receiver'] = new Object({
 							message['streamid'].push(sourceid);
 				}
 
-				//remove all streamids that are not in source (we silently drop streamID's in case they have disappeared during the time it takes to query and bring them up...)
+				// remove all streamids that are not in source (we silently drop streamID's in case they have disappeared during the time it takes to query and bring them up...)
 				for(stream in message['streamid'])
 					if(typeof source[message['streamid'][stream]] == 'undefined')
 						message['streamid'].splice(stream,1);
 
-				//add usernames to the specific streams
+				// add usernames to the specific streams
 				message['streamlist'] = [];
 				for(stream in message['streamid']) {
 					streamlistelement = {};
