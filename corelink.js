@@ -2439,17 +2439,17 @@ function relayData(msg, remoteAddress, remotePort) {
 	// decoding header
 // 	console.log('message: ',msg);
 	if(msg.length>6) {
-		var header_Size = msg.readUInt16LE(0);
-		var data_Size = msg.readUInt32LE(2);
-		if(msg.length!=6+header_Size+data_Size) {
-			console.log('Packet has the wrong size ('+msg.length+' vs. '+(6+header_Size+data_Size)+').');
+		var headerSize = msg.readUInt16LE(0);
+		var dataSize = msg.readUInt32LE(2);
+		if(msg.length!=6+headerSize+dataSize) {
+			console.log('Packet has the wrong size ('+msg.length+' vs. '+(6+headerSize+dataSize)+').');
 			return ;
 		}
-		var header = msg.toString('ascii',6,header_Size+6);
-	// 	var data = Buffer.allocUnsafe(data_Size);
-	// 	msg.copy(data,0,6+header_Size);
-	// 	console.log('header:', header_Size, '>'+header+'<');
-	// 	console.log('data:', data_Size, data);
+		var header = msg.toString('ascii',6,headerSize+6);
+	// 	var data = Buffer.allocUnsafe(dataSize);
+	// 	msg.copy(data,0,6+headerSize);
+	// 	console.log('header:', headerSize, '>'+header+'<');
+	// 	console.log('data:', dataSize, data);
 	} else {
 		console.log('Packet is too small');
 		return;
@@ -2462,11 +2462,11 @@ function relayData(msg, remoteAddress, remotePort) {
 		return console.error(e);
 	}
 	if(debug) {
-		var data_Size = msg.readUInt32LE(2);
-		var data = Buffer.allocUnsafe(data_Size);
-		msg.copy(data,0,6+header_Size);
-		// console.log('Receiving '+header['id']+` b${msg.length} h${header_Size} d${data_Size}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
-		console.log('Receiving '+header['id']+` b${msg.length} h${header_Size} d${data_Size}, header: ${JSON.stringify(header)} to `);
+		var dataSize = msg.readUInt32LE(2);
+		var data = Buffer.allocUnsafe(dataSize);
+		msg.copy(data,0,6+headerSize);
+		// console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
+		console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to `);
 		// console.log(data)
 	}
 	// if we see the 'stamp' variable we will return a ping with the server stamped time
@@ -2475,9 +2475,9 @@ function relayData(msg, remoteAddress, remotePort) {
 			var stream = source[header['id']];
 		else 
 			var stream = target[header['id']];
-		var data_Size = msg.readUInt32LE(2);
-		var data = Buffer.allocUnsafe(data_Size);
-		msg.copy(data,0,6+header_Size);
+		var dataSize = msg.readUInt32LE(2);
+		var data = Buffer.allocUnsafe(dataSize);
+		msg.copy(data,0,6+headerSize);
 		
 		header['stamp'] = Date.now() 
 		headerr = JSON.stringify(header);
@@ -2515,7 +2515,7 @@ function relayData(msg, remoteAddress, remotePort) {
 				if((typeof target[targetid] !='undefined') && (typeof target[targetid]['ip'] !='undefined') && (target[targetid]['ip'] != '')) {
 					if((typeof target[targetid] !='undefined') && (typeof target[targetid]['port'] !='undefined') && (target[targetid]['port']!=0)) {
 						if(debug) {
-							console.log('Sending '+header['id']+` b${msg.length} h${header_Size} d${data_Size}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
+							console.log('Sending '+header['id']+` b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
 							// console.log(data)
 						}
 						target[targetid]['time'] = last;
