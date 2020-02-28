@@ -1443,7 +1443,7 @@ functions['subscribe'] = new Object({
 					streamrelay[message['streamlist'][stream]['streamid']][message['receiverid']]= [];
 				}
 
-				//create result for client to connect as a receiver
+				// create result for client to connect as a receiver
 				var response = {};
 				response['statuscode'] = 0;
 				response['streamlist'] = message['streamlist'];
@@ -1505,25 +1505,25 @@ functions['unsubscribe'] = new Object({
 			if((('receiverid' in message) && (message['receiverid']!='') && (typeof target[message['receiverid']]!='undefined')) &&
 				(('streamid' in message) && (message['streamid'].length>0) )) {
 
-				//unsubscribe streams
+				// unsubscribe streams
 				for(var s in streamrelay)
 					for(var t in streamrelay[s])
 						if((t==message['receiverid']) && (message['streamid'].includes(s))) {
 							delete streamrelay[s][t]
-							//send dropped message to sender streams that are newly subscribed to
+							// send dropped message to sender streams that are newly subscribed to
 							serverfunctions['dropped'].process(s,t);
 							if(streamrelay[s].length==0)
 								delete streamrelay[s]
 						}
 
-				//create list of subscribed streams
+				// create list of subscribed streams
 				message['streamid'] = []
 				for(var s in streamrelay)
 					for(var t in streamrelay[s])
 						if(t==message['receiverid'])
 							message['streamid'].push(s);
 
-				//add usernames to the specific streams
+				// add usernames to the specific streams
 				message['streamlist'] = [];
 				for(stream in message['streamid']) {
 					streamlistelement = {};
@@ -1531,7 +1531,7 @@ functions['unsubscribe'] = new Object({
 					streamlistelement['type'] = source[message['streamid'][stream]]['type'];
 					streamlistelement['meta'] = source[message['streamid'][stream]]['meta'];
 
-					//add apps processing list for streams that are processed, otherwise leave empty
+					// add apps processing list for streams that are processed, otherwise leave empty
 					// walk through source from tags until we find user, add apps and user
 					var userApps = findApps(message['streamid'][stream])
 					streamlistelement['user'] = userApps.user
@@ -1540,7 +1540,7 @@ functions['unsubscribe'] = new Object({
 					message['streamlist'].push(streamlistelement);
 				}
 
-				//create result for client to connect as a receiver
+				// create result for client to connect as a receiver
 				var response = {};
 				response['statuscode'] = 0;
 				response['streamlist'] = message['streamlist'];
@@ -1621,16 +1621,16 @@ functions['disconnect'] = new Object({
 					workspaces = workspaces.concat(message['workspace']);
 
 				if(typeof tokens[message['token']] != 'undefined') {
-					//find user for the submitted token
+					// find user for the submitted token
 					var user = tokens[message['token']]['user']
 
-					//find all streamid's for that user
+					// find all streamid's for that user
 					for(token in tokens)
 						if(user == tokens[token]['user']) {
 							console.log('streams in token',tokens[token]['streams']);
 							allstreams = allstreams.concat(tokens[token]['streams']);
 						}
-					//check if streamid is in correct room and of correct type
+					// check if streamid is in correct room and of correct type
 					for(streamid in allstreams) {
 						if((typeof source[allstreams[streamid]]!='undefined') && 
 								(types.includes(source[allstreams[streamid]]['type']) || types.length==0) &&
@@ -1643,13 +1643,13 @@ functions['disconnect'] = new Object({
 					}
 				}
 
-				//find all streamid's for that app
+				// find all streamid's for that app
 				if (typeof apps[message['token']] != 'undefined') {
 					allstreams = apps[message['token']]['streams']
 					for(streamid in allstreams) {
 						if(debug)
 							console.log('disconnect streamid',allstreams[streamid]);
-						//check if streamid is in correct room and of correct type
+						// check if streamid is in correct room and of correct type
 						if((typeof source[allstreams[streamid]]!='undefined') && 
 								(types.includes(source[allstreams[streamid]]['type']) || types.length==0) &&
 								(workspaces.includes(source[allstreams[streamid]]['room']) || workspaces.length==0))
@@ -1673,7 +1673,7 @@ functions['disconnect'] = new Object({
 				console.log('deleting',streamid);
 				if((typeof source[streamid] !='undefined') || (typeof target[streamid] !='undefined')) {
 					console.log('Cleaning up stream '+streamid);
-	//*** ToDo: in addition we need to make sure that the actual connection is disconnected
+	// *** ToDo: in addition we need to make sure that the actual connection is disconnected
 					if((typeof source[streamid] !='undefined')
 							&& (typeof source[streamid]['ip'] !='undefined')
 							&& (typeof source[streamid]['port'] !='undefined' )) {
@@ -1687,13 +1687,13 @@ functions['disconnect'] = new Object({
 							if(connections[source[streamid]['ip']].length == 0)
 								delete connections[source[streamid]['ip']];
 						}
-	//*** ToDo: disconnect all receivers as well
+	// *** ToDo: disconnect all receivers as well
 						// announce to receivers that the stream is stale
 						serverfunctions['stale'].process(streamid);
 
 						delete streamrelay[streamid]
 						delete source[streamid];
-	//*** ToDo: also delete all receivers that have only this source?
+	// *** ToDo: also delete all receivers that have only this source?
 					}
 
 					// remove stream if it is a target for the stream relay
@@ -1712,7 +1712,7 @@ functions['disconnect'] = new Object({
 						if(tokens[token]['streams'].indexOf(streamid) != -1)
 							tokens[token]['streams'].splice(tokens[token]['streams'].indexOf(streamid),1);
 					
-					//remove streams from apps session list
+					// remove streams from apps session list
 					for(token in apps)
 						if(apps[token]['streams'].indexOf(streamid) != -1)
 							apps[token]['streams'].splice(apps[token]['streams'].indexOf(streamid),1);
