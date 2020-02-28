@@ -11,7 +11,6 @@
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
 
-/* eslint-disable camelcase */
 /* eslint-disable prefer-template */
 /* eslint-disable vars-on-top */
 /* eslint-disable no-redeclare */
