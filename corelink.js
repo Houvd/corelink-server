@@ -34,32 +34,32 @@
  * @version V4.2.0.0
  */
 
-//v4.2.0.0
+// v4.2.0.0
 // - added signaling of subscribed and dropped streams to senders
-//v4.1.0.0
+// v4.1.0.0
 // - added signaling of stale streams
-//v4.0.0.1
+// v4.0.0.1
 // - handling of pings for time syncronization
-//v4.0.0.0
-//- first version that incorporates plugins/apps
-//v3.5.1.0
+// v4.0.0.0
+// - first version that incorporates plugins/apps
+// v3.5.1.0
 // - added metadata for streams
-//v3.5.0.1
+// v3.5.0.1
 // - fixed timeouts for streams
-//v3.5.0.0
+// v3.5.0.0
 // - added ws connection option for sender and receiver streams
-//v3.4.0.0
+// v3.4.0.0
 // - added tcp connection option for sender and receiver streams
-//V3.3.0.0
+// V3.3.0.0
 // - added user announcement for liststream, recevier and update functions
-//V3.2.0.0
+// V3.2.0.0
 // - added signaling of MTU (clients need to manage splitting of data)
-//V3.1.0.0
+// V3.1.0.0
 // - added signaling of new available streams
-//V3.0.0.0
+// V3.0.0.0
 // - new version of protocol
 
-//todo: check logic for reconnecting streams. could someone reconnect to a stream they are not authorized to? 
+// todo: check logic for reconnecting streams. could someone reconnect to a stream they are not authorized to? 
 const crypto = require('crypto');
 
 //******** setup default setting
