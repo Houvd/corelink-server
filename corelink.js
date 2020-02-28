@@ -2483,11 +2483,11 @@ function relayData(msg, remoteAddress, remotePort) {
 		headerr = JSON.stringify(header);
 		headerr = Buffer.from(headerr);
 
-		var header_buf = Buffer.alloc(6);
-		header_buf.writeUInt16LE(headerr.length,0);
-		header_buf.writeUInt32LE(data.length,2);
+		var headerBuffer = Buffer.alloc(6);
+		headerBuffer.writeUInt16LE(headerr.length,0);
+		headerBuffer.writeUInt32LE(data.length,2);
 
-		var packet = [header_buf,headerr,data];
+		var packet = [headerBuffer,headerr,data];
 		var message = Buffer.concat(packet);
 
 		switch(stream['proto']) {
