@@ -5,6 +5,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable guard-for-in */
 
+
 /* eslint-disable block-scoped-var */
 /* eslint-disable no-undef */
 /* eslint-disable dot-notation */
@@ -393,9 +394,9 @@ functions['auth'] = new Object({
 					.digest('hex');
 				response['ip'] = ip;
 				tokens[response['token']] = [];
-				tokens[response['token']]['time'] = Date.now(); //timeout data
-				tokens[response['token']]['user'] = authenticated; //holds the user id for the token
-				tokens[response['token']]['streams'] = [] //provision for streams that get added
+				tokens[response['token']]['time'] = Date.now(); // timeout data
+				tokens[response['token']]['user'] = authenticated; // holds the user id for the token
+				tokens[response['token']]['streams'] = [] // provision for streams that get added
 				tokens[response['token']]['conn'] = conn;
 			} else
 				response = getErrorMessage(4);
@@ -404,7 +405,7 @@ functions['auth'] = new Object({
 				if(typeof apps[message['token']] != 'undefined') {
 					response['token'] = message['token']
 					response['ip'] = ip;
-					apps[response['token']]['time'] = Date.now(); //timeout data
+					apps[response['token']]['time'] = Date.now(); // timeout data
 					apps[response['token']]['conn'] = conn;
 				} else
 					response = getErrorMessage(8);
