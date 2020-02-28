@@ -62,8 +62,8 @@
 // todo: check logic for reconnecting streams. could someone reconnect to a stream they are not authorized to? 
 const crypto = require('crypto');
 
-//******** setup default setting
-//timeouts for sync server
+// ******** setup default setting
+// timeouts for sync server
 const controlTimeout	= 10 * 60 * 60 * 1000; //(10 hours timeout for the control connection)
 const streamTimeout		=      30 * 60 * 1000; //(30 minutes stream timeout)
 const connectTimeout	=      10 * 60 * 1000; //timeout to dump open connections that are not used
@@ -78,9 +78,9 @@ port['udp'] = 20011;
 port['tcp'] = 20011;
 port['ws'] = 20013;
 
-//Allowed packet size
-MTU=20000; //overall size incl. header is not allowed to be larger than this number
-		  //in the future server could drop packets that are not complying with this
+// Allowed packet size
+MTU=20000; // overall size incl. header is not allowed to be larger than this number
+		  // in the future server could drop packets that are not complying with this
 
 var rooms = [];
 rooms['Holodeck'] = [];
@@ -90,9 +90,9 @@ rooms['Chalktalk'] = [];
 rooms['Chalktalk']['users'] = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14'];
 rooms['Chalktalk']['owner'] = '13';
 
-//Should there also be groups to manage users better?
-//Should there be a web interface to manage users?
-//In the future users could come from
+// Should there also be groups to manage users better?
+// Should there be a web interface to manage users?
+// In the future users could come from
 var users = [];
 users['1'] = [];
 users['1']['username'] = 'Testuser';
@@ -147,7 +147,7 @@ users['17']['username'] = 'Ben';
 users['17']['password'] = 'Testpassword';
 
 
-//?? should a token be restricted to a specific IP/Port combination
+// ?? should a token be restricted to a specific IP/Port combination
 // users can have several tokens that are in use
 // tokens time out separately
 var tokens = []; // holds all token related information
@@ -182,12 +182,12 @@ apps['!gfhdgh']['time'] = 0;
 apps['!gfhdgh']['name'] = 'Hanging out on the Holodeck';
 apps['!gfhdgh']['streams'] = [];
 
-//all receiver connections via TCP or WS
+// all receiver connections via TCP or WS
 var connections = [];
-//connections[ip][port]['conn'] = handle for the connection
-//connections[ip][port]['time'] = creation time for stream, used for timeout
+// connections[ip][port]['conn'] = handle for the connection
+// connections[ip][port]['time'] = creation time for stream, used for timeout
 
-//all source and target streams information is stored in source and target
+// all source and target streams information is stored in source and target
 var source = [];
 /*
 source = [] //holds all source stream information
@@ -201,8 +201,8 @@ source[id]['alert'] = true/false (alert when new receiver subscribes)
 source[id]['time'] = timeout for stream
 source[id]['meta'] = metadata to send to receivers during negotiation
 source[id]['conn'] = for tcp/ws connections the connection information
-//if app works as a user, the from tag is given and therefore derived from another stream
-//that from stream can be followed back until we find either the originating user or app
+ if app works as a user, the from tag is given and therefore derived from another stream
+ that from stream can be followed back until we find either the originating user or app
 source[id]['from'] = if derived from other stream
 */
 
