@@ -4,7 +4,7 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable guard-for-in */
-
+/* eslint-disable func-names */
 
 /* eslint-disable block-scoped-var */
 /* eslint-disable no-undef */
