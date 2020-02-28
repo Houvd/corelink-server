@@ -377,7 +377,7 @@ functions['auth'] = new Object({
 			}
 		}
 	},
-	process: function(message, ip, conn){
+	process: function authenticater (message, ip, conn){
 		var response = {};
 		response['statuscode'] = 0;
 		if(('username' in message) && ('password' in message)) {
