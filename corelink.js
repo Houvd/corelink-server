@@ -930,7 +930,7 @@ functions['liststream'] = new Object({
 					for(key in source)
 						if(source[key]['room']==message['workspace'][workspace])
 							if((typeof message['type']=='undefined') || (message['type'].length==0) || (message['type'].includes(source[key]['type']))) {
-								//add usernames and app names to the specific streams
+								// add usernames and app names to the specific streams
 								var streamlistelement = {};
 								streamlistelement['streamid'] = key;
 								for(token in tokens)
@@ -1219,13 +1219,13 @@ functions['receiver'] = new Object({
 					streamlistelement['type'] = source[message['streamid'][stream]]['type'];
 					streamlistelement['meta'] = source[message['streamid'][stream]]['meta'];
 
-					//add apps processing list for streams that are processed, otherwise leave empty
+					// add apps processing list for streams that are processed, otherwise leave empty
 					// walk through source from tags until we find user, add apps and user
 					var userApps = findApps(message['streamid'][stream])
 					streamlistelement['user'] = userApps.user
 					streamlistelement['apps'] = userApps.apps
 
-					//receive streams of the same user if echo is enabled
+					// receive streams of the same user if echo is enabled
 					if(((typeof tokens[message['token']] != 'undefined') &&
 							(users[tokens[message['token']]['user']]['username']!=streamlistelement['user']) &&
 							((!('echo' in message))	|| ('echo' in message) && (message['echo']!=true))) ||
@@ -1237,7 +1237,7 @@ functions['receiver'] = new Object({
 						console.log('skipping stream from same user '+message['streamid'][stream]);
 				}
 					
-				//give error message if we dont have a streamid and are also not expecting updates on streams
+				// give error message if we dont have a streamid and are also not expecting updates on streams
 				var t =  typeof message['alert'] != 'undefined';
 				if((message['streamid'].length<1) && ((typeof message['alert'] == 'undefined') || !((typeof message['alert'] != 'undefined') && (message['alert'] == true)))) {
 					// console.log(message);
@@ -1250,7 +1250,7 @@ functions['receiver'] = new Object({
 //					console.log(target[streamid]);
 				}
 				else {
-					//create a new target streamID
+					// create a new target streamID
 					streamid = null;
 					while((streamid==null) || (typeof target[streamid] != 'undefined'))
 						streamid = crypto.createHash('sha256')
@@ -1268,7 +1268,7 @@ functions['receiver'] = new Object({
 					 (target[streamid]['port']==0)) ||
 					((target[streamid]['proto'] == 'tcp') &&
 					 (target[streamid]['port']==0))) {
-					//put data into the target stream array & overwrite if existing
+					// put data into the target stream array & overwrite if existing
 					target[streamid] = [];
 					target[streamid]['ip'] = message['ip'];
 					target[streamid]['port'] = message['port'];
@@ -1298,35 +1298,35 @@ functions['receiver'] = new Object({
 					target[streamid]['time'] = Date.now();
 				}
 
-				//if exists, remove streamid from streams in this tokens streamlist
+				// if exists, remove streamid from streams in this tokens streamlist
 				for(var token in tokens)
 					for(var i in tokens[token]['streams'])
 						if(tokens[token]['streams'][i]==streamid)
 							tokens[token]['streams'].splice(i,1);
 
-				//if exists, remove streamid from streams in this apps streamlist
+				// if exists, remove streamid from streams in this apps streamlist
 				for(var token in apps)
 					for(var i in apps[token]['streams'])
 						if(apps[token]['streams'][i]==streamid)
 							apps[token]['streams'].splice(i,1);
 
-				//make sure stream is allowed and not rejected
+				// make sure stream is allowed and not rejected
 				if(typeof tokens[message['token']] != 'undefined')
 					tokens[message['token']]['streams'].push(streamid);
 
-				//make sure stream is allowed and not rejected in case of an app
+				// make sure stream is allowed and not rejected in case of an app
 				if(typeof apps[message['token']] != 'undefined')
 					apps[message['token']]['streams'].push(streamid);
 
-				//designate streams to be directly relayed ot this target
+				// designate streams to be directly relayed ot this target
 				for(stream in message['streamlist']) {
-					//send subscriber message to sender streams that are newly subscribed to
+					// send subscriber message to sender streams that are newly subscribed to
 					if(typeof streamrelay[message['streamlist'][stream]['streamid']][streamid] == 'undefined')
 						serverfunctions['subscriber'].process(message['streamlist'][stream]['streamid'], streamid);
 					streamrelay[message['streamlist'][stream]['streamid']][streamid]= [];
 				}
 
-				//create result for client to connect as a receiver
+				// create result for client to connect as a receiver
 				var response = {};
 				response['statuscode'] = 0;
 				response['port'] = port[message['proto']];
@@ -1393,7 +1393,7 @@ functions['subscribe'] = new Object({
 	process: function(message){
 		var data = checkAuth(message);
 
-//*** ToDo: Only allow user to get streams with correct access permissions */
+// *** ToDo: Only allow user to get streams with correct access permissions */
 
 		if(typeof data == "string") {
 			console.log('*** subscribe ***');
@@ -1407,18 +1407,18 @@ functions['subscribe'] = new Object({
 							message['streamid'].push(sourceid);
 				}
 
-				//add the already subscribed streams
+				// add the already subscribed streams
 				for(var s in streamrelay)
 					for(var t in streamrelay[s])
 						if((t==message['receiverid']) && (!message['streamid'].includes(s)))
 							message['streamid'].push(s);
 
-				//remove all streamids that are not in source (we silently drop streamID's in case they have disappeared during the time it takes to query and bring them up...)
+				// remove all streamids that are not in source (we silently drop streamID's in case they have disappeared during the time it takes to query and bring them up...)
 				for(stream in message['streamid'])
 					if(!(message['streamid'][stream] in source))
 						message['streamid'].splice(stream,1);
 
-				//add usernames to the specific streams
+				// add usernames to the specific streams
 				message['streamlist'] = [];
 				for(stream in message['streamid']) {
 					streamlistelement = {};
@@ -1426,7 +1426,7 @@ functions['subscribe'] = new Object({
 					streamlistelement['type'] = source[message['streamid'][stream]]['type'];
 					streamlistelement['meta'] = source[message['streamid'][stream]]['meta'];
 
-					//add apps processing list for streams that are processed, otherwise leave empty
+					// add apps processing list for streams that are processed, otherwise leave empty
 					// walk through source from tags until we find user, add apps and user
 					var userApps = findApps(message['streamid'][stream])
 					streamlistelement['user'] = userApps.user
@@ -1435,9 +1435,9 @@ functions['subscribe'] = new Object({
 					message['streamlist'].push(streamlistelement);
 				}
 
-				//designate streams to be directly relayed ot this target
+				// designate streams to be directly relayed ot this target
 				for(stream in message['streamlist']) {
-					//send subscriber message to sender streams that are newly subscribed to
+					// send subscriber message to sender streams that are newly subscribed to
 					if(typeof streamrelay[message['streamlist'][stream]['streamid']][message['receiverid']] == 'undefined')
 						serverfunctions['subscriber'].process(message['streamlist'][stream]['streamid'],message['receiverid']);
 					streamrelay[message['streamlist'][stream]['streamid']][message['receiverid']]= [];
