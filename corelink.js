@@ -64,10 +64,10 @@ const crypto = require('crypto');
 
 // ******** setup default setting
 // timeouts for sync server
-const controlTimeout	= 10 * 60 * 60 * 1000; //(10 hours timeout for the control connection)
-const streamTimeout		=      30 * 60 * 1000; //(30 minutes stream timeout)
-const connectTimeout	=      10 * 60 * 1000; //timeout to dump open connections that are not used
-const sessionTimeout	= 10 * 60 * 60 * 1000; //10 hours timeout for user token
+const controlTimeout	= 10 * 60 * 60 * 1000; // (10 hours timeout for the control connection)
+const streamTimeout		=      30 * 60 * 1000; // (30 minutes stream timeout)
+const connectTimeout	=      10 * 60 * 1000; // timeout to dump open connections that are not used
+const sessionTimeout	= 10 * 60 * 60 * 1000; // 10 hours timeout for user token
 const testTimeout		=      10 * 60 * 1000; // 10 min frequency to test if something timedout
 
 // Ports for sync server
@@ -222,7 +222,7 @@ target[id]['time'] = timeout for stream
 target[id]['conn'] = for tcp/ws connections the connection information
 */
 
-//fast structure to access to future connections
+// fast structure to access to future connections
 var streamrelay = []; // holds all information to relay data from source to targets most effectively
 /*
 streamrelay[ids] = [] // source stream id
@@ -265,7 +265,7 @@ function listStreams() {
 
 }
 
-stdin.on( 'data', function( key ){
+stdin.on( 'data', function Debugonoff ( key ){
 //	console.log(key.charCodeAt(0));
 //	console.log(key.charCodeAt(1));
 //	console.log(key.charCodeAt(2));
