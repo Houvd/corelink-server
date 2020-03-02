@@ -2230,6 +2230,7 @@ function handleControlConnection(conn) {
 console.log(`trying to bind WS control port ${WSControl}`);
 
 var Ws = require("ws").Server;
+
 var wsControlServer = new Ws({ port: WSControl });
 
 wsControlServer.on('connection', function connection(conn, req) {
@@ -2283,6 +2284,7 @@ wsControlServer.on('listening', () => {
 
 // UDP data transfer setup
 console.log(`trying to bind UDP port ${port['udp']}`);
+
 const dgram = require('dgram');
 const UDPDataServer = dgram.createSocket('udp4');
 
