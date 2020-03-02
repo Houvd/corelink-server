@@ -1238,7 +1238,7 @@ functions['receiver'] = new Object({
 				}
 					
 				// give error message if we dont have a streamid and are also not expecting updates on streams
-				var t =  typeof message['alert'] != 'undefined';
+				// var t =  typeof message['alert'] != 'undefined';
 				if((message['streamid'].length<1) && ((typeof message['alert'] == 'undefined') || !((typeof message['alert'] != 'undefined') && (message['alert'] == true)))) {
 					// console.log(message);
 					return getErrorMessage(7);
