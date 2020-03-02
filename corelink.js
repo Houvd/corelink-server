@@ -1875,7 +1875,7 @@ serverfunctions['update'] = new Object({
 		var room = source[streamid]['room'];
 
 		// get targets that requested an alert and send update
-		var t = [];
+		//var t = [];
 		for(var u in target) {
 			if(target[u]['alert'] && (target[u]['room']==room) && ((target[u]['type'].length == 0) || (target[u]['type'].includes(source[streamid]['type'])))) {
 				response['receiverid'] = u;
@@ -2059,7 +2059,7 @@ serverfunctions['stale'] = new Object({
 		var room = source[streamid]['room'];
 
 		// get subscribed targets and send update (only if receiver wants updates)
-		var t = [];
+		//var t = [];
 		for(var u in target) {
 			if(target[u]['alert'] && (target[u]['room']==room) && ((target[u]['type'].length == 0) || (target[u]['type'].includes(source[streamid]['type'])))) {
 				for(token in tokens)
