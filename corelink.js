@@ -21,7 +21,7 @@
 /* eslint-disable import/newline-after-import */
 /* eslint-disable prefer-destructuring */
 /* eslint-disable default-case */
-/* eslint-disable no-unused-vars */
+
 /* eslint-disable no-new-object */
 /* eslint-disable object-shorthand */
 
