@@ -2,7 +2,7 @@
 /* eslint-disable global-require */
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable no-await-in-loop */
-/* eslint-disable no-restricted-syntax */
+
 
 /* eslint-disable func-names */
 
