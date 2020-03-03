@@ -417,9 +417,9 @@ functions['auth'] = new Object({
 	}
 });
 
-functions['functionlist'] = new Object({
+functions['listfunctions'] = new Object({
 	info: {
-		name: 'functionlist',
+		name: 'listfunctions',
 		description: 'list available functions',
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
@@ -429,8 +429,8 @@ functions['functionlist'] = new Object({
 			'function': {
 				'description': 'function to select and run',
 				'type':'array',
-				'options':['functionlist'],
-				'sample': 'functionlist'
+				'options':['listfunctions'],
+				'sample': 'listfunctions'
 			},
 			'token': {
 				'description': 'token for the user to authenticate',
@@ -438,7 +438,7 @@ functions['functionlist'] = new Object({
 			}
 		},
 		responses: {
-			'functions': {
+			'functionlist': {
 				'description': 'list of functions',
 				'type':'string',
 				'sample': Object.keys(functions)
@@ -460,7 +460,7 @@ functions['functionlist'] = new Object({
 		response['statuscode'] = 0;
 		var data = checkAuth(message);
 		if(typeof data == "string") {
-			response['functions'] = Object.keys(functions);
+			response['functionlist'] = Object.keys(functions);
 			console.log(response);
 			return(response);
 		} 
@@ -468,9 +468,9 @@ functions['functionlist'] = new Object({
 	}
 });
 
-functions['info'] = new Object({
+functions['describefunction'] = new Object({
 	info: {
-		name: 'info',
+		name: 'describefunction',
 		description: 'retrieve endpoint description',
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
@@ -480,7 +480,7 @@ functions['info'] = new Object({
 			'function': {
 				'description': 'function to select and run',
 				'type':'string',
-				'sample': 'info'
+				'sample': 'describefunction'
 			},
 			'functionname': {
 				'description': 'function to get info about',
@@ -493,10 +493,10 @@ functions['info'] = new Object({
 			}
 		},
 		responses: {
-			'info': {
+			'description': {
 				'description': 'information about the function',
 				'type':'string',
-				'sample': functions['functionlist'].info
+				'sample': functions['listfunctions'].info
 			},
 			'statuscode': {
 				'description': 'result code of the function',
@@ -518,7 +518,7 @@ functions['info'] = new Object({
 				if(functions[message['functionname']] == undefined)
 					response = getErrorMessage(2);
 				else {
-					response['info'] = functions[message['functionname']].info;
+					response['description'] = functions[message['functionname']].info;
 					response['statuscode'] = 0;
 				}
 			else
@@ -529,9 +529,9 @@ functions['info'] = new Object({
 	}
 });
 
-functions['listworkspace'] = new Object({
+functions['listworkspaces'] = new Object({
 	info: {
-		name: 'listworkspace',
+		name: 'listworkspaces',
 		description: 'list existing workspaces',
 		version: '1.0.0.0',
 		author: 'Robert Pahle',
@@ -541,7 +541,7 @@ functions['listworkspace'] = new Object({
 			'function': {
 				'description': 'function to select and run',
 				'type':'string',
-				'sample': 'listworkspace'
+				'sample': 'listworkspaces'
 			},
 			'token': {
 				'description': 'token for the user to authenticate',
@@ -2158,16 +2158,16 @@ serverfunctions['dropped'] = new Object({
 });
 
 // fill data list with available objects
-functions['functionlist'].info['responses']['functions']['sample'] = Object.keys(functions);
-functions['listworkspace'].info['responses']['workspacelist']['sample'] = Object.keys(rooms);
+functions['listfunctions'].info['responses']['functionlist']['sample'] = Object.keys(functions);
+functions['listworkspaces'].info['responses']['workspacelist']['sample'] = Object.keys(rooms);
 var userlist = [];
 
 users.forEach(user => {
 	userlist.push(user.username)
 });
-console.log('Functions: ', functions['functionlist'].info['responses']['functions']['sample']);
+console.log('Functions: ', functions['listfunctions'].info['responses']['functionlist']['sample']);
 console.log('Server functions: ', Object.keys(serverfunctions));
-console.log('Workspaces: ', functions['listworkspace'].info['responses']['workspacelist']['sample']);
+console.log('Workspaces: ', functions['listworkspaces'].info['responses']['workspacelist']['sample']);
 console.log('Users: ', userlist);
 
 
