@@ -1,13 +1,21 @@
-// Update with your config settings.
+const path = require('path')
 
+// Update with your config settings.
 module.exports = {
 
   development: {
     client: 'sqlite3',
     connection: {
-      filename: 'data/corelink.sqlite3',
+      filename: path.join(__dirname, '../data/corelink.sqlite3'),
     },
     useNullAsDefault: true,
+    migrations: {
+      directory: path.join(__dirname, '../knex/migrations'),
+      tableName: 'knex_migrations',
+    },
+    seeds: {
+      directory: path.join(__dirname, '../knex/seeds'),
+    },
   },
 
   staging: {
@@ -22,7 +30,11 @@ module.exports = {
       max: 10,
     },
     migrations: {
+      directory: path.join(__dirname, '../knex/migrations'),
       tableName: 'knex_migrations',
+    },
+    seeds: {
+      directory: path.join(__dirname, '../knex/seeds'),
     },
   },
 
@@ -38,7 +50,11 @@ module.exports = {
       max: 10,
     },
     migrations: {
+      directory: path.join(__dirname, '../knex/migrations'),
       tableName: 'knex_migrations',
+    },
+    seeds: {
+      directory: path.join(__dirname, '../knex/seeds'),
     },
   },
 
