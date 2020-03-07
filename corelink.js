@@ -28,6 +28,8 @@
 /* eslint-disable no-shadow */
 /* eslint-disable no-param-reassign */
 
+// I was not able to push, so i added these again:
+/* eslint-disable guard-for-in */
 
 /**
  * @file NodeJS Corelink core server
