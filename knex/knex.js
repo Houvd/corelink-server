@@ -1,3 +1,11 @@
+const fs = require('fs')
+const path = require('path')
+
+const knexpath = path.join(__dirname, '../config/knexfile.js')
+
 const environment = process.env.ENVIRONMENT || 'development'
-const config = require('../config/knexfile.js')[environment]
+if (!fs.existsSync(knexpath)) {
+  fs.copyFileSync(knexpath+'.sample', knexpath)
+}
+const config = require(knexpath)[environment]
 module.exports = require('knex')(config)
