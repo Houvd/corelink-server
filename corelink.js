@@ -65,6 +65,10 @@
 // todo: check logic for reconnecting streams. could someone reconnect to a
 // stream they are not authorized to?
 const crypto = require('crypto')
+const dgram = require('dgram')
+var net = require('net')
+var Ws = require('ws').Server
+const knex = require('./knex/knex.js')
 
 // ******** setup default setting
 // timeouts for sync server
@@ -232,6 +236,43 @@ var streamrelay = [] // holds all information to relay data from source to targe
 streamrelay[ids] = [] // source stream id
 streamrelay[ids][idt] = conn // connection to send data to
 */
+
+
+//* ****************  Utility functions */
+/**
+ * generates random string of characters i.e salt
+ * @function
+ * @param {number} length - Length of the random string.
+ */
+var genRandomString = function (length) {
+  return crypto.randomBytes(Math.ceil(length / 2))
+    .toString('hex') /** convert to hexadecimal format */
+    .slice(0, length) /** return required number of characters */
+}
+
+/**
+* hash password with sha512.
+* @function
+* @param {string} password - List of required fields.
+* @param {string} salt - Data to be validated.
+*/
+var sha512 = function (password, salt) {
+  var hash = crypto.createHmac('sha512', salt) /** Hashing algorithm sha512 */
+  hash.update(password)
+  var value = hash.digest('hex')
+  return {
+    salt: salt,
+    passwordHash: value,
+  }
+}
+
+function saltHashPassword(userpassword) {
+  var salt = genRandomString(16) /** Gives us salt of length 16 */
+  var passwordData = sha512(userpassword, salt)
+  return passwordData
+}
+
+//* **************** Server */
 
 var debug = false
 var stdin = process.openStdin()
@@ -1293,8 +1334,8 @@ functions['receiver'] = new Object({
         response['streamid'] = streamid
         response['streamlist'] = message['streamlist']
         response['MTU'] = MTU
-        // 				console.log(message['proto'],port[message['proto']],response);
-        // 				console.log(port);
+        // console.log(message['proto'],port[message['proto']],response);
+        // console.log(port);
         return (response)
       }
       return getErrorMessage(3)
@@ -1366,7 +1407,9 @@ functions['subscribe'] = new Object({
         // add the already subscribed streams
         for (var s in streamrelay) for (var t in streamrelay[s]) if ((t == message['receiverid']) && (!message['streamid'].includes(s))) message['streamid'].push(s)
 
-        // remove all streamids that are not in source (we silently drop streamID's in case they have disappeared during the time it takes to query and bring them up...)
+        // remove all streamids that are not in source (we silently drop
+        // streamID's in case they have disappeared during the time it takes
+        // to query and bring them up...)
         for (stream in message['streamid']) if (!(message['streamid'][stream] in source)) message['streamid'].splice(stream, 1)
 
         // add usernames to the specific streams
@@ -1701,7 +1744,8 @@ functions['expire'] = new Object({
 // check password and username
 // ToDo: authenticate via LDAP / oAuth
             for(var key in users)
-                if((users[key]['username']==message['username']) && (users[key]['password']==message['password']))
+                if((users[key]['username']==message['username'])
+                   && (users[key]['password']==message['password']))
                     authenticated = key;
             if(authenticated!=0) {
                 response['token'] = crypto.createHash('sha256')
@@ -1710,7 +1754,10 @@ functions['expire'] = new Object({
                 response['ip'] = ip;
                 tokens[response['token']] = [];
                 tokens[response['token']]['time'] = Date.now(); // timeout data
-                tokens[response['token']]['user'] = authenticated; // holds the user id for the token
+
+                // holds the user id for the token
+                tokens[response['token']]['user'] = authenticated;
+
                 tokens[response['token']]['streams'] = [] // provision for streams that get added
                 tokens[response['token']]['conn'] = conn;
             } else
@@ -1885,11 +1932,11 @@ serverfunctions['subscriber'] = new Object({
   process: function (senderid, receiverid) {
     // prep response
     var response = {}
-    response['function']	= 'subscriber'
-    response['receiverid']	= receiverid
-    response['senderid']	= senderid
+    response['function'] = 'subscriber'
+    response['receiverid'] = receiverid
+    response['senderid'] = senderid
 
-    // 	get user or app name
+    // get user or app name
     for (token in tokens) {
       if (tokens[token]['streams'].includes(senderid)) {
         var usertoken = token
@@ -2040,7 +2087,7 @@ serverfunctions['dropped'] = new Object({
     var update = JSON.stringify(response)
     console.log('trying to send dropped update ', update)
 
-    // 	get tokens for this stream
+    // get tokens for this stream
     for (token in tokens) {
       if (tokens[token]['streams'].includes(sourceid)) {
         var usertoken = token
@@ -2083,8 +2130,6 @@ console.log('Users: ', userlist)
 
 
 // TCP control setup
-var net = require('net')
-
 console.log(`trying to bind TCP control port ${TCPControl}`)
 
 var TCPControlServer = net.createServer()
@@ -2098,10 +2143,10 @@ function handleControlConnection(conn) {
   var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
   var remotePort = conn.remotePort
   var send = ''
-  // 	console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
-  // 	controlConnection[remoteAddress] = [];
-  // 	controlConnection[remoteAddress][remotePort]=conn;
-  // 	console.log(controlConnection[remoteAddress][remotePort]);
+  // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
+  // controlConnection[remoteAddress] = [];
+  // controlConnection[remoteAddress][remotePort]=conn;
+  // console.log(controlConnection[remoteAddress][remotePort]);
 
   // at this point we have a new connection that is not yet authenticated
   console.log('new client TCP control connection from %s :%s', remoteAddress, remotePort)
@@ -2137,19 +2182,17 @@ function handleControlConnection(conn) {
 // WS control setup
 console.log(`trying to bind WS control port ${WSControl}`)
 
-var Ws = require('ws').Server
-
 var wsControlServer = new Ws({ port: WSControl })
 
 wsControlServer.on('connection', (conn, req) => {
-// 	const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+// const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
   const remoteAddress = req.connection.remoteAddress
   const remotePort = req.connection.remotePort
   var send = ''
-  // 	console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
-  // 	controlConnection[remoteAddress] = [];
-  // 	controlConnection[remoteAddress][remotePort]=conn;
-  // 	console.log(controlConnection[remoteAddress][remotePort]);
+  // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
+  // controlConnection[remoteAddress] = [];
+  // controlConnection[remoteAddress][remotePort]=conn;
+  // console.log(controlConnection[remoteAddress][remotePort]);
 
   // at this point we have a new connection that is not yet authenticated
   console.log('new client WS control connection from %s:%s', remoteAddress, remotePort)
@@ -2189,8 +2232,6 @@ wsControlServer.on('listening', () => {
 
 // UDP data transfer setup
 console.log(`trying to bind UDP port ${port['udp']}`)
-
-const dgram = require('dgram')
 
 const UDPDataServer = dgram.createSocket('udp4')
 
@@ -2255,7 +2296,7 @@ console.log(`trying to bind WS port ${port['ws']}`)
 var WSDataServer = new Ws({ port: port['ws'] })
 
 WSDataServer.on('connection', (conn, req) => {
-// 	const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+// const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
   const remoteAddress = req.connection.remoteAddress
   const remotePort = req.connection.remotePort
@@ -2294,7 +2335,8 @@ function timeoutConnections() {
   var currentTime = Date.now()
   for (var ip in connections) {
     for (var port in connections[ip]) {
-    // 			console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime,connections[ip][port]['time'] + connectTimeout - currentTime);
+    // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
+    //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
       if (connections[ip][port]['time'] + connectTimeout < currentTime) {
         delete connections[ip][port]
         if (connections[ip].length == 0) delete connections[ip]
@@ -2305,7 +2347,8 @@ function timeoutConnections() {
 
   // Test if sources have timed out
   for (var id in source) {
-    // 		console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time'] + streamTimeout - currentTime);
+    // console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time']
+    //    + streamTimeout - currentTime);
     if (source[id]['time'] + streamTimeout < currentTime) {
       // notify clients of stale streams
       serverfunctions['stale'].process(streamid)
@@ -2318,7 +2361,8 @@ function timeoutConnections() {
 
   // Test if targets have timed out
   for (var id in target) {
-    // 		console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']+streamTimeout - currentTime);
+    // console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']
+    //   +streamTimeout - currentTime);
     if (target[id]['time'] + streamTimeout < currentTime) {
       for (var sid in streamrelay) {
         for (var tid in streamrelay) if (tid == id) delete streamrelay[sid][tid]
@@ -2336,7 +2380,7 @@ function relayData(msg, remoteAddress, remotePort) {
   // *** ToDo: validate that this message is ttruely a sender message that is authenticated
   // console.log(`server got from ${rinfo.address}:${rinfo.port}`);
   // decoding header
-  // 	console.log('message: ',msg);
+  // console.log('message: ',msg);
   if (msg.length > 6) {
     var headerSize = msg.readUInt16LE(0)
     var dataSize = msg.readUInt32LE(2)
@@ -2345,10 +2389,10 @@ function relayData(msg, remoteAddress, remotePort) {
       return
     }
     var header = msg.toString('ascii', 6, headerSize + 6)
-    // 	var data = Buffer.allocUnsafe(dataSize);
-    // 	msg.copy(data,0,6+headerSize);
-    // 	console.log('header:', headerSize, '>'+header+'<');
-    // 	console.log('data:', dataSize, data);
+    // var data = Buffer.allocUnsafe(dataSize);
+    // msg.copy(data,0,6+headerSize);
+    // console.log('header:', headerSize, '>'+header+'<');
+    // console.log('data:', dataSize, data);
   } else {
     console.log('Packet is too small')
     return
@@ -2364,7 +2408,8 @@ function relayData(msg, remoteAddress, remotePort) {
     var dataSize = msg.readUInt32LE(2)
     var data = Buffer.allocUnsafe(dataSize)
     msg.copy(data, 0, 6 + headerSize)
-    // console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
+    // console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize},
+    // header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
     console.log('Receiving ' + header['id'] + ` b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to `)
     // console.log(data)
   }
