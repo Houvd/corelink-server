@@ -100,7 +100,8 @@ rooms['Chalktalk']['owner'] = '13'
 
 // Should there also be groups to manage users better?
 // Should there be a web interface to manage users?
-// In the future users could come from
+// In the future users is partially implemented to come from database,
+// but some functions are still using this array, so it is still here
 var users = []
 users['1'] = []
 users['1']['username'] = 'Testuser'
@@ -298,6 +299,7 @@ function listStreams() {
     }
     console.log('Source: ' + s + ', User: ' + user + ', IP: ' + source[s]['ip'] + ':' + source[s]['port'] + ', proto: ' + source[s]['proto'] + ', room: ' + source[s]['room'] + ', alert: ' + source[s]['alert'] + ', type: ' + source[s]['type'] + ', time: ' + source[s]['time'] + ', from: ' + source[s]['from'])
   }
+
   for (var t in target) console.log('Target: ' + t + ', IP: ' + target[t]['ip'] + ':' + target[t]['port'] + ', proto: ' + target[t]['proto'] + ', room: ' + target[t]['room'] + ', alert: ' + target[t]['alert'] + ', type: ' + target[t]['type'] + ', time: ' + target[t]['time'])
   for (var s in streamrelay) for (var t in streamrelay[s]) console.log('Relaying ' + s + ' -> ' + t)
   for (var ip in connections) for (var port in connections[ip]) console.log('Connection stored for ' + ip + ':' + port)
@@ -408,38 +410,47 @@ functions['auth'] = new Object({
       },
     },
   },
-  process: function authenticater(message, ip, conn) {
+  process: async function authenticater(message, ip, conn) {
     var response = {}
     response['statuscode'] = 0
     if (('username' in message) && ('password' in message)) {
-      var authenticated = 0
       // check password and username
       // ToDo: authenticate via LDAP / oAuth
-      for (var key in users) if ((users[key]['username'] == message['username']) && (users[key]['password'] == message['password'])) authenticated = key
-      if (authenticated != 0) {
+      // saving function in case of rollback
+      // for (var key in users) if ((users[key]['username'] == message['username'])
+      //  && (users[key]['password'] == message['password'])) authenticated = key
+      const user = await knex
+        .from('users')
+        .first('id', 'password', 'salt')
+        .where('username', message['username'])
+
+      if (sha512(message['password'], user.salt).passwordHash == user.password) {
         response['token'] = crypto.createHash('sha256')
           .update(message['username'] + message['passwod'] + (new Date().getTime()))
           .digest('hex')
         response['ip'] = ip
         tokens[response['token']] = []
         tokens[response['token']]['time'] = Date.now() // timeout data
-        tokens[response['token']]['user'] = authenticated // holds the user id for the token
+        tokens[response['token']]['user'] = user.id // holds the user id for the token
         tokens[response['token']]['streams'] = [] // provision for streams that get added
         tokens[response['token']]['conn'] = conn
-      } else response = getErrorMessage(4)
-    } else
+        return (response)
+      }
+      console.log('error message type',typeof getErrorMessage(8))
+      return (getErrorMessage(4))
+    }
     if ('token' in message) {
       if (typeof apps[message['token']] != 'undefined') {
         response['token'] = message['token']
         response['ip'] = ip
         apps[response['token']]['time'] = Date.now() // timeout data
         apps[response['token']]['conn'] = conn
-      } else response = getErrorMessage(8)
+      } else return (getErrorMessage(8))
     } else {
       response = getErrorMessage(3)
-      response['message'] += ' (username or password missing)'
+      response['message'] += ' (username, password or token missing)'
+      return (response)
     }
-    return (response)
   },
 })
 
@@ -481,11 +492,11 @@ functions['listfunctions'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var response = {}
     response['statuscode'] = 0
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       response['functionlist'] = Object.keys(functions)
       console.log(response)
       return (response)
@@ -536,9 +547,9 @@ functions['describefunction'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       var response = {}
       if ('functionname' in message) {
         if (functions[message['functionname']] == undefined) response = getErrorMessage(2)
@@ -590,10 +601,10 @@ functions['listworkspaces'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
     // **** ToDo: list only workspaces that user has access to.
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       var response = {}
       response['workspacelist'] = Object.keys(rooms)
       response['statuscode'] = 0
@@ -640,9 +651,9 @@ functions['addworkspace'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       if ('workspace' in message) {
         if (typeof rooms[message['workspace']] == 'undefined') {
           rooms[message['workspace']] = []
@@ -697,9 +708,9 @@ functions['rmworkspace'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       if ('workspace' in message) {
         if (typeof rooms[message['workspace']] != 'undefined') {
           // **** ToDo: make sure that all existing connections to this workspace will be terminated
@@ -803,9 +814,10 @@ functions['sender'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    console.log('datatype', typeof data)
+    if (typeof data !== 'object') {
       console.log('*** sender ***')
       if (('workspace' in message) && ('proto' in message) && ('type' in message) && ((message['proto'] == 'udp') || (message['proto'] == 'tcp') || (message['proto'] == 'ws'))) {
         if (('senderid' in message) && (message['senderid'] != '') && (typeof source[message['senderid']] != 'undefined')) {
@@ -919,10 +931,10 @@ functions['liststream'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
     // **** ToDo: list only streams that user has access to
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       if (!('workspace' in message)) message['workspace'] = []
 
       if (typeof message['workspace'] == 'string') message['workspace'] = [message['workspace']]
@@ -1015,9 +1027,9 @@ functions['streaminfo'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       if (('streamid' in message) && ((typeof source[message['streamid']] != 'undefined') || (typeof target[message['streamid']] != 'undefined'))) {
         var streamid = message['streamid']
         var response = {}
@@ -1204,9 +1216,9 @@ functions['receiver'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       console.log('*** receiver ***')
       if (('workspace' in message)) {
         // if(('receiverid' in message) && (message['receiverid']!='')
@@ -1390,12 +1402,12 @@ functions['subscribe'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
 
     // *** ToDo: Only allow user to get streams with correct access permissions */
 
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       console.log('*** subscribe ***')
       if ((('receiverid' in message) && (message['receiverid'] != '') && (typeof target[message['receiverid']] != 'undefined'))) {
         // get all streamids if no list is given
@@ -1490,9 +1502,9 @@ functions['unsubscribe'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       console.log('*** unsubscribe *** function untested')
       if ((('receiverid' in message) && (message['receiverid'] != '') && (typeof target[message['receiverid']] != 'undefined'))
                 && (('streamid' in message) && (message['streamid'].length > 0))) {
@@ -1591,14 +1603,14 @@ functions['disconnect'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
     var streamids = []
     var allstreams = []
     var types = []
     var workspaces = []
 
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       console.log('*** disconnect ***')
       // first find all streamid's that we want to disconnect
       if ((!('streamid' in message)) || (Array.isArray(message['streamid']) && (message['streamid'].length == 0))) {
@@ -1728,9 +1740,9 @@ functions['expire'] = new Object({
       },
     },
   },
-  process: function (message) {
+  process: async function (message) {
     var data = checkAuth(message)
-    if (typeof data == 'string') {
+    if (typeof data !== 'object') {
       console.log('*** expire not implemented ***')
 
       // make sure to remove all user sessions and streams, also notify clients of now stale streams
@@ -1832,7 +1844,7 @@ serverfunctions['update'] = new Object({
       },
     },
   },
-  process: function (streamid) {
+  process: async function (streamid) {
     // prep response
     var response = {}
     response['function'] = 'update'
@@ -1929,7 +1941,7 @@ serverfunctions['subscriber'] = new Object({
       },
     },
   },
-  process: function (senderid, receiverid) {
+  process: async function (senderid, receiverid) {
     // prep response
     var response = {}
     response['function'] = 'subscriber'
@@ -2011,7 +2023,7 @@ serverfunctions['stale'] = new Object({
       },
     },
   },
-  process: function (streamid) {
+  process: async function (streamid) {
     var response = {}
     response['function'] = 'stale'
     response['streamid'] = streamid
@@ -2079,7 +2091,7 @@ serverfunctions['dropped'] = new Object({
       },
     },
   },
-  process: function (sourceid, receiverid) {
+  process: async function (sourceid, receiverid) {
     var response = {}
     response['function'] = 'dropped'
     response['streamid'] = receiverid
@@ -2152,7 +2164,7 @@ function handleControlConnection(conn) {
   console.log('new client TCP control connection from %s :%s', remoteAddress, remotePort)
   conn.setNoDelay(true)
 
-  conn.on('data', (data) => {
+  conn.on('data', async (data) => {
     console.log('TCP control connection data from %s :%j', remoteAddress, data.toString('utf8'))
     try {
       message = JSON.parse(data)
@@ -2161,8 +2173,8 @@ function handleControlConnection(conn) {
       return
     }
     if ('function' in message) {
-      if (message['function'] == 'auth') send = JSON.stringify(functions[message['function']].process(message, remoteAddress, conn))
-      else send = JSON.stringify(functions[message['function']].process(message))
+      if (message['function'] == 'auth') send = JSON.stringify(await functions[message['function']].process(message, remoteAddress, conn))
+      else send = JSON.stringify(await functions[message['function']].process(message))
       console.log('sending:' + send)
       conn.write(send)
     } else console.log('Key function not given')
