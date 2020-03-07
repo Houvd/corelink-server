@@ -267,11 +267,13 @@ var sha512 = function (password, salt) {
   }
 }
 
+/*
 function saltHashPassword(userpassword) {
-  var salt = genRandomString(16) /** Gives us salt of length 16 */
+  var salt = genRandomString(16) // Gives us salt of length 16
   var passwordData = sha512(userpassword, salt)
   return passwordData
 }
+*/
 
 //* **************** Server */
 
