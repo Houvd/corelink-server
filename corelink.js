@@ -16,7 +16,7 @@
 /* eslint-disable vars-on-top */
 /* eslint-disable no-redeclare */
 /* eslint-disable no-use-before-define */
-/* eslint-disable consistent-return */
+// -disable consistent-return
 /* eslint-disable no-lonely-if */
 
 /* eslint-disable prefer-destructuring */
@@ -87,7 +87,7 @@ port['tcp'] = 20011
 port['ws'] = 20013
 
 // Allowed packet size
-MTU = 20000 // overall size incl. header is not allowed to be larger than this number
+const MTU = 20000 // overall size incl. header is not allowed to be larger than this number
 //             in the future server could drop packets that are not complying with this
 
 var rooms = []
