@@ -455,6 +455,7 @@ functions['auth'] = new Object({
       response['message'] += ' (username, password or token missing)'
       return (response)
     }
+    return (response)
   },
 })
 
@@ -2517,7 +2518,10 @@ function relayData(msg, remoteAddress, remotePort) {
       } else console.log('StreamID (' + header['id'] + ') not authorized to send')
     }
   }
+
+  return;
 }
+
 
 
 // process.on('SIGINT', process.exit());
