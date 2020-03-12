@@ -2104,7 +2104,7 @@ serverfunctions['dropped'] = new Object({
     console.log('trying to send dropped update ', update)
 
     // get tokens for this stream
-    for (token in tokens) {
+    for (var token in tokens) {
       if (tokens[token]['streams'].includes(sourceid)) {
         var usertoken = token
         break
