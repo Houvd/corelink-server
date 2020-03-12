@@ -299,7 +299,7 @@ function listStreams() {
 
   for (var t in target) console.log('Target: ' + t + ', IP: ' + target[t].ip + ':' + target[t].port + ', proto: ' + target[t].proto + ', room: ' + target[t].room + ', alert: ' + target[t].alert + ', type: ' + target[t].type + ', time: ' + target[t].time)
   for (var s in streamrelay) for (var t in streamrelay[s]) console.log('Relaying ' + s + ' -> ' + t)
-  for (var ip in connections) for (var port in connections[ip]) console.log('Connection stored for ' + ip + ':' + port)
+  for (var ip in connections) for (var connectionPort in connections[ip]) console.log('Connection stored for ' + ip + ':' + connectionPort)
 }
 
 stdin.on('data', (key) => {
@@ -433,7 +433,7 @@ functions.auth = new Object({
         tokens[response.token].conn = conn
         return (response)
       }
-      console.log('error message type',typeof getErrorMessage(8))
+      console.log('error message type', typeof getErrorMessage(8))
       return (getErrorMessage(4))
     }
     if ('token' in message) {
@@ -855,11 +855,18 @@ functions.sender = new Object({
         }
 
         // if exists, remove streamid from streams in this tokens streamlist
-        for (var token in tokens) for (var i in tokens[token].streams) if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
+        for (var token in tokens) {
+          for (var i in tokens[token].streams) {
+            if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
+          }
+        }
 
         // if exists, remove streamid from streams in this apps streamlist
-        for (var token in apps) for (var i in apps[token].streams) if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
-
+        for (var token in apps) {
+          for (var i in apps[token].streams) {
+            if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
+          }
+        }
         // make sure stream is allowed and not rejected
         if (typeof tokens[message.token] != 'undefined') tokens[message.token].streams.push(streamid)
 
@@ -961,7 +968,7 @@ functions.liststream = new Object({
                 }
                 for (var token in apps) {
                   for (var key1 in apps[token].streams) {
-                    // app is never defined as still checked , I am not sure what to do 
+                    // app is never defined as still checked , I am not sure what to do
                     if (app[token].streams[key1] == streamlistelement.streamid) {
                       streamlistelement.apps = app[token].name
                       break
@@ -1035,7 +1042,7 @@ functions.streaminfo = new Object({
         response.statuscode = 0
         response.info = {}
 
-        for ( var token in tokens) {
+        for (var token in tokens) {
           for (var key in tokens[token].streams) {
             if (tokens[token].streams[key] == streamid) {
               response.info.user = users[tokens[token].user].username
@@ -1233,9 +1240,9 @@ functions.receiver = new Object({
         // remove all streamids that are not in source (we silently drop
         // streamID's in case they have disappeared during the time it takes to
         // query and bring them up...)
-        for (var stream in message.streamid)
+        for (var stream in message.streamid) {
           if (typeof source[message.streamid[stream]] == 'undefined') message.streamid.splice(stream, 1)
-
+        }
         // add usernames to the specific streams
         message.streamlist = []
         for (var stream in message.streamid) {
@@ -1252,11 +1259,11 @@ functions.receiver = new Object({
 
           // receive streams of the same user if echo is enabled
           if (((typeof tokens[message.token] != 'undefined')
-                            && (users[tokens[message.token].user].username != streamlistelement.user)
-                            && ((!('echo' in message)) || (('echo' in message) && (message.echo != true))))
-                            || (('echo' in message) && (message.echo == true))
-                            || ((typeof apps[message.token] != 'undefined')
-                            && ((!('echo' in message)) || (('echo' in message) && (message.echo != true))))) {
+                          && (users[tokens[message.token].user].username != streamlistelement.user)
+                          && ((!('echo' in message)) || (('echo' in message) && (message.echo != true))))
+                          || (('echo' in message) && (message.echo == true))
+                          || ((typeof apps[message.token] != 'undefined')
+                          && ((!('echo' in message)) || (('echo' in message) && (message.echo != true))))) {
             message.streamlist.push(streamlistelement)
           } else console.log('skipping stream from same user ' + message.streamid[stream])
         }
@@ -1318,10 +1325,18 @@ functions.receiver = new Object({
         }
 
         // if exists, remove streamid from streams in this tokens streamlist
-        for (var token in tokens) for (var i in tokens[token].streams) if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
+        for (var token in tokens) {
+          for (var i in tokens[token].streams) {
+            if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
+          }
+        }
 
         // if exists, remove streamid from streams in this apps streamlist
-        for (var token in apps) for (var i in apps[token].streams) if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
+        for (var token in apps) {
+          for (var i in apps[token].streams) {
+            if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
+          }
+        }
 
         // make sure stream is allowed and not rejected
         if (typeof tokens[message.token] != 'undefined') tokens[message.token].streams.push(streamid)
@@ -1413,18 +1428,29 @@ functions.subscribe = new Object({
         // get all streamids if no list is given
         if (!('streamid' in message) || (message.streamid.length == 0)) {
           message.streamid = []
-          for (var sourceid in source) 
+          for (var sourceid in source) {
             if (!('type' in message) || (message.type.length == 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
+          }
         }
 
+
         // add the already subscribed streams
-        for (var s in streamrelay) for (var t in streamrelay[s]) if ((t == message.receiverid) && (!message.streamid.includes(s))) message.streamid.push(s)
+        for (var s in streamrelay) {
+          for (var t in streamrelay[s]) {
+            if ((t == message.receiverid) && (!message.streamid.includes(s))) {
+              message.streamid.push(s)
+            }
+          }
+        }
 
         // remove all streamids that are not in source (we silently drop
         // streamID's in case they have disappeared during the time it takes
         // to query and bring them up...)
-        for (var stream in message.streamid) 
-          if (!(message.streamid[stream] in source)) message.streamid.splice(stream, 1)
+        for (var stream in message.streamid) {
+          if (!(message.streamid[stream] in source)) {
+            message.streamid.splice(stream, 1)
+          }
+        }
 
         // add usernames to the specific streams
         message.streamlist = []
@@ -1524,7 +1550,11 @@ functions.unsubscribe = new Object({
 
         // create list of subscribed streams
         message.streamid = []
-        for (var s in streamrelay) for (var t in streamrelay[s]) if (t == message.receiverid) message.streamid.push(s)
+        for (var s in streamrelay) {
+          for (var t in streamrelay[s]) {
+            if (t == message.receiverid) message.streamid.push(s)
+          }
+        }
 
         // add usernames to the specific streams
         message.streamlist = []
