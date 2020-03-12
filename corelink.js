@@ -1625,14 +1625,14 @@ functions['disconnect'] = new Object({
           var user = tokens[message['token']]['user']
 
           // find all streamid's for that user
-          for (token in tokens) {
+          for (var token in tokens) {
             if (user == tokens[token]['user']) {
               console.log('streams in token', tokens[token]['streams'])
               allstreams = allstreams.concat(tokens[token]['streams'])
             }
           }
           // check if streamid is in correct room and of correct type
-          for (streamid in allstreams) {
+          for (var streamid in allstreams) {
             if ((typeof source[allstreams[streamid]] != 'undefined')
                                 && (types.includes(source[allstreams[streamid]]['type']) || types.length == 0)
                                 && (workspaces.includes(source[allstreams[streamid]]['room']) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
