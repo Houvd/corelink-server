@@ -287,7 +287,7 @@ function listStreams() {
 
   for (var s in source) {
     for (token in tokens) {
-      for (let key in tokens[token]['streams']) {
+      for (var key in tokens[token]['streams']) {
         if (tokens[token]['streams'][key] == s) {
           var user = users[tokens[token]['user']]['username']
           break
