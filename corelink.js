@@ -1873,7 +1873,7 @@ serverfunctions['update'] = new Object({
       if (target[u]['alert'] && (target[u]['room'] == room) && ((target[u]['type'].length == 0) || (target[u]['type'].includes(source[streamid]['type'])))) {
         response['receiverid'] = u
         update = JSON.stringify(response)
-        for (token in tokens) {
+        for (var token in tokens) {
           if (tokens[token]['streams'].includes(u)) {
             if (((users[tokens[token]['user']]['username'] != response['user'])
                                 && (target[u]['echo'] != true))
