@@ -1953,7 +1953,7 @@ serverfunctions['subscriber'] = new Object({
     response['senderid'] = senderid
 
     // get user or app name
-    for (token in tokens) {
+    for (var token in tokens) {
       if (tokens[token]['streams'].includes(senderid)) {
         var usertoken = token
         if (typeof response['user'] != 'undefined') break
@@ -2042,7 +2042,7 @@ serverfunctions['stale'] = new Object({
     // var t = [];
     for (var u in target) {
       if (target[u]['alert'] && (target[u]['room'] == room) && ((target[u]['type'].length == 0) || (target[u]['type'].includes(source[streamid]['type'])))) {
-        for (token in tokens) {
+        for (var token in tokens) {
           if (tokens[token]['streams'].includes(u)) {
             if (((users[tokens[token]['user']]['username'] != response['user'])
                                 && (target[u]['echo'] != true))
