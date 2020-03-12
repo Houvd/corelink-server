@@ -945,7 +945,7 @@ functions['liststream'] = new Object({
         var response = {}
         response['streamlist'] = []
         for (var workspace in message['workspace']) {
-          for (key in source) {
+          for (var key in source) {
             if (source[key]['room'] == message['workspace'][workspace]) {
               if ((typeof message['type'] == 'undefined') || (message['type'].length == 0) || (message['type'].includes(source[key]['type']))) {
                 // add usernames and app names to the specific streams
