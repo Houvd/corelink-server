@@ -2367,6 +2367,7 @@ function timeoutConnections() {
     //    + streamTimeout - currentTime);
     if (source[id]['time'] + streamTimeout < currentTime) {
       // notify clients of stale streams
+      // streamid not defined  but used 
       serverfunctions['stale'].process(streamid)
 
       // remove stream information from the relay
@@ -2438,7 +2439,7 @@ function relayData(msg, remoteAddress, remotePort) {
     msg.copy(data, 0, 6 + headerSize)
 
     header['stamp'] = Date.now()
-    headerr = JSON.stringify(header)
+    var headerr = JSON.stringify(header)
     headerr = Buffer.from(headerr)
 
     var headerBuffer = Buffer.alloc(6)
@@ -2458,7 +2459,7 @@ function relayData(msg, remoteAddress, remotePort) {
         stream['conn'].write(message)
         break
       case 'ws':
-        strem['conn'].send(message)
+        stream['conn'].send(message) // was strem instead of stream @abhishek
         break
     }
     if (debug) console.log('sending back ' + stream['proto'] + ' ping:' + JSON.stringify(header) + ', ip:' + remoteAddress + ', port' + remotePort)
@@ -2466,7 +2467,7 @@ function relayData(msg, remoteAddress, remotePort) {
     // console.log(header['id']);
     if (header['id'] in streamrelay) {
       source[header['id']]['time'] = last
-      for (targetid in streamrelay[header['id']]) {
+      for (var targetid in streamrelay[header['id']]) {
         if ((typeof target[targetid] != 'undefined') && (typeof target[targetid]['ip'] != 'undefined') && (target[targetid]['ip'] != '')) {
           if ((typeof target[targetid] != 'undefined') && (typeof target[targetid]['port'] != 'undefined') && (target[targetid]['port'] != 0)) {
             if (debug) {
