@@ -1690,7 +1690,7 @@ functions['disconnect'] = new Object({
 
           // remove stream if it is a target for the stream relay
           if (typeof target[streamid] != 'undefined') {
-            for (stream in streamrelay) {
+            for (var stream in streamrelay) {
               if (streamid in streamrelay[stream]) {
               // send dropped message to senders
                 serverfunctions['dropped'].process(stream, streamid)
@@ -1701,10 +1701,12 @@ functions['disconnect'] = new Object({
           }
 
           // remove streams from user session list
-          for (token in tokens) if (tokens[token]['streams'].indexOf(streamid) != -1) tokens[token]['streams'].splice(tokens[token]['streams'].indexOf(streamid), 1)
+          for (token in tokens) 
+            if (tokens[token]['streams'].indexOf(streamid) != -1) tokens[token]['streams'].splice(tokens[token]['streams'].indexOf(streamid), 1)
 
           // remove streams from apps session list
-          for (token in apps) if (apps[token]['streams'].indexOf(streamid) != -1) apps[token]['streams'].splice(apps[token]['streams'].indexOf(streamid), 1)
+          for (token in apps)
+            if (apps[token]['streams'].indexOf(streamid) != -1) apps[token]['streams'].splice(apps[token]['streams'].indexOf(streamid), 1)
           listStreams()
         } else return getErrorMessage(3)
       }
