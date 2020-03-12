@@ -1087,14 +1087,14 @@ function findApps(streamid) {
     if (userApps.user != '') user = userApps.user
     if (userApps.apps.length > 0) apps = userApps.apps
   } else {
-    for (token in tokens) {
+    for (var token in tokens) {
       if (tokens[token]['streams'].includes(streamid)) {
         user = users[tokens[token]['user']]['username']
         break
       }
     }
   }
-  for (token in apps) {
+  for (var token in apps) {
     if (apps[token]['streams'].includes(streamid)) {
       apps.push(apps[token]['name'])
       break
