@@ -1429,7 +1429,7 @@ functions['subscribe'] = new Object({
         // add usernames to the specific streams
         message['streamlist'] = []
         for (stream in message['streamid']) {
-          streamlistelement = {}
+          var streamlistelement = {}
           streamlistelement['streamid'] = message['streamid'][stream]
           streamlistelement['type'] = source[message['streamid'][stream]]['type']
           streamlistelement['meta'] = source[message['streamid'][stream]]['meta']
