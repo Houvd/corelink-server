@@ -1271,7 +1271,7 @@ functions['receiver'] = new Object({
         }
 
         if (('receiverid' in message) && (message['receiverid'] != '') && (typeof target[message['receiverid']] != 'undefined')) {
-          streamid = message['receiverid']
+          var streamid = message['receiverid']
           console.log('used existing receiver streamid: ' + streamid)
           // console.log(target[streamid]);
         } else {
