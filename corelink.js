@@ -1233,11 +1233,12 @@ functions['receiver'] = new Object({
         // remove all streamids that are not in source (we silently drop
         // streamID's in case they have disappeared during the time it takes to
         // query and bring them up...)
-        for (stream in message['streamid']) if (typeof source[message['streamid'][stream]] == 'undefined') message['streamid'].splice(stream, 1)
+        for (var stream in message['streamid'])
+          if (typeof source[message['streamid'][stream]] == 'undefined') message['streamid'].splice(stream, 1)
 
         // add usernames to the specific streams
         message['streamlist'] = []
-        for (stream in message['streamid']) {
+        for (var stream in message['streamid']) {
           streamlistelement = {}
           streamlistelement['streamid'] = message['streamid'][stream]
           streamlistelement['type'] = source[message['streamid'][stream]]['type']
