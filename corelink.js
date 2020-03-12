@@ -1227,7 +1227,7 @@ functions['receiver'] = new Object({
         // get appropriate streamids
         if (!('streamid' in message) || (message['streamid'].length == 0)) {
           message['streamid'] = []
-          for (sourceid in source) if (!('type' in message) || (message['type'].length == 0) || (message['type'].includes(source[sourceid]['type']))) message['streamid'].push(sourceid)
+          for (var sourceid in source) if (!('type' in message) || (message['type'].length == 0) || (message['type'].includes(source[sourceid]['type']))) message['streamid'].push(sourceid)
         }
 
         // remove all streamids that are not in source (we silently drop
