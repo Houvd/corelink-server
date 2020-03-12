@@ -2403,7 +2403,7 @@ function relayData(msg, remoteAddress, remotePort) {
     var dataSize = msg.readUInt32LE(2)
     if (msg.length != 6 + headerSize + dataSize) {
       console.log('Packet has the wrong size (' + msg.length + ' vs. ' + (6 + headerSize + dataSize) + ').')
-      return
+      return console.error('Packet has the wrong size (' + msg.length + ' vs. ' + (6 + headerSize + dataSize) + ').')
     }
     var header = msg.toString('ascii', 6, headerSize + 6)
     // var data = Buffer.allocUnsafe(dataSize);
@@ -2412,14 +2412,14 @@ function relayData(msg, remoteAddress, remotePort) {
     // console.log('data:', dataSize, data);
   } else {
     console.log('Packet is too small')
-    return
+    return console.error('Packet is too small');
   }
 
   try {
     header = JSON.parse(header)
   } catch (e) {
     console.log(`error during parsing ${e}`)
-    return console.error(e)
+    return console.error(e);
   }
   if (debug) {
     var dataSize = msg.readUInt32LE(2)
