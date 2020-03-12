@@ -959,7 +959,7 @@ functions['liststream'] = new Object({
                     }
                   }
                 }
-                for (token in apps) {
+                for (var token in apps) {
                   for (var key1 in apps[token]['streams']) {
                     if (app[token]['streams'][key1] == streamlistelement['streamid']) {
                       streamlistelement['apps'] = app[token]['name']
@@ -1034,16 +1034,16 @@ functions['streaminfo'] = new Object({
         response['statuscode'] = 0
         response['info'] = {}
 
-        for (token in tokens) {
-          for (key in tokens[token]['streams']) {
+        for ( var token in tokens) {
+          for (var key in tokens[token]['streams']) {
             if (tokens[token]['streams'][key] == streamid) {
               response['info']['user'] = users[tokens[token]['user']]['username']
               break
             }
           }
         }
-        for (token in apps) {
-          for (key in apps[token]['streams']) {
+        for (var token in apps) {
+          for (var key in apps[token]['streams']) {
             if (apps[token]['streams'][key] == streamid) {
               response['info']['apps'] = apps[token]['name']
               break
