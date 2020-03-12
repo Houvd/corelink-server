@@ -5,7 +5,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable func-names */
 /* eslint-disable block-scoped-var */
-
+/* eslint-disable no-undef */    // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef 
 /* eslint-disable dot-notation */
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
