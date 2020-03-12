@@ -1423,7 +1423,8 @@ functions['subscribe'] = new Object({
         // remove all streamids that are not in source (we silently drop
         // streamID's in case they have disappeared during the time it takes
         // to query and bring them up...)
-        for (stream in message['streamid']) if (!(message['streamid'][stream] in source)) message['streamid'].splice(stream, 1)
+        for (var stream in message['streamid']) 
+          if (!(message['streamid'][stream] in source)) message['streamid'].splice(stream, 1)
 
         // add usernames to the specific streams
         message['streamlist'] = []
