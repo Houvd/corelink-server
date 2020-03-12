@@ -2216,7 +2216,7 @@ wsControlServer.on('connection', (conn, req) => {
   conn.on('message', (data) => {
     console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
     try {
-      message = JSON.parse(data)
+      var message = JSON.parse(data)
     } catch (e) {
       console.log('Received message not a proper JSON:' + data.toString())
       return
