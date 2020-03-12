@@ -3,28 +3,21 @@
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-
 /* eslint-disable func-names */
-
 /* eslint-disable block-scoped-var */
-/* eslint-disable no-undef */
+
 /* eslint-disable dot-notation */
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
-
 /* eslint-disable prefer-template */
 /* eslint-disable vars-on-top */
 /* eslint-disable no-redeclare */
 /* eslint-disable no-use-before-define */
-// -disable consistent-return
 /* eslint-disable no-lonely-if */
-
 /* eslint-disable prefer-destructuring */
 /* eslint-disable default-case */
-
 /* eslint-disable no-new-object */
 /* eslint-disable object-shorthand */
-
 /* eslint-disable no-shadow */
 /* eslint-disable no-param-reassign */
 
