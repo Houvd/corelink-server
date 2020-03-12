@@ -2171,7 +2171,7 @@ function handleControlConnection(conn) {
   conn.on('data', async (data) => {
     console.log('TCP control connection data from %s :%j', remoteAddress, data.toString('utf8'))
     try {
-      message = JSON.parse(data)
+      var message = JSON.parse(data)
     } catch (e) {
       console.log('Received message not a proper JSON:' + data.toString())
       return
