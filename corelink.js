@@ -951,8 +951,8 @@ functions['liststream'] = new Object({
                 // add usernames and app names to the specific streams
                 var streamlistelement = {}
                 streamlistelement['streamid'] = key
-                for (token in tokens) {
-                  for (key1 in tokens[token]['streams']) {
+                for (var token in tokens) {
+                  for (var key1 in tokens[token]['streams']) {
                     if (tokens[token]['streams'][key1] == streamlistelement['streamid']) {
                       streamlistelement['user'] = users[tokens[token]['user']]['username']
                       break
@@ -960,7 +960,7 @@ functions['liststream'] = new Object({
                   }
                 }
                 for (token in apps) {
-                  for (key1 in apps[token]['streams']) {
+                  for (var key1 in apps[token]['streams']) {
                     if (app[token]['streams'][key1] == streamlistelement['streamid']) {
                       streamlistelement['apps'] = app[token]['name']
                       break
