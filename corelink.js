@@ -2518,8 +2518,6 @@ function relayData(msg, remoteAddress, remotePort) {
       } else console.log('StreamID (' + header['id'] + ') not authorized to send')
     }
   }
-
-  return;
 }
 
 
