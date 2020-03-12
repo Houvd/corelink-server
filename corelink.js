@@ -961,6 +961,7 @@ functions['liststream'] = new Object({
                 }
                 for (var token in apps) {
                   for (var key1 in apps[token]['streams']) {
+                    // app is never defined as still checked , I am not sure what to do 
                     if (app[token]['streams'][key1] == streamlistelement['streamid']) {
                       streamlistelement['apps'] = app[token]['name']
                       break
