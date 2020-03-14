@@ -12,11 +12,6 @@ npm install
 npm audit fix
 ```
 
-### Install dependencies
-```bash
-npm install
-```
-
 ### Enable config file for the database
 ```bash
 cd server/config/
