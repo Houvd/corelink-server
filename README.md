@@ -20,7 +20,7 @@ cp knexfile.js.sample knexfile.js
 ```
 
 Windows:
-```bash
+```
 cd server\config\
 copy knexfile.js.sample knexfile.js
 ```
