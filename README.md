@@ -1,35 +1,35 @@
-### Installations instructions for the Corelink Server
+# Installations instructions for the Corelink Server
 
-# Clone the repository and go into repository folder
+### Clone the repository and go into repository folder
 ```bash
 git clone https://dev.nyu-x.org/holodeck/networktest.git
 cd networktest
 ```
 
-# Install dependencies and fix potential bugs
+### Install dependencies and fix potential bugs
 ```bash
 npm install
 npm audit fix
 ```
 
-# Install dependencies
+### Install dependencies
 ```bash
 npm install
 ```
 
-# Enable config file for the database
+### Enable config file for the database
 ```bash
 cd server/config/
 mv knexfile.js.sample knexfile.js
 ```
 
-# Create database with latest tables
+### Create database with latest tables
 ```bash
 cd server/config
 node ../../node_modules/knex/bin/cli.js migrate:up
 ```
 
-# Seed database with basic data
+### Seed database with basic data
 
 > `Warning: All existing data inside the database will be deleted.`
 
@@ -38,21 +38,21 @@ cd server/config
 node ../../node_modules/knex/bin/cli.js seed:run
 ```
 
-# Start server
+### Start server
 ```bash
 cd server
 node corelink.js
 ```
 
-### Upgrade instructions for the Corelink Server
+# Upgrade instructions for the Corelink Server
 
-# Pull latest version
+### Pull latest version
 ```bash
 cd networktest
 git pull
 ```
 
-# Update database to latest table version 
+### Update database to latest table version 
 ```bash
 cd server/config
 node ../../node_modules/knex/bin/cli.js migrate:up
