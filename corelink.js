@@ -6,7 +6,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable func-names */
 /* eslint-disable block-scoped-var */
-/* eslint-disable no-undef */ // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef 
+/* eslint-disable no-undef */ // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
 /* eslint-disable prefer-template */
@@ -1664,8 +1664,10 @@ functions.disconnect = new Object({
           // check if streamid is in correct room and of correct type
           for (var streamid in allstreams) {
             if ((typeof source[allstreams[streamid]] != 'undefined')
-                                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
-                                && (workspaces.includes(source[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                        && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
+                        && (workspaces.includes(source[allstreams[streamid]].room) || workspaces.length == 0)) {
+              streamids = streamids.concat([allstreams[streamid]])
+            }
             if ((typeof target[allstreams[streamid]] != 'undefined')
                                 && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
                                 && (workspaces.includes(target[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
@@ -1707,7 +1709,9 @@ functions.disconnect = new Object({
               delete connections[source[streamid].ip][source[streamid].port].conn
               delete connections[source[streamid].ip][source[streamid].port].time
               delete connections[source[streamid].ip][source[streamid].port]
-              if (connections[source[streamid].ip].length == 0) delete connections[source[streamid].ip]
+              if (connections[source[streamid].ip].length == 0) {
+                delete connections[source[streamid].ip]
+              }
             }
             // *** ToDo: disconnect all receivers as well
             // announce to receivers that the stream is stale
@@ -1731,12 +1735,17 @@ functions.disconnect = new Object({
           }
 
           // remove streams from user session list
-          for (token in tokens) 
-            if (tokens[token].streams.indexOf(streamid) != -1) tokens[token].streams.splice(tokens[token].streams.indexOf(streamid), 1)
-
+          for (token in tokens) {
+            if (tokens[token].streams.indexOf(streamid) != -1) {
+              tokens[token].streams.splice(tokens[token].streams.indexOf(streamid), 1)
+            }
+          }
           // remove streams from apps session list
-          for (token in apps)
-            if (apps[token].streams.indexOf(streamid) != -1) apps[token].streams.splice(apps[token].streams.indexOf(streamid), 1)
+          for (token in apps) {
+            if (apps[token].streams.indexOf(streamid) != -1) {
+              apps[token].streams.splice(apps[token].streams.indexOf(streamid), 1)
+            }
+          }
           listStreams()
         } else return getErrorMessage(3)
       }
@@ -2389,7 +2398,9 @@ function timeoutConnections() {
       }
     }
   }
-  for (var token in tokens) if (tokens[token].time + sessionTimeout < currentTime) delete tokens[token]
+  for (var token in tokens) {
+    if (tokens[token].time + sessionTimeout < currentTime) delete tokens[token]
+  }
 
   // Test if sources have timed out
   for (var id in source) {
@@ -2397,7 +2408,7 @@ function timeoutConnections() {
     //    + streamTimeout - currentTime);
     if (source[id].time + streamTimeout < currentTime) {
       // notify clients of stale streams
-      // streamid not defined  but used 
+      // streamid not defined  but used
       serverfunctions.stale.process(streamid)
 
       // remove stream information from the relay
@@ -2442,14 +2453,14 @@ function relayData(msg, remoteAddress, remotePort) {
     // console.log('data:', dataSize, data);
   } else {
     console.log('Packet is too small')
-    return console.error('Packet is too small');
+    return console.error('Packet is too small')
   }
 
   try {
     header = JSON.parse(header)
   } catch (e) {
     console.log(`error during parsing ${e}`)
-    return console.error(e);
+    return console.error(e)
   }
   if (debug) {
     var dataSize = msg.readUInt32LE(2)
@@ -2548,9 +2559,7 @@ function relayData(msg, remoteAddress, remotePort) {
       } else console.log('StreamID (' + header.id + ') not authorized to send')
     }
   }
-  return console.log("relaydata end")
+  return console.log('relaydata end')
 }
-
-
 
 // process.on('SIGINT', process.exit());
