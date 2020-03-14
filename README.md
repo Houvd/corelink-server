@@ -13,10 +13,19 @@ npm audit fix
 ```
 
 ### Enable config file for the database
+Linux/Mac:
 ```bash
 cd server/config/
-mv knexfile.js.sample knexfile.js
+cp knexfile.js.sample knexfile.js
 ```
+
+Windows:
+```bash
+cd server\config\
+copy knexfile.js.sample knexfile.js
+```
+
+
 
 ### Create database with latest tables
 ```bash
