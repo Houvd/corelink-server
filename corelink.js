@@ -10,7 +10,7 @@
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
 /* eslint-disable prefer-template */
-/* eslint-disable vars-on-top */
+
 /* eslint-disable no-redeclare */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-lonely-if */
@@ -75,15 +75,69 @@ const testTimeout = 10 * 60 * 1000 // 10 min frequency to test if something time
 var TCPControl = 20010
 var WSControl = 20012
 var port = []
-port.udp = 20011
-port.tcp = 20011
-port.ws = 20013
+var rooms = []
+var users = []
+var tokens = [] // holds all token related information
+var apps = [] // holds all tokens and related information for apps
+var sha512
 
+var debug
+var stdin // for server
+
+
+// all receiver connections via TCP or WS
+var connections = []
+// connections[ip][port]['conn'] = handle for the connection
+// connections[ip][port]['time'] = creation time for stream, used for timeout
+
+// all source and target streams information is stored in source and target
+var source = []
+/*
+source = [] // holds all source stream information
+source[id] =  [] // stream ID
+source[id]['ip'] = source ip address
+source[id]['port'] = source port
+source[id]['proto'] = ws or tcp or ws
+source[id]['room'] = workspace name
+source[id]['type'] = type of stream e.g. 3D, Audio, etc...
+source[id]['alert'] = true/false (alert when new receiver subscribes)
+source[id]['time'] = timeout for stream
+source[id]['meta'] = metadata to send to receivers during negotiation
+source[id]['conn'] = for tcp/ws connections the connection information
+ if app works as a user, the from tag is given and therefore derived from another stream
+ that from stream can be followed back until we find either the originating user or app
+source[id]['from'] = if derived from other stream
+*/
+
+var target = []
+/*
+target = [] // holds all target stream information
+target[id] =  [] // stream ID
+target[id]['ip'] = source ip address
+target[id]['port'] = source port
+target[id]['proto'] = udp or tcp or ws
+target[id]['room'] = workspace name
+target[id]['alert'] = true/false (Alert if stream of specific type becomse available)
+target[id]['echo'] = true/false (send data to receivers with the same username)
+target[id]['type'] = array of type of stream e.g. 3D, Audio, etc...
+target[id]['meta'] = metadata to send to senders during negotiation
+target[id]['time'] = timeout for stream
+target[id]['conn'] = for tcp/ws connections the connection information
+*/
+
+// fast structure to access to future connections
+var streamrelay = [] // holds all information to relay data from source to targets most effectively
+/*
+streamrelay[ids] = [] // source stream id
+streamrelay[ids][idt] = conn // connection to send data to
+*/
 // Allowed packet size
 const MTU = 20000 // overall size incl. header is not allowed to be larger than this number
 //             in the future server could drop packets that are not complying with this
 
-var rooms = []
+port.udp = 20011
+port.tcp = 20011
+port.ws = 20013
 rooms.Holodeck = []
 rooms.Holodeck.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
 rooms.Holodeck.owner = '1'
@@ -95,7 +149,7 @@ rooms.Chalktalk.owner = '13'
 // Should there be a web interface to manage users?
 // In the future users is partially implemented to come from database,
 // but some functions are still using this array, so it is still here
-var users = []
+
 users['1'] = []
 users['1'].username = 'Testuser'
 users['1'].password = 'Testpassword'
@@ -152,7 +206,7 @@ users['17'].password = 'Testpassword'
 // ?? should a token be restricted to a specific IP/Port combination
 // users can have several tokens that are in use
 // tokens time out separately
-var tokens = [] // holds all token related information
+
 // tokens[token] = [] // information for specific token
 // tokens[token]['time'] = 342523; // holds the timeout time stamp for the tokens
 // tokens[token]['user'] = 1; // holds the user id for the token
@@ -163,7 +217,7 @@ var tokens = [] // holds all token related information
 
 // app can work as a app (e.g. user is the app)
 // app can work as a user (e.g. user is the user)
-var apps = [] // holds all tokens and related information for apps
+
 // apps[atoken] = [] // information for a specific pre shared app token, always starts with an !
 // apps[atoken]['time'] = 0 // holds timeout time stamp for token, 0 for no timeout
 // apps[atoken]['name'] = '' // holds app name for the app
@@ -183,54 +237,6 @@ apps['!gfhdgh'] = []
 apps['!gfhdgh'].time = 0
 apps['!gfhdgh'].name = 'Hanging out on the Holodeck'
 apps['!gfhdgh'].streams = []
-
-// all receiver connections via TCP or WS
-var connections = []
-// connections[ip][port]['conn'] = handle for the connection
-// connections[ip][port]['time'] = creation time for stream, used for timeout
-
-// all source and target streams information is stored in source and target
-var source = []
-/*
-source = [] // holds all source stream information
-source[id] =  [] // stream ID
-source[id]['ip'] = source ip address
-source[id]['port'] = source port
-source[id]['proto'] = ws or tcp or ws
-source[id]['room'] = workspace name
-source[id]['type'] = type of stream e.g. 3D, Audio, etc...
-source[id]['alert'] = true/false (alert when new receiver subscribes)
-source[id]['time'] = timeout for stream
-source[id]['meta'] = metadata to send to receivers during negotiation
-source[id]['conn'] = for tcp/ws connections the connection information
- if app works as a user, the from tag is given and therefore derived from another stream
- that from stream can be followed back until we find either the originating user or app
-source[id]['from'] = if derived from other stream
-*/
-
-var target = []
-/*
-target = [] // holds all target stream information
-target[id] =  [] // stream ID
-target[id]['ip'] = source ip address
-target[id]['port'] = source port
-target[id]['proto'] = udp or tcp or ws
-target[id]['room'] = workspace name
-target[id]['alert'] = true/false (Alert if stream of specific type becomse available)
-target[id]['echo'] = true/false (send data to receivers with the same username)
-target[id]['type'] = array of type of stream e.g. 3D, Audio, etc...
-target[id]['meta'] = metadata to send to senders during negotiation
-target[id]['time'] = timeout for stream
-target[id]['conn'] = for tcp/ws connections the connection information
-*/
-
-// fast structure to access to future connections
-var streamrelay = [] // holds all information to relay data from source to targets most effectively
-/*
-streamrelay[ids] = [] // source stream id
-streamrelay[ids][idt] = conn // connection to send data to
-*/
-
 
 //* ****************  Utility functions */
 /**
@@ -252,10 +258,11 @@ var genRandomString = function (length) {
 * @param {string} password - List of required fields.
 * @param {string} salt - Data to be validated.
 */
-var sha512 = function (password, salt) {
+sha512 = function (password, salt) {
+  var value
   var hash = crypto.createHmac('sha512', salt) /** Hashing algorithm sha512 */
   hash.update(password)
-  var value = hash.digest('hex')
+  value = hash.digest('hex')
   return {
     salt: salt,
     passwordHash: value,
@@ -272,24 +279,29 @@ function saltHashPassword(userpassword) {
 
 //* **************** Server */
 
-var debug = false
-var stdin = process.openStdin()
+debug = false
+stdin = process.openStdin()
 if (stdin.isTTY) stdin.setRawMode(true)
 stdin.resume()
 stdin.setEncoding('utf8')
 
 function listStreams() {
+  var token
+  var user
+  var s
+  var token
+  var key
   console.log('Listing Streams')
   // console.log(tokens);
   // console.log(source);
-  for (var token in tokens) console.log('Token: ' + token + ', user: ' + users[tokens[token].user].username + ', streams: ' + tokens[token].streams.toString() + ', time: ' + tokens[token].time)
-  for (var token in apps) console.log('Token: ' + token + ', app: ' + apps[token].name + ', streams: ' + apps[token].streams.toString() + ', time: ' + apps[token].time)
+  for (token in tokens) console.log('Token: ' + token + ', user: ' + users[tokens[token].user].username + ', streams: ' + tokens[token].streams.toString() + ', time: ' + tokens[token].time)
+  for (token in apps) console.log('Token: ' + token + ', app: ' + apps[token].name + ', streams: ' + apps[token].streams.toString() + ', time: ' + apps[token].time)
 
-  for (var s in source) {
+  for (s in source) {
     for (token in tokens) {
-      for (var key in tokens[token].streams) {
+      for (key in tokens[token].streams) {
         if (tokens[token].streams[key] == s) {
-          var user = users[tokens[token].user].username
+          user = users[tokens[token].user].username
           break
         }
       }
