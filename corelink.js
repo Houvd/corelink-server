@@ -1,3 +1,4 @@
+/* eslint-disable vars-on-top */
 /* eslint-disable linebreak-style */
 /* eslint no-console: ["error", { allow: ["log", "warn", "error"] }] */
 /* eslint-disable global-require */
