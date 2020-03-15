@@ -511,8 +511,8 @@ functions.listfunctions = new Object({
   },
   process: async function (message) {
     var response = {}
-    response.statuscode = 0
     var data = checkAuth(message)
+    response.statuscode = 0
     if (typeof data !== 'object') {
       response.functionlist = Object.keys(functions)
       console.log(response)
@@ -566,8 +566,8 @@ functions.describefunction = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var response = {}
     if (typeof data !== 'object') {
-      var response = {}
       if ('functionname' in message) {
         if (functions[message.functionname] == undefined) response = getErrorMessage(2)
         else {
@@ -620,9 +620,9 @@ functions.listworkspaces = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var response = {}
     // **** ToDo: list only workspaces that user has access to.
     if (typeof data !== 'object') {
-      var response = {}
       response.workspacelist = Object.keys(rooms)
       response.statuscode = 0
       return (response)
@@ -670,13 +670,13 @@ functions.addworkspace = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
         if (typeof rooms[message.workspace] == 'undefined') {
           rooms[message.workspace] = []
           rooms[message.workspace].owner = data
           rooms[message.workspace].users = [data]
-          var response = {}
           response.statuscode = 0
           return (response)
         }
@@ -727,12 +727,13 @@ functions.rmworkspace = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
         if (typeof rooms[message.workspace] != 'undefined') {
           // **** ToDo: make sure that all existing connections to this workspace will be terminated
           delete rooms[message.workspace]
-          var response = {}
+
           response.statuscode = 0
           return (response)
         }
@@ -833,6 +834,7 @@ functions.sender = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var i
     console.log('datatype', typeof data)
     if (typeof data !== 'object') {
       console.log('*** sender ***')
@@ -882,7 +884,7 @@ functions.sender = new Object({
 
         // if exists, remove streamid from streams in this apps streamlist
         for (var token in apps) {
-          for (var i in apps[token].streams) {
+          for (i in apps[token].streams) {
             if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
           }
         }
