@@ -83,8 +83,8 @@ var sha512
 
 var debug
 var stdin // for server
-
-
+var errorList = [] // holds all error messages
+var functions = [] // holds all objects for functions in use
 // all receiver connections via TCP or WS
 var connections = []
 // connections[ip][port]['conn'] = handle for the connection
@@ -291,6 +291,12 @@ function listStreams() {
   var s
   var token
   var key
+  var sr
+  var t
+  var tsr
+  var ip
+  var connectionPort
+
   console.log('Listing Streams')
   // console.log(tokens);
   // console.log(source);
@@ -309,9 +315,9 @@ function listStreams() {
     console.log('Source: ' + s + ', User: ' + user + ', IP: ' + source[s].ip + ':' + source[s].port + ', proto: ' + source[s].proto + ', room: ' + source[s].room + ', alert: ' + source[s].alert + ', type: ' + source[s].type + ', time: ' + source[s].time + ', from: ' + source[s].from)
   }
 
-  for (var t in target) console.log('Target: ' + t + ', IP: ' + target[t].ip + ':' + target[t].port + ', proto: ' + target[t].proto + ', room: ' + target[t].room + ', alert: ' + target[t].alert + ', type: ' + target[t].type + ', time: ' + target[t].time)
-  for (var s in streamrelay) for (var t in streamrelay[s]) console.log('Relaying ' + s + ' -> ' + t)
-  for (var ip in connections) for (var connectionPort in connections[ip]) console.log('Connection stored for ' + ip + ':' + connectionPort)
+  for (t in target) console.log('Target: ' + t + ', IP: ' + target[t].ip + ':' + target[t].port + ', proto: ' + target[t].proto + ', room: ' + target[t].room + ', alert: ' + target[t].alert + ', type: ' + target[t].type + ', time: ' + target[t].time)
+  for (sr in streamrelay) for (tsr in streamrelay[sr]) console.log('Relaying ' + sr + ' -> ' + tsr)
+  for (ip in connections) for (connectionPort in connections[ip]) console.log('Connection stored for ' + ip + ':' + connectionPort)
 }
 
 stdin.on('data', (key) => {
@@ -337,7 +343,7 @@ stdin.on('data', (key) => {
 })
 
 
-var errorList = [] // holds all error messages
+errorList = [] // holds all error messages
 errorList[1] = 'Key Functionname not set'
 errorList[2] = 'Function does not exist.'
 errorList[3] = 'Required key not supplied'
@@ -355,9 +361,10 @@ function getErrorMessage(code) {
 }
 
 function checkAuth(message) {
+  var authenticated
   console.log('token: ', message.token)
   if ('token' in message) {
-    var authenticated = 0
+    authenticated = 0
     if (typeof tokens[message.token] != 'undefined') if ((Date.now() - controlTimeout) < tokens[message.token].time) authenticated = tokens[message.token].user
     if (typeof apps[message.token] != 'undefined') authenticated = message.token
     if (authenticated == 0) return getErrorMessage(4)
@@ -366,7 +373,7 @@ function checkAuth(message) {
   return getErrorMessage(3)
 }
 
-var functions = [] // holds all objects for functions in use
+// var functions = [] holds all objects for functions in use
 
 functions.auth = new Object({
   info: {
