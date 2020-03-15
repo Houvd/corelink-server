@@ -1,0 +1,15 @@
+exports.up = (knex) => knex.schema.createTable('config', (table) => {
+  table.increments()
+  table.integer('updated_by_id').unsigned()
+  table.foreign('updated_by_id').references('id').inTable('users')
+    .onUpdate('CASCADE')
+    .onDelete('SET NULL')
+  table.string('name').notNullable()
+  table.text('description').notNullable()
+  table.string('type').notNullable()
+  table.string('value').notNullable()
+  table.timestamp('created_at').default(knex.fn.now())
+  table.timestamp('updated_at').default(knex.fn.now())
+})
+
+exports.down = (knex) => knex.schema.dropTable('config')
