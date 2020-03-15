@@ -1,5 +1,9 @@
 exports.up = (knex) => knex.schema.createTable('users', (table) => {
   table.increments()
+  table.integer('room_id').unsigned()
+  table.foreign('room_id').references('id').inTable('rooms')
+    .onUpdate('CASCADE')
+    .onDelete('SET NULL')
   table.string('username').notNullable()
   table.unique('username')
   table.string('password').notNullable()
@@ -8,9 +12,9 @@ exports.up = (knex) => knex.schema.createTable('users', (table) => {
   table.unique('email')
   table.string('first').notNullable()
   table.string('last').notNullable()
-  table.boolean('admin').default(false)
-  table.timestamp('created_at').default(knex.fn.now())
-  table.timestamp('updated_at').default(knex.fn.now())
+  table.boolean('admin').notNullable().default(false)
+  table.timestamp('created_at').notNullable().default(knex.fn.now())
+  table.timestamp('updated_at').notNullable().default(knex.fn.now())
 })
 
 exports.down = (knex) => knex.schema.dropTable('users')

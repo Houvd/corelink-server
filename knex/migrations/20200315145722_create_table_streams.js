@@ -1,0 +1,15 @@
+exports.up = (knex) => knex.schema.createTable('streams', (table) => {
+  table.string('id').primary()
+  table.integer('owner_id').notNullable().unsigned()
+  table.foreign('owner_id').references('id').inTable('users')
+    .onUpdate('CASCADE')
+    .onDelete('CASCADE')
+  table.integer('room_id').unsigned()
+  table.foreign('room_id').references('id').inTable('rooms')
+    .onUpdate('CASCADE')
+    .onDelete('CASCADE')
+  table.timestamp('created_at').notNullable().default(knex.fn.now())
+  table.timestamp('updated_at').notNullable().default(knex.fn.now())
+})
+
+exports.down = (knex) => knex.schema.dropTable('users')

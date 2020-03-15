@@ -5,7 +5,7 @@ exports.seed = (knex) => knex('users')
   // Inserts seed entries
   .then(() => knex('users').insert([
     {
-      id: 0,
+      id: 1,
       username: 'admin',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -15,7 +15,7 @@ exports.seed = (knex) => knex('users')
       admin: true,
     },
     {
-      id: 1,
+      id: 2,
       username: 'Testuser',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -25,7 +25,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 2,
+      id: 3,
       username: 'Testuser1',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -35,7 +35,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 3,
+      id: 4,
       username: 'Testuser2',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -45,7 +45,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 4,
+      id: 5,
       username: 'Testuser3',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -55,7 +55,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 5,
+      id: 6,
       username: 'Testuser4',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -65,7 +65,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 6,
+      id: 7,
       username: 'Testuser5',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -75,7 +75,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 7,
+      id: 8,
       username: 'Testuser6',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -85,7 +85,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 8,
+      id: 9,
       username: 'Testuser7',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -95,7 +95,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 9,
+      id: 10,
       username: 'Testuser8',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -105,7 +105,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 10,
+      id: 11,
       username: 'Testuser9',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -115,7 +115,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 11,
+      id: 12,
       username: 'Testuser10',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -125,7 +125,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 12,
+      id: 13,
       username: 'Rob',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -135,7 +135,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 13,
+      id: 14,
       username: 'Connor',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -145,7 +145,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 14,
+      id: 15,
       username: 'Zhenyi',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -155,7 +155,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 15,
+      id: 16,
       username: 'Andrea',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -165,7 +165,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 16,
+      id: 17,
       username: 'Xavier',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
@@ -175,7 +175,7 @@ exports.seed = (knex) => knex('users')
       admin: false,
     },
     {
-      id: 17,
+      id: 18,
       username: 'Ben',
       password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
       salt: '53b2843baa4b18f0',
