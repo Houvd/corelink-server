@@ -15,7 +15,7 @@
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-lonely-if */
 /* eslint-disable prefer-destructuring */
-/* eslint-disable default-case */
+
 /* eslint-disable no-new-object */
 /* eslint-disable object-shorthand */
 /* eslint-disable no-shadow */
@@ -2502,6 +2502,8 @@ function relayData(msg, remoteAddress, remotePort) {
       case 'ws':
         stream.conn.send(message) // was strem instead of stream @abhishek
         break
+      default:
+        console.log('wrong stream')
     }
     if (debug) console.log('sending back ' + stream.proto + ' ping:' + JSON.stringify(header) + ', ip:' + remoteAddress + ', port' + remotePort)
   } else {
