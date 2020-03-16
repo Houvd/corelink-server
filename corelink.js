@@ -1,4 +1,4 @@
-/* eslint-disable vars-on-top */
+// /* eslint-disable vars-on-top */
 /* eslint-disable linebreak-style */
 /* eslint no-console: ["error", { allow: ["log", "warn", "error"] }] */
 /* eslint-disable global-require */
@@ -836,6 +836,10 @@ functions.sender = new Object({
   process: async function (message) {
     var data = checkAuth(message)
     var i
+    var streamid
+    var token
+    var i
+    var response = {}
     console.log('datatype', typeof data)
     if (typeof data !== 'object') {
       console.log('*** sender ***')
@@ -844,7 +848,7 @@ functions.sender = new Object({
           streamid = message.senderid
           console.log('used existing sender streamid: ' + streamid)
         } else {
-          var streamid = null
+          streamid = null
           while ((streamid == null) || (typeof source[streamid] != 'undefined')) {
             streamid = crypto.createHash('sha256')
               .update(message.workspace + message.proto + (new Date().getTime()))
@@ -877,14 +881,14 @@ functions.sender = new Object({
         }
 
         // if exists, remove streamid from streams in this tokens streamlist
-        for (var token in tokens) {
-          for (var i in tokens[token].streams) {
+        for (token in tokens) {
+          for (i in tokens[token].streams) {
             if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
           }
         }
 
         // if exists, remove streamid from streams in this apps streamlist
-        for (var token in apps) {
+        for (token in apps) {
           for (i in apps[token].streams) {
             if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
           }
@@ -897,7 +901,6 @@ functions.sender = new Object({
 
         if (!(('senderid' in message) && (message.senderid != '') && (typeof source[message.senderid] != 'undefined'))) serverfunctions.update.process(streamid)
 
-        var response = {}
         response.statuscode = 0
         response.port = port[message.proto]
         response.streamid = streamid
@@ -960,6 +963,13 @@ functions.liststream = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var response = {}
+    var workspace
+    var streamlistelement = {}
+    var key
+    var token
+    var key1
+
     // **** ToDo: list only streams that user has access to
     if (typeof data !== 'object') {
       if (!('workspace' in message)) message.workspace = []
@@ -971,25 +981,23 @@ functions.liststream = new Object({
       if (message.workspace.length == 0) message.workspace = Object.keys(rooms)
 
       if ('workspace' in message) {
-        var response = {}
         response.streamlist = []
-        for (var workspace in message.workspace) {
-          for (var key in source) {
+        for (workspace in message.workspace) {
+          for (key in source) {
             if (source[key].room == message.workspace[workspace]) {
               if ((typeof message.type == 'undefined') || (message.type.length == 0) || (message.type.includes(source[key].type))) {
                 // add usernames and app names to the specific streams
-                var streamlistelement = {}
                 streamlistelement.streamid = key
-                for (var token in tokens) {
-                  for (var key1 in tokens[token].streams) {
+                for (token in tokens) {
+                  for (key1 in tokens[token].streams) {
                     if (tokens[token].streams[key1] == streamlistelement.streamid) {
                       streamlistelement.user = users[tokens[token].user].username
                       break
                     }
                   }
                 }
-                for (var token in apps) {
-                  for (var key1 in apps[token].streams) {
+                for (token in apps) {
+                  for (key1 in apps[token].streams) {
                     // app is never defined as still checked , I am not sure what to do
                     if (app[token].streams[key1] == streamlistelement.streamid) {
                       streamlistelement.apps = app[token].name
@@ -1057,23 +1065,27 @@ functions.streaminfo = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var streamid
+    var response
+    var token
+    var key
     if (typeof data !== 'object') {
       if (('streamid' in message) && ((typeof source[message.streamid] != 'undefined') || (typeof target[message.streamid] != 'undefined'))) {
-        var streamid = message.streamid
-        var response = {}
+        streamid = message.streamid
+        response = {}
         response.statuscode = 0
         response.info = {}
 
-        for (var token in tokens) {
-          for (var key in tokens[token].streams) {
+        for (token in tokens) {
+          for (key in tokens[token].streams) {
             if (tokens[token].streams[key] == streamid) {
               response.info.user = users[tokens[token].user].username
               break
             }
           }
         }
-        for (var token in apps) {
-          for (var key in apps[token].streams) {
+        for (token in apps) {
+          for (key in apps[token].streams) {
             if (apps[token].streams[key] == streamid) {
               response.info.apps = apps[token].name
               break
@@ -1108,22 +1120,26 @@ functions.streaminfo = new Object({
 })
 
 function findApps(streamid) {
-  if (debug) console.log('findApps', streamid)
   var user = ''
-  var apps = []
+  var apps
+  var userApps
+  var token
+  if (debug) console.log('findApps', streamid)
+  user = ''
+  apps = []
   if ((typeof source[streamid] != 'undefined') && (source[streamid].from != '')) {
-    var userApps = findApps(source[streamid].from)
+    userApps = findApps(source[streamid].from)
     if (userApps.user != '') user = userApps.user
     if (userApps.apps.length > 0) apps = userApps.apps
   } else {
-    for (var token in tokens) {
+    for (token in tokens) {
       if (tokens[token].streams.includes(streamid)) {
         user = users[tokens[token].user].username
         break
       }
     }
   }
-  for (var token in apps) {
+  for (token in apps) {
     if (apps[token].streams.includes(streamid)) {
       apps.push(apps[token].name)
       break
@@ -1246,6 +1262,16 @@ functions.receiver = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var sourceid
+    var stream
+    var streamlistelement = {}
+    var userApps
+    var streamid
+    var token
+    var i
+    var response = {}
+
+
     if (typeof data !== 'object') {
       console.log('*** receiver ***')
       if (('workspace' in message)) {
@@ -1256,26 +1282,26 @@ functions.receiver = new Object({
         // get appropriate streamids
         if (!('streamid' in message) || (message.streamid.length == 0)) {
           message.streamid = []
-          for (var sourceid in source) if (!('type' in message) || (message.type.length == 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
+          for (sourceid in source) if (!('type' in message) || (message.type.length == 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
         }
 
         // remove all streamids that are not in source (we silently drop
         // streamID's in case they have disappeared during the time it takes to
         // query and bring them up...)
-        for (var stream in message.streamid) {
+        for (stream in message.streamid) {
           if (typeof source[message.streamid[stream]] == 'undefined') message.streamid.splice(stream, 1)
         }
         // add usernames to the specific streams
         message.streamlist = []
-        for (var stream in message.streamid) {
-          var streamlistelement = {}
+        for (stream in message.streamid) {
+          streamlistelement = {}
           streamlistelement.streamid = message.streamid[stream]
           streamlistelement.type = source[message.streamid[stream]].type
           streamlistelement.meta = source[message.streamid[stream]].meta
 
           // add apps processing list for streams that are processed, otherwise leave empty
           // walk through source from tags until we find user, add apps and user
-          var userApps = findApps(message.streamid[stream])
+          userApps = findApps(message.streamid[stream])
           streamlistelement.user = userApps.user
           streamlistelement.apps = userApps.apps
 
@@ -1300,7 +1326,7 @@ functions.receiver = new Object({
         }
 
         if (('receiverid' in message) && (message.receiverid != '') && (typeof target[message.receiverid] != 'undefined')) {
-          var streamid = message.receiverid
+          streamid = message.receiverid
           console.log('used existing receiver streamid: ' + streamid)
           // console.log(target[streamid]);
         } else {
@@ -1347,15 +1373,15 @@ functions.receiver = new Object({
         }
 
         // if exists, remove streamid from streams in this tokens streamlist
-        for (var token in tokens) {
-          for (var i in tokens[token].streams) {
+        for (token in tokens) {
+          for (i in tokens[token].streams) {
             if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
           }
         }
 
         // if exists, remove streamid from streams in this apps streamlist
-        for (var token in apps) {
-          for (var i in apps[token].streams) {
+        for (token in apps) {
+          for (i in apps[token].streams) {
             if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
           }
         }
@@ -1376,7 +1402,7 @@ functions.receiver = new Object({
         }
 
         // create result for client to connect as a receiver
-        var response = {}
+        response = {}
         response.statuscode = 0
         response.port = port[message.proto]
         response.proto = message.proto
