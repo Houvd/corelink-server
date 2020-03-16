@@ -1,4 +1,4 @@
-// /* eslint-disable vars-on-top */
+/* eslint-disable vars-on-top */
 /* eslint-disable linebreak-style */
 /* eslint no-console: ["error", { allow: ["log", "warn", "error"] }] */
 /* eslint-disable global-require */
@@ -1637,7 +1637,7 @@ functions.unsubscribe = new Object({
         }
 
         // create result for client to connect as a receiver
-        response = {}
+        var response = {}
         response.statuscode = 0
         response.streamlist = message.streamlist
         return (response)
