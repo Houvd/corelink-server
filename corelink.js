@@ -1,4 +1,3 @@
-/* eslint-disable vars-on-top */
 /* eslint-disable linebreak-style */
 /* eslint no-console: ["error", { allow: ["log", "warn", "error"] }] */
 /* eslint-disable global-require */
@@ -63,6 +62,12 @@ const dgram = require('dgram')
 var net = require('net')
 var Ws = require('ws').Server
 const knex = require('./knex/knex.js')
+
+var userlist = []
+var TCPControlServer
+var wsControlServer
+var TCPDataServer
+var WSDataServer
 
 // ******** setup default setting
 // timeouts for sync server
@@ -135,6 +140,9 @@ streamrelay[ids][idt] = conn // connection to send data to
 // Allowed packet size
 const MTU = 20000 // overall size incl. header is not allowed to be larger than this number
 //             in the future server could drop packets that are not complying with this
+
+// All server initiated functions
+var serverfunctions = []
 
 port.udp = 20011
 port.tcp = 20011
@@ -1473,8 +1481,8 @@ functions.subscribe = new Object({
     var stream
     var streamlistelement = {}
     var userApps
-     // create result for client to connect as a receiver
-     var response = {}
+    // create result for client to connect as a receiver
+    var response = {}
 
     // *** ToDo: Only allow user to get streams with correct access permissions */
 
@@ -1637,7 +1645,7 @@ functions.unsubscribe = new Object({
         }
 
         // create result for client to connect as a receiver
-        var response = {}
+        response = {}
         response.statuscode = 0
         response.streamlist = message.streamlist
         return (response)
@@ -1704,6 +1712,12 @@ functions.disconnect = new Object({
     var allstreams = []
     var types = []
     var workspaces = []
+    var user
+    var token
+    var streamid
+    var stream
+    var streamkey
+
 
     if (typeof data !== 'object') {
       console.log('*** disconnect ***')
@@ -1715,17 +1729,17 @@ functions.disconnect = new Object({
 
         if (typeof tokens[message.token] != 'undefined') {
           // find user for the submitted token
-          var user = tokens[message.token].user
+          user = tokens[message.token].user
 
           // find all streamid's for that user
-          for (var token in tokens) {
+          for (token in tokens) {
             if (user == tokens[token].user) {
               console.log('streams in token', tokens[token].streams)
               allstreams = allstreams.concat(tokens[token].streams)
             }
           }
           // check if streamid is in correct room and of correct type
-          for (var streamid in allstreams) {
+          for (streamid in allstreams) {
             if ((typeof source[allstreams[streamid]] != 'undefined')
                         && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
                         && (workspaces.includes(source[allstreams[streamid]].room) || workspaces.length == 0)) {
@@ -1752,12 +1766,12 @@ functions.disconnect = new Object({
           }
         }
       } else {
-        if (Array.isArray(message.streamid)) var streamids = message.streamid
-        if (typeof message.streamid == 'string') var streamids = [message.streamid]
+        if (Array.isArray(message.streamid)) streamids = message.streamid
+        if (typeof message.streamid == 'string') streamids = [message.streamid]
       }
-      var response = {}
+      response = {}
       response.statuscode = 0
-      for (var streamkey in streamids) {
+      for (streamkey in streamids) {
         streamid = streamids[streamkey]
         console.log('deleting', streamid)
         if ((typeof source[streamid] != 'undefined') || (typeof target[streamid] != 'undefined')) {
@@ -1787,7 +1801,7 @@ functions.disconnect = new Object({
 
           // remove stream if it is a target for the stream relay
           if (typeof target[streamid] != 'undefined') {
-            for (var stream in streamrelay) {
+            for (stream in streamrelay) {
               if (streamid in streamrelay[stream]) {
               // send dropped message to senders
                 serverfunctions.dropped.process(stream, streamid)
@@ -1848,6 +1862,7 @@ functions.expire = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+
     if (typeof data !== 'object') {
       console.log('*** expire not implemented ***')
 
@@ -1900,7 +1915,7 @@ functions.expire = new Object({
 })
 
 // All server initiated functions
-var serverfunctions = []
+serverfunctions = []
 serverfunctions.update = new Object({
   info: {
     name: 'update',
@@ -1953,29 +1968,32 @@ serverfunctions.update = new Object({
   process: async function (streamid) {
     // prep response
     var response = {}
-    response.function = 'update'
-    response.streamid = streamid
+    var update = ''
+    var room
+    var u
+    var token
 
     // add apps processing list for streams that are processed, otherwise leave empty
     // walk through source from tags until we find user, add apps and user
     var userApps = findApps(streamid)
+    response.function = 'update'
+    response.streamid = streamid
     response.user = userApps.user
     response.apps = userApps.apps
 
     response.type = source[streamid].type
     response.meta = source[streamid].meta
-    var update = ''
     console.log('trying to send update ', response)
     // get correct room information
-    var room = source[streamid].room
+    room = source[streamid].room
 
     // get targets that requested an alert and send update
     // var t = [];
-    for (var u in target) {
+    for (u in target) {
       if (target[u].alert && (target[u].room == room) && ((target[u].type.length == 0) || (target[u].type.includes(source[streamid].type)))) {
         response.receiverid = u
         update = JSON.stringify(response)
-        for (var token in tokens) {
+        for (token in tokens) {
           if (tokens[token].streams.includes(u)) {
             if (((users[tokens[token].user].username != response.user)
                                 && (target[u].echo != true))
@@ -2048,6 +2066,9 @@ serverfunctions.subscriber = new Object({
     },
   },
   process: async function (senderid, receiverid) {
+    var token
+    var usertoken
+    var update
     // prep response
     var response = {}
     response.function = 'subscriber'
@@ -2055,9 +2076,9 @@ serverfunctions.subscriber = new Object({
     response.senderid = senderid
 
     // get user or app name
-    for (var token in tokens) {
+    for (token in tokens) {
       if (tokens[token].streams.includes(senderid)) {
-        var usertoken = token
+        usertoken = token
         if (typeof response.user != 'undefined') break
       }
       if (tokens[token].streams.includes(receiverid)) {
@@ -2069,7 +2090,7 @@ serverfunctions.subscriber = new Object({
 
     for (token in apps) {
       if (apps[token].streams.includes(senderid)) {
-        var apptoken = token
+        apptoken = token
         if (typeof response.app != 'undefined') break
       }
       if (apps[token].streams.includes(receiverid)) {
@@ -2080,7 +2101,7 @@ serverfunctions.subscriber = new Object({
 
     response.type = target[receiverid].type
     response.meta = target[receiverid].meta
-    var update = JSON.stringify(response)
+    update = JSON.stringify(response)
     console.log('trying to send subscriber update ', update)
 
     // send update to sender
@@ -2130,21 +2151,25 @@ serverfunctions.stale = new Object({
     },
   },
   process: async function (streamid) {
+    var update
+    var room
+    var u
+    var token
     var response = {}
     response.function = 'stale'
     response.streamid = streamid
 
-    var update = JSON.stringify(response)
+    update = JSON.stringify(response)
     console.log('trying to send stale ', update)
 
     // get correct room information
-    var room = source[streamid].room
+    room = source[streamid].room
 
     // get subscribed targets and send update (only if receiver wants updates)
     // var t = [];
-    for (var u in target) {
+    for (u in target) {
       if (target[u].alert && (target[u].room == room) && ((target[u].type.length == 0) || (target[u].type.includes(source[streamid].type)))) {
-        for (var token in tokens) {
+        for (token in tokens) {
           if (tokens[token].streams.includes(u)) {
             if (((users[tokens[token].user].username != response.user)
                                 && (target[u].echo != true))
@@ -2198,23 +2223,27 @@ serverfunctions.dropped = new Object({
     },
   },
   process: async function (sourceid, receiverid) {
+    var update
+    var token
     var response = {}
+    var usertoken
+    var apptoken
     response.function = 'dropped'
     response.streamid = receiverid
 
-    var update = JSON.stringify(response)
+    update = JSON.stringify(response)
     console.log('trying to send dropped update ', update)
 
     // get tokens for this stream
-    for (var token in tokens) {
+    for (token in tokens) {
       if (tokens[token].streams.includes(sourceid)) {
-        var usertoken = token
+        usertoken = token
         break
       }
     }
     for (token in apps) {
       if (apps[token].streams.includes(sourceid)) {
-        var apptoken = token
+        apptoken = token
         break
       }
     }
@@ -2236,7 +2265,7 @@ serverfunctions.dropped = new Object({
 // fill data list with available objects
 functions.listfunctions.info.responses.functionlist.sample = Object.keys(functions)
 functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
-var userlist = []
+
 
 users.forEach((user) => {
   userlist.push(user.username)
@@ -2250,7 +2279,7 @@ console.log('Users: ', userlist)
 // TCP control setup
 console.log(`trying to bind TCP control port ${TCPControl}`)
 
-var TCPControlServer = net.createServer()
+TCPControlServer = net.createServer()
 TCPControlServer.on('connection', handleControlConnection)
 
 TCPControlServer.listen(TCPControl, () => {
@@ -2258,6 +2287,7 @@ TCPControlServer.listen(TCPControl, () => {
 })
 
 function handleControlConnection(conn) {
+  var message
   var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
   var remotePort = conn.remotePort
   var send = ''
@@ -2273,7 +2303,7 @@ function handleControlConnection(conn) {
   conn.on('data', async (data) => {
     console.log('TCP control connection data from %s :%j', remoteAddress, data.toString('utf8'))
     try {
-      var message = JSON.parse(data)
+      message = JSON.parse(data)
     } catch (e) {
       console.log('Received message not a proper JSON:' + data.toString())
       return
@@ -2300,13 +2330,14 @@ function handleControlConnection(conn) {
 // WS control setup
 console.log(`trying to bind WS control port ${WSControl}`)
 
-var wsControlServer = new Ws({ port: WSControl })
+wsControlServer = new Ws({ port: WSControl })
 
 wsControlServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
   const remoteAddress = req.connection.remoteAddress
   const remotePort = req.connection.remotePort
   var send = ''
+  var message
   // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
   // controlConnection[remoteAddress] = [];
   // controlConnection[remoteAddress][remotePort]=conn;
@@ -2318,7 +2349,7 @@ wsControlServer.on('connection', (conn, req) => {
   conn.on('message', (data) => {
     console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
     try {
-      var message = JSON.parse(data)
+      message = JSON.parse(data)
     } catch (e) {
       console.log('Received message not a proper JSON:' + data.toString())
       return
@@ -2373,7 +2404,8 @@ UDPDataServer.bind(port.udp)
 // TCP data transfer setup
 console.log(`trying to bind TCP port ${port.tcp}`)
 
-var TCPDataServer = net.createServer()
+
+TCPDataServer = net.createServer()
 TCPDataServer.on('connection', handleDataConnection)
 
 TCPDataServer.listen(port.tcp, () => {
@@ -2411,7 +2443,8 @@ function handleDataConnection(conn) {
 // WS data transfer setup
 console.log(`trying to bind WS port ${port.ws}`)
 
-var WSDataServer = new Ws({ port: port.ws })
+
+WSDataServer = new Ws({ port: port.ws })
 
 WSDataServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
@@ -2450,9 +2483,15 @@ WSDataServer.on('listening', () => {
 })
 
 function timeoutConnections() {
+  var ip
+  var port
+  var token
+  var id
+  var sid
+  var tid
   var currentTime = Date.now()
-  for (var ip in connections) {
-    for (var port in connections[ip]) {
+  for (ip in connections) {
+    for (port in connections[ip]) {
     // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
     //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
       if (connections[ip][port].time + connectTimeout < currentTime) {
@@ -2461,12 +2500,12 @@ function timeoutConnections() {
       }
     }
   }
-  for (var token in tokens) {
+  for (token in tokens) {
     if (tokens[token].time + sessionTimeout < currentTime) delete tokens[token]
   }
 
   // Test if sources have timed out
-  for (var id in source) {
+  for (id in source) {
     // console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time']
     //    + streamTimeout - currentTime);
     if (source[id].time + streamTimeout < currentTime) {
@@ -2481,12 +2520,12 @@ function timeoutConnections() {
   }
 
   // Test if targets have timed out
-  for (var id in target) {
+  for (id in target) {
     // console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']
     //   +streamTimeout - currentTime);
     if (target[id].time + streamTimeout < currentTime) {
-      for (var sid in streamrelay) {
-        for (var tid in streamrelay) if (tid == id) delete streamrelay[sid][tid]
+      for (sid in streamrelay) {
+        for (tid in streamrelay) if (tid == id) delete streamrelay[sid][tid]
         if (streamrelay[sid].length == 0) delete streamrelay[sid]
       }
       delete target[id]
@@ -2497,19 +2536,31 @@ function timeoutConnections() {
 timeoutConnections()
 
 function relayData(msg, remoteAddress, remotePort) {
+  var headerSize
+  var dataSize
+  var header
+  var data
+  var stream
+  var headerr
+  var headerBuffer
+  var types
+  var packet
+  var message
   var last = Date.now()
+  var type
+  var targetid
   // *** ToDo: validate that this message is ttruely a sender message that is authenticated
   // console.log(`server got from ${rinfo.address}:${rinfo.port}`);
   // decoding header
   // console.log('message: ',msg);
   if (msg.length > 6) {
-    var headerSize = msg.readUInt16LE(0)
-    var dataSize = msg.readUInt32LE(2)
+    headerSize = msg.readUInt16LE(0)
+    dataSize = msg.readUInt32LE(2)
     if (msg.length != 6 + headerSize + dataSize) {
       console.log('Packet has the wrong size (' + msg.length + ' vs. ' + (6 + headerSize + dataSize) + ').')
       return console.error('Packet has the wrong size (' + msg.length + ' vs. ' + (6 + headerSize + dataSize) + ').')
     }
-    var header = msg.toString('ascii', 6, headerSize + 6)
+    header = msg.toString('ascii', 6, headerSize + 6)
     // var data = Buffer.allocUnsafe(dataSize);
     // msg.copy(data,0,6+headerSize);
     // console.log('header:', headerSize, '>'+header+'<');
@@ -2526,8 +2577,8 @@ function relayData(msg, remoteAddress, remotePort) {
     return console.error(e)
   }
   if (debug) {
-    var dataSize = msg.readUInt32LE(2)
-    var data = Buffer.allocUnsafe(dataSize)
+    dataSize = msg.readUInt32LE(2)
+    data = Buffer.allocUnsafe(dataSize)
     msg.copy(data, 0, 6 + headerSize)
     // console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize},
     // header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
@@ -2536,22 +2587,22 @@ function relayData(msg, remoteAddress, remotePort) {
   }
   // if we see the 'stamp' variable we will return a ping with the server stamped time
   if (('stamp' in header) && ((header.id in source) || (header.id in target))) {
-    if (header.id in source) var stream = source[header.id]
-    else var stream = target[header.id]
-    var dataSize = msg.readUInt32LE(2)
-    var data = Buffer.allocUnsafe(dataSize)
+    if (header.id in source) stream = source[header.id]
+    else stream = target[header.id]
+    dataSize = msg.readUInt32LE(2)
+    data = Buffer.allocUnsafe(dataSize)
     msg.copy(data, 0, 6 + headerSize)
 
     header.stamp = Date.now()
-    var headerr = JSON.stringify(header)
+    headerr = JSON.stringify(header)
     headerr = Buffer.from(headerr)
 
-    var headerBuffer = Buffer.alloc(6)
+    headerBuffer = Buffer.alloc(6)
     headerBuffer.writeUInt16LE(headerr.length, 0)
     headerBuffer.writeUInt32LE(data.length, 2)
 
-    var packet = [headerBuffer, headerr, data]
-    var message = Buffer.concat(packet)
+    packet = [headerBuffer, headerr, data]
+    message = Buffer.concat(packet)
 
     switch (stream.proto) {
       case 'udp':
@@ -2573,7 +2624,7 @@ function relayData(msg, remoteAddress, remotePort) {
     // console.log(header['id']);
     if (header.id in streamrelay) {
       source[header.id].time = last
-      for (var targetid in streamrelay[header.id]) {
+      for (targetid in streamrelay[header.id]) {
         if ((typeof target[targetid] != 'undefined') && (typeof target[targetid].ip != 'undefined') && (target[targetid].ip != '')) {
           if ((typeof target[targetid] != 'undefined') && (typeof target[targetid].port != 'undefined') && (target[targetid].port != 0)) {
             if (debug) {
@@ -2595,8 +2646,8 @@ function relayData(msg, remoteAddress, remotePort) {
           } else {
             if (typeof target[targetid] == 'undefined') console.log(targetid + ' is not registered at all')
             else {
-              var types = ''
-              for (var type in target.targetid) {
+              types = ''
+              for (type in target.targetid) {
                 if (types == '') types = type
                 else types = types + ', ' + type
               }
