@@ -1467,6 +1467,14 @@ functions.subscribe = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var sourceid
+    var s
+    var t
+    var stream
+    var streamlistelement = {}
+    var userApps
+     // create result for client to connect as a receiver
+     var response = {}
 
     // *** ToDo: Only allow user to get streams with correct access permissions */
 
@@ -1476,15 +1484,15 @@ functions.subscribe = new Object({
         // get all streamids if no list is given
         if (!('streamid' in message) || (message.streamid.length == 0)) {
           message.streamid = []
-          for (var sourceid in source) {
+          for (sourceid in source) {
             if (!('type' in message) || (message.type.length == 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
           }
         }
 
 
         // add the already subscribed streams
-        for (var s in streamrelay) {
-          for (var t in streamrelay[s]) {
+        for (s in streamrelay) {
+          for (t in streamrelay[s]) {
             if ((t == message.receiverid) && (!message.streamid.includes(s))) {
               message.streamid.push(s)
             }
@@ -1494,7 +1502,7 @@ functions.subscribe = new Object({
         // remove all streamids that are not in source (we silently drop
         // streamID's in case they have disappeared during the time it takes
         // to query and bring them up...)
-        for (var stream in message.streamid) {
+        for (stream in message.streamid) {
           if (!(message.streamid[stream] in source)) {
             message.streamid.splice(stream, 1)
           }
@@ -1503,14 +1511,14 @@ functions.subscribe = new Object({
         // add usernames to the specific streams
         message.streamlist = []
         for (stream in message.streamid) {
-          var streamlistelement = {}
+          streamlistelement = {}
           streamlistelement.streamid = message.streamid[stream]
           streamlistelement.type = source[message.streamid[stream]].type
           streamlistelement.meta = source[message.streamid[stream]].meta
 
           // add apps processing list for streams that are processed, otherwise leave empty
           // walk through source from tags until we find user, add apps and user
-          var userApps = findApps(message.streamid[stream])
+          userApps = findApps(message.streamid[stream])
           streamlistelement.user = userApps.user
           streamlistelement.apps = userApps.apps
 
@@ -1525,7 +1533,7 @@ functions.subscribe = new Object({
         }
 
         // create result for client to connect as a receiver
-        var response = {}
+        response = {}
         response.statuscode = 0
         response.streamlist = message.streamlist
         if (debug) console.log(response)
@@ -1580,13 +1588,20 @@ functions.unsubscribe = new Object({
   },
   process: async function (message) {
     var data = checkAuth(message)
+    var s
+    var t
+    var streamlistelement = {}
+    var stream
+    var userApps
+    var response = {}
+
     if (typeof data !== 'object') {
       console.log('*** unsubscribe *** function untested')
       if ((('receiverid' in message) && (message.receiverid != '') && (typeof target[message.receiverid] != 'undefined'))
                 && (('streamid' in message) && (message.streamid.length > 0))) {
         // unsubscribe streams
-        for (var s in streamrelay) {
-          for (var t in streamrelay[s]) {
+        for (s in streamrelay) {
+          for (t in streamrelay[s]) {
             if ((t == message.receiverid) && (message.streamid.includes(s))) {
               delete streamrelay[s][t]
               // send dropped message to sender streams that are newly subscribed to
@@ -1598,23 +1613,23 @@ functions.unsubscribe = new Object({
 
         // create list of subscribed streams
         message.streamid = []
-        for (var s in streamrelay) {
-          for (var t in streamrelay[s]) {
+        for (s in streamrelay) {
+          for (t in streamrelay[s]) {
             if (t == message.receiverid) message.streamid.push(s)
           }
         }
 
         // add usernames to the specific streams
         message.streamlist = []
-        for (var stream in message.streamid) {
-          var streamlistelement = {}
+        for (stream in message.streamid) {
+          streamlistelement = {}
           streamlistelement.streamid = message.streamid[stream]
           streamlistelement.type = source[message.streamid[stream]].type
           streamlistelement.meta = source[message.streamid[stream]].meta
 
           // add apps processing list for streams that are processed, otherwise leave empty
           // walk through source from tags until we find user, add apps and user
-          var userApps = findApps(message.streamid[stream])
+          userApps = findApps(message.streamid[stream])
           streamlistelement.user = userApps.user
           streamlistelement.apps = userApps.apps
 
@@ -1622,7 +1637,7 @@ functions.unsubscribe = new Object({
         }
 
         // create result for client to connect as a receiver
-        var response = {}
+        response = {}
         response.statuscode = 0
         response.streamlist = message.streamlist
         return (response)
