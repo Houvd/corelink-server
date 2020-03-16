@@ -1,4 +1,4 @@
-exports.up = (knex) => knex.schema.createTable('group_room', (table) => {
+exports.up = (knex) => knex.schema.createTable('app_room', (table) => {
   table.increments()
   table.integer('owner_id').notNullable().unsigned()
   table.foreign('owner_id').references('id').inTable('users')
@@ -8,12 +8,12 @@ exports.up = (knex) => knex.schema.createTable('group_room', (table) => {
   table.foreign('room_id').references('id').inTable('rooms')
     .onUpdate('CASCADE')
     .onDelete('CASCADE')
-  table.integer('group_id').notNullable().unsigned()
-  table.foreign('group_id').references('id').inTable('groups')
+  table.integer('app_id').notNullable().unsigned()
+  table.foreign('app_id').references('id').inTable('apps')
     .onUpdate('CASCADE')
     .onDelete('CASCADE')
   table.timestamp('created_at').default(knex.fn.now())
   table.timestamp('updated_at').default(knex.fn.now())
 })
 
-exports.down = (knex) => knex.schema.dropTable('group_room')
+exports.down = (knex) => knex.schema.dropTable('app_room')

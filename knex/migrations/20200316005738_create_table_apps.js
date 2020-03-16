@@ -1,0 +1,15 @@
+exports.up = (knex) => knex.schema.createTable('apps', (table) => {
+  table.increments()
+  table.string('appname').notNullable()
+  table.unique('appname')
+  table.integer('owner_id').notNullable().unsigned()
+  table.foreign('owner_id').references('id').inTable('users')
+    .onUpdate('CASCADE')
+    .onDelete('RESTRICT')
+  table.string('token')
+  table.bigInteger('time').unsigned()
+  table.timestamp('created_at').notNullable().default(knex.fn.now())
+  table.timestamp('updated_at').notNullable().default(knex.fn.now())
+})
+
+exports.down = (knex) => knex.schema.dropTable('apps')
