@@ -6,7 +6,10 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable func-names */
 /* eslint-disable block-scoped-var */
-/* eslint-disable no-undef */ // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef
+/* eslint-disable no-undef */
+//     965:25 error 'app' is not defined no-undef
+//     966:51 error 'app' is not defined no-undef
+//    2371:40 error 'streamid' is not defined no-undef
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
 /* eslint-disable prefer-template */
@@ -78,10 +81,6 @@ var TCPControlServer
 var wsControlServer
 var TCPDataServer
 var WSDataServer
-
-if (typeof config.ca !== 'undefined') {
-  httpsOptions.ca = fs.readFileSync(config.ca)
-}
 
 // ******** setup default setting
 // timeouts for sync server
@@ -260,6 +259,11 @@ apps['!gfhdgh'] = []
 apps['!gfhdgh'].time = 0
 apps['!gfhdgh'].name = 'Hanging out on the Holodeck'
 apps['!gfhdgh'].streams = []
+
+// setting root ca certificate for self signed server certificates
+if (typeof config.ca !== 'undefined') {
+  httpsOptions.ca = fs.readFileSync(config.ca)
+}
 
 //* ****************  Utility functions */
 /**
@@ -1755,13 +1759,15 @@ functions.disconnect = new Object({
           // check if streamid is in correct room and of correct type
           for (streamid in allstreams) {
             if ((typeof source[allstreams[streamid]] != 'undefined')
-                        && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
-                        && (workspaces.includes(source[allstreams[streamid]].room) || workspaces.length == 0)) {
+                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(source[allstreams[streamid]].room)
+                || workspaces.length == 0)) {
               streamids = streamids.concat([allstreams[streamid]])
             }
             if ((typeof target[allstreams[streamid]] != 'undefined')
-                                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
-                                && (workspaces.includes(target[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(target[allstreams[streamid]].room)
+                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
           }
         }
 
@@ -1772,11 +1778,13 @@ functions.disconnect = new Object({
             if (debug) console.log('disconnect streamid', allstreams[streamid])
             // check if streamid is in correct room and of correct type
             if ((typeof source[allstreams[streamid]] != 'undefined')
-                                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
-                                && (workspaces.includes(source[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(source[allstreams[streamid]].room)
+                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
             if ((typeof target[allstreams[streamid]] != 'undefined')
-                                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
-                                && (workspaces.includes(target[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(target[allstreams[streamid]].room)
+                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
           }
         }
       } else {
@@ -2004,7 +2012,10 @@ serverfunctions.update = new Object({
     // get targets that requested an alert and send update
     // var t = [];
     for (u in target) {
-      if (target[u].alert && (target[u].room == room) && ((target[u].type.length == 0) || (target[u].type.includes(source[streamid].type)))) {
+      if (target[u].alert
+          && (target[u].room == room)
+          && ((target[u].type.length == 0)
+          || (target[u].type.includes(source[streamid].type)))) {
         response.receiverid = u
         update = JSON.stringify(response)
         for (token in tokens) {
@@ -2182,7 +2193,9 @@ serverfunctions.stale = new Object({
     // get subscribed targets and send update (only if receiver wants updates)
     // var t = [];
     for (u in target) {
-      if (target[u].alert && (target[u].room == room) && ((target[u].type.length == 0) || (target[u].type.includes(source[streamid].type)))) {
+      if (target[u].alert && (target[u].room == room)
+          && ((target[u].type.length == 0)
+          || (target[u].type.includes(source[streamid].type)))) {
         for (token in tokens) {
           if (tokens[token].streams.includes(u)) {
             if (((users[tokens[token].user].username != response.user)
@@ -2345,14 +2358,13 @@ function handleControlConnection(conn) {
 console.log(`trying to bind WS control port ${WSControl}`)
 
 const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
-  console.log(req.connection.remoteAddress+' '+req.method+' '+req.url)
+  console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
   res.writeHead(200)
   res.end(`Corelink Server ${serverVersion}`)
 })
 httpsControlServer.listen(WSControl)
 
-var wsControlServer = new Ws({ server: httpsControlServer })
-
+wsControlServer = new Ws({ server: httpsControlServer })
 
 wsControlServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
