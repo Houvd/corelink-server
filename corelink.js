@@ -13,7 +13,7 @@
 //    2371:40 error 'streamid' is not defined no-undef
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
-/* eslint-disable no-use-before-define */
+// /* eslint-disable no-use-before-define */
 /* eslint-disable no-lonely-if */
 // /* eslint-disable prefer-destructuring */
 
@@ -2284,30 +2284,6 @@ serverfunctions.dropped = new Object({
   },
 })
 
-// fill data list with available objects
-functions.listfunctions.info.responses.functionlist.sample = Object.keys(functions)
-functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
-
-
-users.forEach((user) => {
-  userlist.push(user.username)
-})
-console.log('Functions: ', functions.listfunctions.info.responses.functionlist.sample)
-console.log('Server functions: ', Object.keys(serverfunctions))
-console.log('Workspaces: ', functions.listworkspaces.info.responses.workspacelist.sample)
-console.log('Users: ', userlist)
-
-
-// TCP control setup
-console.log(`trying to bind TCP control port ${TCPControl}`)
-
-TCPControlServer = net.createServer()
-TCPControlServer.on('connection', handleControlConnection)
-
-TCPControlServer.listen(TCPControl, () => {
-  console.log('TCP control server listening to %j:%j', TCPControlServer.address().address, TCPControlServer.address().port)
-})
-
 function handleControlConnection(conn) {
   var message
   var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
@@ -2349,65 +2325,29 @@ function handleControlConnection(conn) {
   })
 }
 
-// WS control setup
-console.log(`trying to bind WS control port ${WSControl}`)
+// fill data list with available objects
+functions.listfunctions.info.responses.functionlist.sample = Object.keys(functions)
+functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
 
-const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
-  console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
-  res.writeHead(200)
-  res.end(`Corelink Server ${serverVersion}`)
+
+users.forEach((user) => {
+  userlist.push(user.username)
 })
-httpsControlServer.listen(WSControl)
+console.log('Functions: ', functions.listfunctions.info.responses.functionlist.sample)
+console.log('Server functions: ', Object.keys(serverfunctions))
+console.log('Workspaces: ', functions.listworkspaces.info.responses.workspacelist.sample)
+console.log('Users: ', userlist)
 
-wsControlServer = new Ws({ server: httpsControlServer })
 
-wsControlServer.on('connection', (conn, req) => {
-// const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
-  const { remoteAddress } = req.connection
-  const { remotePort } = req.connection
-  var send = ''
-  var message
-  // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
-  // controlConnection[remoteAddress] = [];
-  // controlConnection[remoteAddress][remotePort]=conn;
-  // console.log(controlConnection[remoteAddress][remotePort]);
+// TCP control setup
+console.log(`trying to bind TCP control port ${TCPControl}`)
 
-  // at this point we have a new connection that is not yet authenticated
-  console.log('new client WS control connection from %s:%s', remoteAddress, remotePort)
+TCPControlServer = net.createServer()
+TCPControlServer.on('connection', handleControlConnection)
 
-  conn.on('message', async (data) => {
-    console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
-    try {
-      message = JSON.parse(data)
-    } catch (e) {
-      console.log(`Received message not a proper JSON:${data.toString()}`)
-      return
-    }
-    if ('function' in message) {
-      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
-      else send = JSON.stringify(await functions[message.function].process(message))
-      console.log(`sending:${send}`)
-
-      conn.send(send)
-    } else console.log('Key function not given')
-  })
-
-  conn.once('close', () => {
-    // todo: unset the array element for the connection
-    console.log('WS control connection from %s closed', remoteAddress)
-  })
-
-  conn.on('error', (err) => {
-    // todo: unset the array element for the connection
-    console.log('WS control connection %s error: %s', remoteAddress, err.message)
-  })
+TCPControlServer.listen(TCPControl, () => {
+  console.log('TCP control server listening to %j:%j', TCPControlServer.address().address, TCPControlServer.address().port)
 })
-
-wsControlServer.on('listening', () => {
-  const address = wsControlServer.address()
-  console.log(`WS control server listening ${address.address}:${address.port}`)
-})
-
 
 // UDP data transfer setup
 console.log(`trying to bind UDP port ${port.udp}`)
@@ -2420,150 +2360,12 @@ UDPDataServer.on('error', (err) => {
   UDPDataServer.close()
 })
 
-UDPDataServer.on('message', (msg, rinfo) => {
-  relayData(msg, rinfo.address, rinfo.port)
-})
-
 UDPDataServer.on('listening', () => {
   const address = UDPDataServer.address()
   console.log(`UDP data server listening ${address.address}:${address.port}`)
 })
 
 UDPDataServer.bind(port.udp)
-
-// TCP data transfer setup
-console.log(`trying to bind TCP port ${port.tcp}`)
-
-
-TCPDataServer = net.createServer()
-TCPDataServer.on('connection', handleDataConnection)
-
-TCPDataServer.listen(port.tcp, () => {
-  console.log('TCP data server listening to %j:%j', TCPDataServer.address().address, TCPDataServer.address().port)
-})
-
-function handleDataConnection(conn) {
-  var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
-  var { remotePort } = conn
-
-  if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
-  connections[remoteAddress][remotePort] = []
-  connections[remoteAddress][remotePort].conn = conn
-  connections[remoteAddress][remotePort].time = Date.now()
-
-  // at this point we have a new connection that is not yet authenticated
-  console.log('new TCP data connection from %s', remoteAddress)
-  conn.setNoDelay(true)
-
-  conn.on('data', (msg) => {
-    relayData(msg, remoteAddress, remotePort)
-  })
-
-  conn.once('close', () => {
-    // todo: unset the array element for the connection
-    console.log('TCP data connection from %s closed', remoteAddress)
-  })
-
-  conn.on('error', (err) => {
-    // todo: unset the array element for the connection
-    console.log('TCP data connection %s error: %s', remoteAddress, err.message)
-  })
-}
-
-// WS data transfer setup
-console.log(`trying to bind WS port ${port.ws}`)
-
-
-WSDataServer = new Ws({ port: port.ws })
-
-WSDataServer.on('connection', (conn, req) => {
-// const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
-
-  const { remoteAddress } = req.connection
-  const { remotePort } = req.connection
-  console.log(`Connected new WS client from ${remoteAddress} port ${remotePort}`)
-
-  if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
-  connections[remoteAddress][remotePort] = []
-  connections[remoteAddress][remotePort].conn = conn
-  connections[remoteAddress][remotePort].time = Date.now()
-
-  conn.on('message', (msg) => {
-    relayData(msg, remoteAddress, remotePort)
-  })
-
-  conn.once('close', () => {
-    // todo: unset the array element for the connection
-    delete connections[remoteAddress][remotePort]
-    if (connections[remoteAddress].length == 0) delete connections[remoteAddress]
-    console.log('---------------WS data connection from %s closed', remoteAddress)
-  })
-
-  conn.on('error', (err) => {
-    // todo: unset the array element for the connection
-    delete connections[remoteAddress][remotePort]
-    if (connections[remoteAddress].length == 0) delete connections[remoteAddress]
-    console.log('WS data connection %s error: %s', remoteAddress, err.message)
-  })
-})
-
-WSDataServer.on('listening', () => {
-  const address = WSDataServer.address()
-  console.log(`WS data server listening ${address.address}:${address.port}`)
-})
-
-function timeoutConnections() {
-  var ip
-  var port
-  var token
-  var id
-  var sid
-  var tid
-  var currentTime = Date.now()
-  for (ip in connections) {
-    for (port in connections[ip]) {
-    // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
-    //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
-      if (connections[ip][port].time + connectTimeout < currentTime) {
-        delete connections[ip][port]
-        if (connections[ip].length == 0) delete connections[ip]
-      }
-    }
-  }
-  for (token in tokens) {
-    if (tokens[token].time + sessionTimeout < currentTime) delete tokens[token]
-  }
-
-  // Test if sources have timed out
-  for (id in source) {
-    // console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time']
-    //    + streamTimeout - currentTime);
-    if (source[id].time + streamTimeout < currentTime) {
-      // notify clients of stale streams
-      // streamid not defined  but used
-      serverfunctions.stale.process(streamid)
-
-      // remove stream information from the relay
-      delete streamrelay[id]
-      delete source[id]
-    }
-  }
-
-  // Test if targets have timed out
-  for (id in target) {
-    // console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']
-    //   +streamTimeout - currentTime);
-    if (target[id].time + streamTimeout < currentTime) {
-      for (sid in streamrelay) {
-        for (tid in streamrelay) if (tid == id) delete streamrelay[sid][tid]
-        if (streamrelay[sid].length == 0) delete streamrelay[sid]
-      }
-      delete target[id]
-    }
-  }
-  setTimeout(timeoutConnections, testTimeout)
-}
-timeoutConnections()
 
 function relayData(msg, remoteAddress, remotePort) {
   var headerSize
@@ -2707,5 +2509,204 @@ function relayData(msg, remoteAddress, remotePort) {
   }
   return 'relaydata end'
 }
+
+UDPDataServer.on('message', (msg, rinfo) => {
+  relayData(msg, rinfo.address, rinfo.port)
+})
+
+function handleDataConnection(conn) {
+  var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
+  var { remotePort } = conn
+
+  if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
+  connections[remoteAddress][remotePort] = []
+  connections[remoteAddress][remotePort].conn = conn
+  connections[remoteAddress][remotePort].time = Date.now()
+
+  // at this point we have a new connection that is not yet authenticated
+  console.log('new TCP data connection from %s', remoteAddress)
+  conn.setNoDelay(true)
+
+  conn.on('data', (msg) => {
+    relayData(msg, remoteAddress, remotePort)
+  })
+
+  conn.once('close', () => {
+    // todo: unset the array element for the connection
+    console.log('TCP data connection from %s closed', remoteAddress)
+  })
+
+  conn.on('error', (err) => {
+    // todo: unset the array element for the connection
+    console.log('TCP data connection %s error: %s', remoteAddress, err.message)
+  })
+}
+
+
+// WS control setup
+console.log(`trying to bind WS control port ${WSControl}`)
+
+const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
+  console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
+  res.writeHead(200)
+  res.end(`Corelink Server ${serverVersion}`)
+})
+httpsControlServer.listen(WSControl)
+
+wsControlServer = new Ws({ server: httpsControlServer })
+
+wsControlServer.on('connection', (conn, req) => {
+// const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+  const { remoteAddress } = req.connection
+  const { remotePort } = req.connection
+  var send = ''
+  var message
+  // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
+  // controlConnection[remoteAddress] = [];
+  // controlConnection[remoteAddress][remotePort]=conn;
+  // console.log(controlConnection[remoteAddress][remotePort]);
+
+  // at this point we have a new connection that is not yet authenticated
+  console.log('new client WS control connection from %s:%s', remoteAddress, remotePort)
+
+  conn.on('message', async (data) => {
+    console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
+    try {
+      message = JSON.parse(data)
+    } catch (e) {
+      console.log(`Received message not a proper JSON:${data.toString()}`)
+      return
+    }
+    if ('function' in message) {
+      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
+      else send = JSON.stringify(await functions[message.function].process(message))
+      console.log(`sending:${send}`)
+
+      conn.send(send)
+    } else console.log('Key function not given')
+  })
+
+  conn.once('close', () => {
+    // todo: unset the array element for the connection
+    console.log('WS control connection from %s closed', remoteAddress)
+  })
+
+  conn.on('error', (err) => {
+    // todo: unset the array element for the connection
+    console.log('WS control connection %s error: %s', remoteAddress, err.message)
+  })
+})
+
+wsControlServer.on('listening', () => {
+  const address = wsControlServer.address()
+  console.log(`WS control server listening ${address.address}:${address.port}`)
+})
+
+
+// TCP data transfer setup
+console.log(`trying to bind TCP port ${port.tcp}`)
+
+
+TCPDataServer = net.createServer()
+TCPDataServer.on('connection', handleDataConnection)
+
+TCPDataServer.listen(port.tcp, () => {
+  console.log('TCP data server listening to %j:%j', TCPDataServer.address().address, TCPDataServer.address().port)
+})
+
+// WS data transfer setup
+console.log(`trying to bind WS port ${port.ws}`)
+
+
+WSDataServer = new Ws({ port: port.ws })
+
+WSDataServer.on('connection', (conn, req) => {
+// const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+
+  const { remoteAddress } = req.connection
+  const { remotePort } = req.connection
+  console.log(`Connected new WS client from ${remoteAddress} port ${remotePort}`)
+
+  if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
+  connections[remoteAddress][remotePort] = []
+  connections[remoteAddress][remotePort].conn = conn
+  connections[remoteAddress][remotePort].time = Date.now()
+
+  conn.on('message', (msg) => {
+    relayData(msg, remoteAddress, remotePort)
+  })
+
+  conn.once('close', () => {
+    // todo: unset the array element for the connection
+    delete connections[remoteAddress][remotePort]
+    if (connections[remoteAddress].length == 0) delete connections[remoteAddress]
+    console.log('---------------WS data connection from %s closed', remoteAddress)
+  })
+
+  conn.on('error', (err) => {
+    // todo: unset the array element for the connection
+    delete connections[remoteAddress][remotePort]
+    if (connections[remoteAddress].length == 0) delete connections[remoteAddress]
+    console.log('WS data connection %s error: %s', remoteAddress, err.message)
+  })
+})
+
+WSDataServer.on('listening', () => {
+  const address = WSDataServer.address()
+  console.log(`WS data server listening ${address.address}:${address.port}`)
+})
+
+function timeoutConnections() {
+  var ip
+  var port
+  var token
+  var id
+  var sid
+  var tid
+  var currentTime = Date.now()
+  for (ip in connections) {
+    for (port in connections[ip]) {
+    // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
+    //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
+      if (connections[ip][port].time + connectTimeout < currentTime) {
+        delete connections[ip][port]
+        if (connections[ip].length == 0) delete connections[ip]
+      }
+    }
+  }
+  for (token in tokens) {
+    if (tokens[token].time + sessionTimeout < currentTime) delete tokens[token]
+  }
+
+  // Test if sources have timed out
+  for (id in source) {
+    // console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time']
+    //    + streamTimeout - currentTime);
+    if (source[id].time + streamTimeout < currentTime) {
+      // notify clients of stale streams
+      // streamid not defined  but used
+      serverfunctions.stale.process(streamid)
+
+      // remove stream information from the relay
+      delete streamrelay[id]
+      delete source[id]
+    }
+  }
+
+  // Test if targets have timed out
+  for (id in target) {
+    // console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']
+    //   +streamTimeout - currentTime);
+    if (target[id].time + streamTimeout < currentTime) {
+      for (sid in streamrelay) {
+        for (tid in streamrelay) if (tid == id) delete streamrelay[sid][tid]
+        if (streamrelay[sid].length == 0) delete streamrelay[sid]
+      }
+      delete target[id]
+    }
+  }
+  setTimeout(timeoutConnections, testTimeout)
+}
+timeoutConnections()
 
 // process.on('SIGINT', process.exit());
