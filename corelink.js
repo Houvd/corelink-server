@@ -8,7 +8,6 @@
 //     965:25 error 'app' is not defined no-undef
 //     966:51 error 'app' is not defined no-undef
 //    2371:40 error 'streamid' is not defined no-undef
-/* eslint-disable no-var */
 /* eslint-disable no-lonely-if */
 
 /* eslint-disable no-new-object */
@@ -55,8 +54,8 @@ const serverVersion = 'v4.3.0.0'
 // stream they are not authorized to?
 const crypto = require('crypto')
 const dgram = require('dgram')
-var net = require('net')
-var Ws = require('ws').Server
+const net = require('net')
+const Ws = require('ws').Server
 const fs = require('fs')
 const https = require('https')
 const config = require('./config/configure')
@@ -67,11 +66,7 @@ const httpsOptions = {
   cert: fs.readFileSync(config.cert),
 }
 
-var userlist = []
-var TCPControlServer
-var wsControlServer
-var TCPDataServer
-var WSDataServer
+const userlist = []
 
 // ******** setup default setting
 // timeouts for sync server
@@ -82,26 +77,24 @@ const sessionTimeout = 10 * 60 * 60 * 1000 // 10 hours timeout for user token
 const testTimeout = 10 * 60 * 1000 // 10 min frequency to test if something timedout
 
 // Ports for sync server
-var TCPControl = 20010
-var WSControl = 20012
-var port = []
-var rooms = []
-var users = []
-var tokens = [] // holds all token related information
-var apps = [] // holds all tokens and related information for apps
-var sha512
+const TCPControl = 20010
+const WSControl = 20012
+const port = []
+const rooms = []
+const users = []
+const tokens = [] // holds all token related information
+const apps = [] // holds all tokens and related information for apps
 
-var debug
-var stdin // for server
-var errorList = [] // holds all error messages
-var functions = [] // holds all objects for functions in use
+let debug
+let errorList = [] // holds all error messages
+const functions = [] // holds all objects for functions in use
 // all receiver connections via TCP or WS
-var connections = []
+const connections = []
 // connections[ip][port]['conn'] = handle for the connection
 // connections[ip][port]['time'] = creation time for stream, used for timeout
 
 // all source and target streams information is stored in source and target
-var source = []
+const source = []
 /*
 source = [] // holds all source stream information
 source[id] =  [] // stream ID
@@ -119,7 +112,7 @@ source[id]['conn'] = for tcp/ws connections the connection information
 source[id]['from'] = if derived from other stream
 */
 
-var target = []
+const target = []
 /*
 target = [] // holds all target stream information
 target[id] =  [] // stream ID
@@ -136,7 +129,8 @@ target[id]['conn'] = for tcp/ws connections the connection information
 */
 
 // fast structure to access to future connections
-var streamrelay = [] // holds all information to relay data from source to targets most effectively
+const streamrelay = [] // holds all information to relay
+// data from source to targets most effectively
 /*
 streamrelay[ids] = [] // source stream id
 streamrelay[ids][idt] = conn // connection to send data to
@@ -146,7 +140,7 @@ const MTU = 20000 // overall size incl. header is not allowed to be larger than 
 //             in the future server could drop packets that are not complying with this
 
 // All server initiated functions
-var serverfunctions = []
+let serverfunctions = []
 
 port.udp = 20011
 port.tcp = 20011
@@ -270,17 +264,16 @@ var genRandomString = function (length) {
 }
 */
 
-/**
+/*
 * hash password with sha512.
 * @function
 * @param {string} password - List of required fields.
 * @param {string} salt - Data to be validated.
 */
-sha512 = (password, salt) => {
-  var value
-  var hash = crypto.createHmac('sha512', salt) /** Hashing algorithm sha512 */
+function hashSha512(password, salt) {
+  const hash = crypto.createHmac('sha512', salt) /** Hashing algorithm sha512 */
   hash.update(password)
-  value = hash.digest('hex')
+  const value = hash.digest('hex')
   return {
     salt,
     passwordHash: value,
@@ -298,21 +291,21 @@ function saltHashPassword(userpassword) {
 //* **************** Server */
 
 debug = false
-stdin = process.openStdin()
+const stdin = process.openStdin()
 if (stdin.isTTY) stdin.setRawMode(true)
 stdin.resume()
 stdin.setEncoding('utf8')
 
 function listStreams() {
-  var token
-  var user
-  var s
-  var key
-  var sr
-  var t
-  var tsr
-  var ip
-  var connectionPort
+  let token
+  let user
+  let s
+  let key
+  let sr
+  let t
+  let tsr
+  let ip
+  let connectionPort
 
   console.log('Listing Streams')
   // console.log(tokens);
@@ -371,14 +364,14 @@ errorList[7] = 'Wrong StreamID.'
 errorList[8] = 'Invalid app token, access denied.'
 
 function getErrorMessage(code) {
-  var response = {}
+  const response = {}
   response.statuscode = code
   response.message = errorList[code]
   return (response)
 }
 
 function checkAuth(message) {
-  var authenticated
+  let authenticated
   console.log('token: ', message.token)
   if ('token' in message) {
     authenticated = 0
@@ -444,7 +437,7 @@ functions.auth = new Object({
     },
   },
   process: async function authenticater(message, ip, conn) {
-    var response = {}
+    let response = {}
     response.statuscode = 0
     if (('username' in message) && ('password' in message)) {
       // check password and username
@@ -459,7 +452,7 @@ functions.auth = new Object({
           throw error
         })
 
-      if ((typeof user !== 'undefined') && (sha512(message.password, user.salt).passwordHash === user.password)) {
+      if ((typeof user !== 'undefined') && (hashSha512(message.password, user.salt).passwordHash === user.password)) {
         if (user.time + sessionTimeout < Date.now()) {
           response.token = crypto.createHash('sha256')
             .update(message.username + message.passwod + (new Date().getTime()))
@@ -558,8 +551,8 @@ functions.listfunctions = new Object({
     },
   },
   async process(message) {
-    var response = {}
-    var data = checkAuth(message)
+    const response = {}
+    const data = checkAuth(message)
     response.statuscode = 0
     if (typeof data !== 'object') {
       response.functionlist = Object.keys(functions)
@@ -613,8 +606,8 @@ functions.describefunction = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var response = {}
+    const data = checkAuth(message)
+    let response = {}
     if (typeof data !== 'object') {
       if ('functionname' in message) {
         if (functions[message.functionname] === undefined) response = getErrorMessage(2)
@@ -667,8 +660,8 @@ functions.listworkspaces = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var response = {}
+    const data = checkAuth(message)
+    const response = {}
     // **** ToDo: list only workspaces that user has access to.
     if (typeof data !== 'object') {
       response.workspacelist = Object.keys(rooms)
@@ -717,8 +710,8 @@ functions.addworkspace = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var response = {}
+    const data = checkAuth(message)
+    const response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
         if (typeof rooms[message.workspace] === 'undefined') {
@@ -774,8 +767,8 @@ functions.rmworkspace = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var response = {}
+    const data = checkAuth(message)
+    const response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
         if (typeof rooms[message.workspace] !== 'undefined') {
@@ -881,11 +874,11 @@ functions.sender = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var i
-    var streamid
-    var token
-    var response = {}
+    const data = checkAuth(message)
+    let i
+    let streamid
+    let token
+    const response = {}
     console.log('datatype', typeof data)
     if (typeof data !== 'object') {
       console.log('*** sender ***')
@@ -1008,13 +1001,13 @@ functions.liststream = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var response = {}
-    var workspace
-    var streamlistelement = {}
-    var key
-    var token
-    var key1
+    const data = checkAuth(message)
+    const response = {}
+    let workspace
+    const streamlistelement = {}
+    let key
+    let token
+    let key1
 
     // **** ToDo: list only streams that user has access to
     if (typeof data !== 'object') {
@@ -1110,11 +1103,11 @@ functions.streaminfo = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var streamid
-    var response
-    var token
-    var key
+    const data = checkAuth(message)
+    let streamid
+    let response
+    let token
+    let key
     if (typeof data !== 'object') {
       if (('streamid' in message) && ((typeof source[message.streamid] !== 'undefined') || (typeof target[message.streamid] !== 'undefined'))) {
         streamid = message.streamid
@@ -1166,10 +1159,10 @@ functions.streaminfo = new Object({
 })
 
 function findApps(streamid) {
-  var user = ''
-  var apps
-  var userApps
-  var token
+  let user = ''
+  let apps
+  let userApps
+  let token
   if (debug) console.log('findApps', streamid)
   user = ''
   apps = []
@@ -1307,15 +1300,15 @@ functions.receiver = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var sourceid
-    var stream
-    var streamlistelement = {}
-    var userApps
-    var streamid
-    var token
-    var i
-    var response = {}
+    const data = checkAuth(message)
+    let sourceid
+    let stream
+    let streamlistelement = {}
+    let userApps
+    let streamid
+    let token
+    let i
+    let response = {}
 
 
     if (typeof data !== 'object') {
@@ -1512,15 +1505,15 @@ functions.subscribe = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var sourceid
-    var s
-    var t
-    var stream
-    var streamlistelement = {}
-    var userApps
+    const data = checkAuth(message)
+    let sourceid
+    let s
+    let t
+    let stream
+    let streamlistelement = {}
+    let userApps
     // create result for client to connect as a receiver
-    var response = {}
+    let response = {}
 
     // *** ToDo: Only allow user to get streams with correct access permissions */
 
@@ -1633,13 +1626,13 @@ functions.unsubscribe = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var s
-    var t
-    var streamlistelement = {}
-    var stream
-    var userApps
-    var response = {}
+    const data = checkAuth(message)
+    let s
+    let t
+    let streamlistelement = {}
+    let stream
+    let userApps
+    let response = {}
 
     if (typeof data !== 'object') {
       console.log('*** unsubscribe *** function untested')
@@ -1745,16 +1738,16 @@ functions.disconnect = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
-    var streamids = []
-    var allstreams = []
-    var types = []
-    var workspaces = []
-    var user
-    var token
-    var streamid
-    var stream
-    var streamkey
+    const data = checkAuth(message)
+    let streamids = []
+    let allstreams = []
+    let types = []
+    let workspaces = []
+    let user
+    let token
+    let streamid
+    let stream
+    let streamkey
     let response
 
 
@@ -1904,7 +1897,7 @@ functions.expire = new Object({
     },
   },
   async process(message) {
-    var data = checkAuth(message)
+    const data = checkAuth(message)
 
     if (typeof data !== 'object') {
       console.log('*** expire not implemented ***')
@@ -2010,15 +2003,14 @@ serverfunctions.update = new Object({
   },
   async process(streamid) {
     // prep response
-    var response = {}
-    var update = ''
-    var room
-    var u
-    var token
+    const response = {}
+    let update = ''
+    let u
+    let token
 
     // add apps processing list for streams that are processed, otherwise leave empty
     // walk through source from tags until we find user, add apps and user
-    var userApps = findApps(streamid)
+    const userApps = findApps(streamid)
     response.function = 'update'
     response.streamid = streamid
     response.user = userApps.user
@@ -2028,7 +2020,7 @@ serverfunctions.update = new Object({
     response.meta = source[streamid].meta
     console.log('trying to send update ', response)
     // get correct room information
-    room = source[streamid].room
+    const { room } = source.streamid
 
     // get targets that requested an alert and send update
     // var t = [];
@@ -2112,12 +2104,11 @@ serverfunctions.subscriber = new Object({
     },
   },
   async process(senderid, receiverid) {
-    var token
-    var usertoken
-    var update
+    let token
+    let usertoken
     let apptoken
     // prep response
-    var response = {}
+    const response = {}
     response.function = 'subscriber'
     response.receiverid = receiverid
     response.senderid = senderid
@@ -2148,7 +2139,7 @@ serverfunctions.subscriber = new Object({
 
     response.type = target[receiverid].type
     response.meta = target[receiverid].meta
-    update = JSON.stringify(response)
+    const update = JSON.stringify(response)
     console.log('trying to send subscriber update ', update)
 
     // send update to sender
@@ -2198,19 +2189,17 @@ serverfunctions.stale = new Object({
     },
   },
   async process(streamid) {
-    var update
-    var room
-    var u
-    var token
-    var response = {}
+    let u
+    let token
+    const response = {}
     response.function = 'stale'
     response.streamid = streamid
 
-    update = JSON.stringify(response)
+    const update = JSON.stringify(response)
     console.log('trying to send stale ', update)
 
     // get correct room information
-    room = source[streamid].room
+    const { room } = source[streamid]
 
     // get subscribed targets and send update (only if receiver wants updates)
     // var t = [];
@@ -2272,15 +2261,14 @@ serverfunctions.dropped = new Object({
     },
   },
   async process(sourceid, receiverid) {
-    var update
-    var token
-    var response = {}
-    var usertoken
-    var apptoken
+    let token
+    const response = {}
+    let usertoken
+    let apptoken
     response.function = 'dropped'
     response.streamid = receiverid
 
-    update = JSON.stringify(response)
+    const update = JSON.stringify(response)
     console.log('trying to send dropped update ', update)
 
     // get tokens for this stream
@@ -2312,10 +2300,10 @@ serverfunctions.dropped = new Object({
 })
 
 function handleControlConnection(conn) {
-  var message
-  var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
-  var { remotePort } = conn
-  var send = ''
+  let message
+  const remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
+  const { remotePort } = conn
+  let send = ''
   // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
   // controlConnection[remoteAddress] = [];
   // controlConnection[remoteAddress][remotePort]=conn;
@@ -2369,7 +2357,7 @@ console.log('Users: ', userlist)
 // TCP control setup
 console.log(`trying to bind TCP control port ${TCPControl}`)
 
-TCPControlServer = net.createServer()
+const TCPControlServer = net.createServer()
 TCPControlServer.on('connection', handleControlConnection)
 
 TCPControlServer.listen(TCPControl, () => {
@@ -2395,19 +2383,19 @@ UDPDataServer.on('listening', () => {
 UDPDataServer.bind(port.udp)
 
 function relayData(msg, remoteAddress, remotePort) {
-  var headerSize
-  var dataSize
-  var header
-  var data
-  var stream
-  var headerr
-  var headerBuffer
-  var types
-  var packet
-  var message
-  var last = Date.now()
-  var type
-  var targetid
+  let headerSize
+  let dataSize
+  let header
+  let data
+  let stream
+  let headerr
+  let headerBuffer
+  let types
+  let packet
+  let message
+  const last = Date.now()
+  let type
+  let targetid
   // *** ToDo: validate that this message is ttruely a sender message that is authenticated
   // console.log(`server got from ${rinfo.address}:${rinfo.port}`);
   // decoding header
@@ -2542,8 +2530,8 @@ UDPDataServer.on('message', (msg, rinfo) => {
 })
 
 function handleDataConnection(conn) {
-  var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
-  var { remotePort } = conn
+  const remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
+  const { remotePort } = conn
 
   if (typeof connections[remoteAddress] === 'undefined') connections[remoteAddress] = []
   connections[remoteAddress][remotePort] = []
@@ -2580,14 +2568,14 @@ const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
 })
 httpsControlServer.listen(WSControl)
 
-wsControlServer = new Ws({ server: httpsControlServer })
+const wsControlServer = new Ws({ server: httpsControlServer })
 
 wsControlServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
   const { remoteAddress } = req.connection
   const { remotePort } = req.connection
-  var send = ''
-  var message
+  let send = ''
+  let message
   // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
   // controlConnection[remoteAddress] = [];
   // controlConnection[remoteAddress][remotePort]=conn;
@@ -2634,7 +2622,7 @@ wsControlServer.on('listening', () => {
 console.log(`trying to bind TCP port ${port.tcp}`)
 
 
-TCPDataServer = net.createServer()
+const TCPDataServer = net.createServer()
 TCPDataServer.on('connection', handleDataConnection)
 
 TCPDataServer.listen(port.tcp, () => {
@@ -2645,7 +2633,7 @@ TCPDataServer.listen(port.tcp, () => {
 console.log(`trying to bind WS port ${port.ws}`)
 
 
-WSDataServer = new Ws({ port: port.ws })
+const WSDataServer = new Ws({ port: port.ws })
 
 WSDataServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
@@ -2684,13 +2672,13 @@ WSDataServer.on('listening', () => {
 })
 
 function timeoutConnections() {
-  var ip
-  var port
-  var token
-  var id
-  var sid
-  var tid
-  var currentTime = Date.now()
+  let ip
+  let port
+  let token
+  let id
+  let sid
+  let tid
+  const currentTime = Date.now()
   for (ip in connections) {
     for (port in connections[ip]) {
     // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
