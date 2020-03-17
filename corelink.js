@@ -5,15 +5,12 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable func-names */
-<<<<<<< server/corelink.js
-/*  eslint-disable no-undef */ // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef
-=======
+
 /* eslint-disable block-scoped-var */
 /* eslint-disable no-undef */
 //     965:25 error 'app' is not defined no-undef
 //     966:51 error 'app' is not defined no-undef
 //    2371:40 error 'streamid' is not defined no-undef
->>>>>>> server/corelink.js
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
 /* eslint-disable no-use-before-define */
@@ -2387,15 +2384,10 @@ wsControlServer.on('connection', (conn, req) => {
       return
     }
     if ('function' in message) {
-<<<<<<< server/corelink.js
       if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
       else send = JSON.stringify(await functions[message.function].process(message))
       console.log(`sending:${send}`)
-=======
-      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
-      else send = JSON.stringify(await functions[message.function].process(message))
-      console.log('sending:' + send)
->>>>>>> server/corelink.js
+
       conn.send(send)
     } else console.log('Key function not given')
   })
