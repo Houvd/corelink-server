@@ -11,7 +11,6 @@
 //     965:25 error 'app' is not defined no-undef
 //     966:51 error 'app' is not defined no-undef
 //    2371:40 error 'streamid' is not defined no-undef
-/* eslint-disable eqeqeq */
 /* eslint-disable no-var */
 // /* eslint-disable no-use-before-define */
 /* eslint-disable no-lonely-if */
@@ -282,7 +281,7 @@ var genRandomString = function (length) {
 * @param {string} password - List of required fields.
 * @param {string} salt - Data to be validated.
 */
-sha512 = function (password, salt) {
+sha512 = (password, salt) => {
   var value
   var hash = crypto.createHmac('sha512', salt) /** Hashing algorithm sha512 */
   hash.update(password)
@@ -329,7 +328,7 @@ function listStreams() {
   for (s in source) {
     for (token in tokens) {
       for (key in tokens[token].streams) {
-        if (tokens[token].streams[key] == s) {
+        if (tokens[token].streams[key] === s) {
           user = users[tokens[token].user].username
           break
         }
@@ -351,14 +350,14 @@ stdin.on('data', (key) => {
   if (key === '\u0003') process.exit()
 
 
-  if (key.charCodeAt(0) == 115) listStreams()
+  if (key.charCodeAt(0) === 115) listStreams()
 
-  if ((key.charCodeAt(0) == 27) && (key.charCodeAt(1) == 91)) {
-    if ((key.charCodeAt(2) == 65)) {
+  if ((key.charCodeAt(0) === 27) && (key.charCodeAt(1) === 91)) {
+    if ((key.charCodeAt(2) === 65)) {
       console.log('Debug on')
       debug = true
     }
-    if ((key.charCodeAt(2) == 66)) {
+    if ((key.charCodeAt(2) === 66)) {
       console.log('Debug off')
       debug = false
     }
@@ -388,9 +387,9 @@ function checkAuth(message) {
   console.log('token: ', message.token)
   if ('token' in message) {
     authenticated = 0
-    if (typeof tokens[message.token] != 'undefined') if ((Date.now() - controlTimeout) < tokens[message.token].time) authenticated = tokens[message.token].user
-    if (typeof apps[message.token] != 'undefined') authenticated = message.token
-    if (authenticated == 0) return getErrorMessage(4)
+    if (typeof tokens[message.token] !== 'undefined') if ((Date.now() - controlTimeout) < tokens[message.token].time) authenticated = tokens[message.token].user
+    if (typeof apps[message.token] !== 'undefined') authenticated = message.token
+    if (authenticated === 0) return getErrorMessage(4)
     return (authenticated)
   }
   return getErrorMessage(3)
@@ -456,14 +455,14 @@ functions.auth = new Object({
       // check password and username
       // ToDo: authenticate via LDAP / oAuth
       // saving function in case of rollback
-      // for (var key in users) if ((users[key]['username'] == message['username'])
-      //  && (users[key]['password'] == message['password'])) authenticated = key
+      // for (var key in users) if ((users[key]['username'] === message['username'])
+      //  && (users[key]['password'] === message['password'])) authenticated = key
       const user = await knex
         .from('users')
         .first('id', 'password', 'salt')
         .where('username', message.username)
 
-      if (sha512(message.password, user.salt).passwordHash == user.password) {
+      if (sha512(message.password, user.salt).passwordHash === user.password) {
         response.token = crypto.createHash('sha256')
           .update(message.username + message.passwod + (new Date().getTime()))
           .digest('hex')
@@ -479,7 +478,7 @@ functions.auth = new Object({
       return (getErrorMessage(4))
     }
     if ('token' in message) {
-      if (typeof apps[message.token] != 'undefined') {
+      if (typeof apps[message.token] !== 'undefined') {
         response.token = message.token
         response.ip = ip
         apps[response.token].time = Date.now() // timeout data
@@ -592,7 +591,7 @@ functions.describefunction = new Object({
     var response = {}
     if (typeof data !== 'object') {
       if ('functionname' in message) {
-        if (functions[message.functionname] == undefined) response = getErrorMessage(2)
+        if (functions[message.functionname] === undefined) response = getErrorMessage(2)
         else {
           response.description = functions[message.functionname].info
           response.statuscode = 0
@@ -696,7 +695,7 @@ functions.addworkspace = new Object({
     var response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
-        if (typeof rooms[message.workspace] == 'undefined') {
+        if (typeof rooms[message.workspace] === 'undefined') {
           rooms[message.workspace] = []
           rooms[message.workspace].owner = data
           rooms[message.workspace].users = [data]
@@ -753,7 +752,7 @@ functions.rmworkspace = new Object({
     var response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
-        if (typeof rooms[message.workspace] != 'undefined') {
+        if (typeof rooms[message.workspace] !== 'undefined') {
           // **** ToDo: make sure that all existing connections to this workspace will be terminated
           delete rooms[message.workspace]
 
@@ -864,13 +863,13 @@ functions.sender = new Object({
     console.log('datatype', typeof data)
     if (typeof data !== 'object') {
       console.log('*** sender ***')
-      if (('workspace' in message) && ('proto' in message) && ('type' in message) && ((message.proto == 'udp') || (message.proto == 'tcp') || (message.proto == 'ws'))) {
-        if (('senderid' in message) && (message.senderid != '') && (typeof source[message.senderid] != 'undefined')) {
+      if (('workspace' in message) && ('proto' in message) && ('type' in message) && ((message.proto === 'udp') || (message.proto === 'tcp') || (message.proto === 'ws'))) {
+        if (('senderid' in message) && (message.senderid !== '') && (typeof source[message.senderid] !== 'undefined')) {
           streamid = message.senderid
           console.log(`used existing sender streamid: ${streamid}`)
         } else {
           streamid = null
-          while ((streamid == null) || (typeof source[streamid] != 'undefined')) {
+          while ((streamid === null) || (typeof source[streamid] !== 'undefined')) {
             streamid = crypto.createHash('sha256')
               .update(message.workspace + message.proto + (new Date().getTime()))
               .digest('hex').substr(0, 7)
@@ -881,7 +880,7 @@ functions.sender = new Object({
         if ((typeof source[streamid] === 'undefined')
                     || (typeof source[streamid].conn === 'undefined')
                     || (typeof source[streamid].conn.readyState === 'undefined')
-                    || (source[streamid].conn.readyState != 1)) {
+                    || (source[streamid].conn.readyState !== 1)) {
           source[streamid] = []
           source[streamid].ip = message.ip
           source[streamid].port = message.port
@@ -894,7 +893,7 @@ functions.sender = new Object({
           if ((typeof message.from !== 'undefined')
                     && (typeof apps[message.token] !== 'undefined')) source[streamid].from = message.from
 
-          if (('alert' in message) && (message.alert == true)) source[streamid].alert = true
+          if (('alert' in message) && (message.alert === true)) source[streamid].alert = true
           else source[streamid].alert = false
 
           source[streamid].meta = ''
@@ -904,23 +903,23 @@ functions.sender = new Object({
         // if exists, remove streamid from streams in this tokens streamlist
         for (token in tokens) {
           for (i in tokens[token].streams) {
-            if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
+            if (tokens[token].streams[i] === streamid) tokens[token].streams.splice(i, 1)
           }
         }
 
         // if exists, remove streamid from streams in this apps streamlist
         for (token in apps) {
           for (i in apps[token].streams) {
-            if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
+            if (apps[token].streams[i] === streamid) apps[token].streams.splice(i, 1)
           }
         }
         // make sure stream is allowed and not rejected
-        if (typeof tokens[message.token] != 'undefined') tokens[message.token].streams.push(streamid)
+        if (typeof tokens[message.token] !== 'undefined') tokens[message.token].streams.push(streamid)
 
         // make sure stream is allowed and not rejected in case of an app
-        if (typeof apps[message.token] != 'undefined') apps[message.token].streams.push(streamid)
+        if (typeof apps[message.token] !== 'undefined') apps[message.token].streams.push(streamid)
 
-        if (!(('senderid' in message) && (message.senderid != '') && (typeof source[message.senderid] != 'undefined'))) serverfunctions.update.process(streamid)
+        if (!(('senderid' in message) && (message.senderid !== '') && (typeof source[message.senderid] !== 'undefined'))) serverfunctions.update.process(streamid)
 
         response.statuscode = 0
         response.port = port[message.proto]
@@ -995,23 +994,23 @@ functions.liststream = new Object({
     if (typeof data !== 'object') {
       if (!('workspace' in message)) message.workspace = []
 
-      if (typeof message.workspace == 'string') message.workspace = [message.workspace]
+      if (typeof message.workspace === 'string') message.workspace = [message.workspace]
 
       if (!Array.isArray(message.workspace)) message.workspace = []
 
-      if (message.workspace.length == 0) message.workspace = Object.keys(rooms)
+      if (message.workspace.length === 0) message.workspace = Object.keys(rooms)
 
       if ('workspace' in message) {
         response.streamlist = []
         for (workspace in message.workspace) {
           for (key in source) {
-            if (source[key].room == message.workspace[workspace]) {
-              if ((typeof message.type == 'undefined') || (message.type.length == 0) || (message.type.includes(source[key].type))) {
+            if (source[key].room === message.workspace[workspace]) {
+              if ((typeof message.type === 'undefined') || (message.type.length === 0) || (message.type.includes(source[key].type))) {
                 // add usernames and app names to the specific streams
                 streamlistelement.streamid = key
                 for (token in tokens) {
                   for (key1 in tokens[token].streams) {
-                    if (tokens[token].streams[key1] == streamlistelement.streamid) {
+                    if (tokens[token].streams[key1] === streamlistelement.streamid) {
                       streamlistelement.user = users[tokens[token].user].username
                       break
                     }
@@ -1020,7 +1019,7 @@ functions.liststream = new Object({
                 for (token in apps) {
                   for (key1 in apps[token].streams) {
                     // app is never defined as still checked , I am not sure what to do
-                    if (app[token].streams[key1] == streamlistelement.streamid) {
+                    if (app[token].streams[key1] === streamlistelement.streamid) {
                       streamlistelement.apps = app[token].name
                       break
                     }
@@ -1091,7 +1090,7 @@ functions.streaminfo = new Object({
     var token
     var key
     if (typeof data !== 'object') {
-      if (('streamid' in message) && ((typeof source[message.streamid] != 'undefined') || (typeof target[message.streamid] != 'undefined'))) {
+      if (('streamid' in message) && ((typeof source[message.streamid] !== 'undefined') || (typeof target[message.streamid] !== 'undefined'))) {
         streamid = message.streamid
         response = {}
         response.statuscode = 0
@@ -1099,7 +1098,7 @@ functions.streaminfo = new Object({
 
         for (token in tokens) {
           for (key in tokens[token].streams) {
-            if (tokens[token].streams[key] == streamid) {
+            if (tokens[token].streams[key] === streamid) {
               response.info.user = users[tokens[token].user].username
               break
             }
@@ -1107,29 +1106,29 @@ functions.streaminfo = new Object({
         }
         for (token in apps) {
           for (key in apps[token].streams) {
-            if (apps[token].streams[key] == streamid) {
+            if (apps[token].streams[key] === streamid) {
               response.info.apps = apps[token].name
               break
             }
           }
         }
-        if (typeof source[streamid] != 'undefined') {
+        if (typeof source[streamid] !== 'undefined') {
           response.info.proto = source[streamid].proto
           response.info.workspace = source[streamid].room
           response.info.type = source[streamid].type
           response.info.MTU = MTU
-          if (typeof response.info.port != 'undefined') response.info.port = source[streamid].port
-          if (typeof response.info.ip != 'undefined') response.info.ip = source[streamid].ip
+          if (typeof response.info.port !== 'undefined') response.info.port = source[streamid].port
+          if (typeof response.info.ip !== 'undefined') response.info.ip = source[streamid].ip
           response.info.meta = source[streamid].meta
           response.info.direction = 'source'
         }
-        if (typeof target[streamid] != 'undefined') {
+        if (typeof target[streamid] !== 'undefined') {
           response.info.proto = target[streamid].proto
           response.info.workspace = target[streamid].room
           response.info.type = target[streamid].type
           response.info.MTU = MTU
-          if (typeof response.info.port != 'undefined') response.info.port = target[streamid].port
-          if (typeof response.info.ip != 'undefined') response.info.ip = target[streamid].ip
+          if (typeof response.info.port !== 'undefined') response.info.port = target[streamid].port
+          if (typeof response.info.ip !== 'undefined') response.info.ip = target[streamid].ip
           response.info.direction = 'target'
         }
         return (response)
@@ -1148,9 +1147,9 @@ function findApps(streamid) {
   if (debug) console.log('findApps', streamid)
   user = ''
   apps = []
-  if ((typeof source[streamid] != 'undefined') && (source[streamid].from != '')) {
+  if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
     userApps = findApps(source[streamid].from)
-    if (userApps.user != '') user = userApps.user
+    if (userApps.user !== '') user = userApps.user
     if (userApps.apps.length > 0) apps = userApps.apps
   } else {
     for (token in tokens) {
@@ -1301,16 +1300,16 @@ functions.receiver = new Object({
         // process.exit();
 
         // get appropriate streamids
-        if (!('streamid' in message) || (message.streamid.length == 0)) {
+        if (!('streamid' in message) || (message.streamid.length === 0)) {
           message.streamid = []
-          for (sourceid in source) if (!('type' in message) || (message.type.length == 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
+          for (sourceid in source) if (!('type' in message) || (message.type.length === 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
         }
 
         // remove all streamids that are not in source (we silently drop
         // streamID's in case they have disappeared during the time it takes to
         // query and bring them up...)
         for (stream in message.streamid) {
-          if (typeof source[message.streamid[stream]] == 'undefined') message.streamid.splice(stream, 1)
+          if (typeof source[message.streamid[stream]] === 'undefined') message.streamid.splice(stream, 1)
         }
         // add usernames to the specific streams
         message.streamlist = []
@@ -1327,33 +1326,33 @@ functions.receiver = new Object({
           streamlistelement.apps = userApps.apps
 
           // receive streams of the same user if echo is enabled
-          if (((typeof tokens[message.token] != 'undefined')
-                          && (users[tokens[message.token].user].username != streamlistelement.user)
-                          && ((!('echo' in message)) || (('echo' in message) && (message.echo != true))))
-                          || (('echo' in message) && (message.echo == true))
-                          || ((typeof apps[message.token] != 'undefined')
-                          && ((!('echo' in message)) || (('echo' in message) && (message.echo != true))))) {
+          if (((typeof tokens[message.token] !== 'undefined')
+                          && (users[tokens[message.token].user].username !== streamlistelement.user)
+                          && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))
+                          || (('echo' in message) && (message.echo === true))
+                          || ((typeof apps[message.token] !== 'undefined')
+                          && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))) {
             message.streamlist.push(streamlistelement)
           } else console.log(`skipping stream from same user ${message.streamid[stream]}`)
         }
 
         // give error message if we dont have a streamid and are also not
         // expecting updates on streams
-        // var t =  typeof message['alert'] != 'undefined';
-        if ((message.streamid.length < 1) && ((typeof message.alert == 'undefined')
-             || !((typeof message.alert != 'undefined') && (message.alert == true)))) {
+        // var t =  typeof message['alert'] !== 'undefined';
+        if ((message.streamid.length < 1) && ((typeof message.alert === 'undefined')
+             || !((typeof message.alert !== 'undefined') && (message.alert === true)))) {
           // console.log(message);
           return getErrorMessage(7)
         }
 
-        if (('receiverid' in message) && (message.receiverid != '') && (typeof target[message.receiverid] != 'undefined')) {
+        if (('receiverid' in message) && (message.receiverid !== '') && (typeof target[message.receiverid] !== 'undefined')) {
           streamid = message.receiverid
           console.log(`used existing receiver streamid: ${streamid}`)
           // console.log(target[streamid]);
         } else {
           // create a new target streamID
           streamid = null
-          while ((streamid == null) || (typeof target[streamid] != 'undefined')) {
+          while ((streamid === null) || (typeof target[streamid] !== 'undefined')) {
             streamid = crypto.createHash('sha256')
               .update(message.workspace + message.proto + (new Date().getTime()))
               .digest('hex').substr(0, 7)
@@ -1362,14 +1361,14 @@ functions.receiver = new Object({
         }
 
         if ((typeof target[streamid] === 'undefined')
-                    || ((target[streamid].proto == 'ws')
+                    || ((target[streamid].proto === 'ws')
                         && ((typeof target[streamid].conn === 'undefined')
                         || (typeof target[streamid].conn.readyState === 'undefined')
-                        || (target[streamid].conn.readyState != 1)))
-                    || ((target[streamid].proto == 'udp')
-                     && (target[streamid].port == 0))
-                    || ((target[streamid].proto == 'tcp')
-                     && (target[streamid].port == 0))) {
+                        || (target[streamid].conn.readyState !== 1)))
+                    || ((target[streamid].proto === 'udp')
+                     && (target[streamid].port === 0))
+                    || ((target[streamid].proto === 'tcp')
+                     && (target[streamid].port === 0))) {
           // put data into the target stream array & overwrite if existing
           target[streamid] = []
           target[streamid].ip = message.ip
@@ -1378,10 +1377,10 @@ functions.receiver = new Object({
           target[streamid].room = message.workspace
           // console.log(target[streamid]);
 
-          if (('alert' in message) && (message.alert == true)) target[streamid].alert = true
+          if (('alert' in message) && (message.alert === true)) target[streamid].alert = true
           else target[streamid].alert = false
 
-          if (('echo' in message) && (message.echo == true)) target[streamid].echo = true
+          if (('echo' in message) && (message.echo === true)) target[streamid].echo = true
           else target[streamid].echo = false
 
           if ('type' in message) target[streamid].type = message.type
@@ -1396,27 +1395,27 @@ functions.receiver = new Object({
         // if exists, remove streamid from streams in this tokens streamlist
         for (token in tokens) {
           for (i in tokens[token].streams) {
-            if (tokens[token].streams[i] == streamid) tokens[token].streams.splice(i, 1)
+            if (tokens[token].streams[i] === streamid) tokens[token].streams.splice(i, 1)
           }
         }
 
         // if exists, remove streamid from streams in this apps streamlist
         for (token in apps) {
           for (i in apps[token].streams) {
-            if (apps[token].streams[i] == streamid) apps[token].streams.splice(i, 1)
+            if (apps[token].streams[i] === streamid) apps[token].streams.splice(i, 1)
           }
         }
 
         // make sure stream is allowed and not rejected
-        if (typeof tokens[message.token] != 'undefined') tokens[message.token].streams.push(streamid)
+        if (typeof tokens[message.token] !== 'undefined') tokens[message.token].streams.push(streamid)
 
         // make sure stream is allowed and not rejected in case of an app
-        if (typeof apps[message.token] != 'undefined') apps[message.token].streams.push(streamid)
+        if (typeof apps[message.token] !== 'undefined') apps[message.token].streams.push(streamid)
 
         // designate streams to be directly relayed ot this target
         for (stream in message.streamlist) {
           // send subscriber message to sender streams that are newly subscribed to
-          if (typeof streamrelay[message.streamlist[stream].streamid][streamid] == 'undefined') {
+          if (typeof streamrelay[message.streamlist[stream].streamid][streamid] === 'undefined') {
             serverfunctions.subscriber.process(message.streamlist[stream].streamid, streamid)
           }
           streamrelay[message.streamlist[stream].streamid][streamid] = []
@@ -1501,12 +1500,12 @@ functions.subscribe = new Object({
 
     if (typeof data !== 'object') {
       console.log('*** subscribe ***')
-      if ((('receiverid' in message) && (message.receiverid != '') && (typeof target[message.receiverid] != 'undefined'))) {
+      if ((('receiverid' in message) && (message.receiverid !== '') && (typeof target[message.receiverid] !== 'undefined'))) {
         // get all streamids if no list is given
-        if (!('streamid' in message) || (message.streamid.length == 0)) {
+        if (!('streamid' in message) || (message.streamid.length === 0)) {
           message.streamid = []
           for (sourceid in source) {
-            if (!('type' in message) || (message.type.length == 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
+            if (!('type' in message) || (message.type.length === 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
           }
         }
 
@@ -1514,7 +1513,7 @@ functions.subscribe = new Object({
         // add the already subscribed streams
         for (s in streamrelay) {
           for (t in streamrelay[s]) {
-            if ((t == message.receiverid) && (!message.streamid.includes(s))) {
+            if ((t === message.receiverid) && (!message.streamid.includes(s))) {
               message.streamid.push(s)
             }
           }
@@ -1549,7 +1548,7 @@ functions.subscribe = new Object({
         // designate streams to be directly relayed ot this target
         for (stream in message.streamlist) {
           // send subscriber message to sender streams that are newly subscribed to
-          if (typeof streamrelay[message.streamlist[stream].streamid][message.receiverid] == 'undefined') serverfunctions.subscriber.process(message.streamlist[stream].streamid, message.receiverid)
+          if (typeof streamrelay[message.streamlist[stream].streamid][message.receiverid] === 'undefined') serverfunctions.subscriber.process(message.streamlist[stream].streamid, message.receiverid)
           streamrelay[message.streamlist[stream].streamid][message.receiverid] = []
         }
 
@@ -1618,16 +1617,16 @@ functions.unsubscribe = new Object({
 
     if (typeof data !== 'object') {
       console.log('*** unsubscribe *** function untested')
-      if ((('receiverid' in message) && (message.receiverid != '') && (typeof target[message.receiverid] != 'undefined'))
+      if ((('receiverid' in message) && (message.receiverid !== '') && (typeof target[message.receiverid] !== 'undefined'))
                 && (('streamid' in message) && (message.streamid.length > 0))) {
         // unsubscribe streams
         for (s in streamrelay) {
           for (t in streamrelay[s]) {
-            if ((t == message.receiverid) && (message.streamid.includes(s))) {
+            if ((t === message.receiverid) && (message.streamid.includes(s))) {
               delete streamrelay[s][t]
               // send dropped message to sender streams that are newly subscribed to
               serverfunctions.dropped.process(s, t)
-              if (streamrelay[s].length == 0) delete streamrelay[s]
+              if (streamrelay[s].length === 0) delete streamrelay[s]
             }
           }
         }
@@ -1636,7 +1635,7 @@ functions.unsubscribe = new Object({
         message.streamid = []
         for (s in streamrelay) {
           for (t in streamrelay[s]) {
-            if (t == message.receiverid) message.streamid.push(s)
+            if (t === message.receiverid) message.streamid.push(s)
           }
         }
 
@@ -1735,75 +1734,75 @@ functions.disconnect = new Object({
     if (typeof data !== 'object') {
       console.log('*** disconnect ***')
       // first find all streamid's that we want to disconnect
-      if ((!('streamid' in message)) || (Array.isArray(message.streamid) && (message.streamid.length == 0))) {
+      if ((!('streamid' in message)) || (Array.isArray(message.streamid) && (message.streamid.length === 0))) {
         // make sure we can use the types and workspaces
         if (('type' in message) && Array.isArray(message.type) && (message.type.length > 0)) types = types.concat(message.type)
         if (('workspace' in message) && Array.isArray(message.workspace) && (message.workspace.length > 0)) workspaces = workspaces.concat(message.workspace)
 
-        if (typeof tokens[message.token] != 'undefined') {
+        if (typeof tokens[message.token] !== 'undefined') {
           // find user for the submitted token
           user = tokens[message.token].user
 
           // find all streamid's for that user
           for (token in tokens) {
-            if (user == tokens[token].user) {
+            if (user === tokens[token].user) {
               console.log('streams in token', tokens[token].streams)
               allstreams = allstreams.concat(tokens[token].streams)
             }
           }
           // check if streamid is in correct room and of correct type
           for (streamid in allstreams) {
-            if ((typeof source[allstreams[streamid]] != 'undefined')
-                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
+            if ((typeof source[allstreams[streamid]] !== 'undefined')
+                && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
                 && (workspaces.includes(source[allstreams[streamid]].room)
-                || workspaces.length == 0)) {
+                || workspaces.length === 0)) {
               streamids = streamids.concat([allstreams[streamid]])
             }
-            if ((typeof target[allstreams[streamid]] != 'undefined')
-                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
+            if ((typeof target[allstreams[streamid]] !== 'undefined')
+                && (types.includes(target[allstreams[streamid]].type) || types.length === 0)
                 && (workspaces.includes(target[allstreams[streamid]].room)
-                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
           }
         }
 
         // find all streamid's for that app
-        if (typeof apps[message.token] != 'undefined') {
+        if (typeof apps[message.token] !== 'undefined') {
           allstreams = apps[message.token].streams
           for (streamid in allstreams) {
             if (debug) console.log('disconnect streamid', allstreams[streamid])
             // check if streamid is in correct room and of correct type
-            if ((typeof source[allstreams[streamid]] != 'undefined')
-                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
+            if ((typeof source[allstreams[streamid]] !== 'undefined')
+                && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
                 && (workspaces.includes(source[allstreams[streamid]].room)
-                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
-            if ((typeof target[allstreams[streamid]] != 'undefined')
-                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
+                || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
+            if ((typeof target[allstreams[streamid]] !== 'undefined')
+                && (types.includes(target[allstreams[streamid]].type) || types.length === 0)
                 && (workspaces.includes(target[allstreams[streamid]].room)
-                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
           }
         }
       } else {
         if (Array.isArray(message.streamid)) streamids = message.streamid
-        if (typeof message.streamid == 'string') streamids = [message.streamid]
+        if (typeof message.streamid === 'string') streamids = [message.streamid]
       }
       response = {}
       response.statuscode = 0
       for (streamkey in streamids) {
         streamid = streamids[streamkey]
         console.log('deleting', streamid)
-        if ((typeof source[streamid] != 'undefined') || (typeof target[streamid] != 'undefined')) {
+        if ((typeof source[streamid] !== 'undefined') || (typeof target[streamid] !== 'undefined')) {
           console.log(`Cleaning up stream ${streamid}`)
           // *** ToDo: in addition we need to make sure that the actual connection is disconnected
-          if ((typeof source[streamid] != 'undefined')
-                            && (typeof source[streamid].ip != 'undefined')
-                            && (typeof source[streamid].port != 'undefined')) {
-            if ((typeof connections[source[streamid].ip] != 'undefined')
-                            && (typeof connections[source[streamid].ip][source[streamid].port] != 'undefined')
-                            && (typeof connections[source[streamid].ip][source[streamid].port].conn != 'undefined')) {
+          if ((typeof source[streamid] !== 'undefined')
+                            && (typeof source[streamid].ip !== 'undefined')
+                            && (typeof source[streamid].port !== 'undefined')) {
+            if ((typeof connections[source[streamid].ip] !== 'undefined')
+                            && (typeof connections[source[streamid].ip][source[streamid].port] !== 'undefined')
+                            && (typeof connections[source[streamid].ip][source[streamid].port].conn !== 'undefined')) {
               delete connections[source[streamid].ip][source[streamid].port].conn
               delete connections[source[streamid].ip][source[streamid].port].time
               delete connections[source[streamid].ip][source[streamid].port]
-              if (connections[source[streamid].ip].length == 0) {
+              if (connections[source[streamid].ip].length === 0) {
                 delete connections[source[streamid].ip]
               }
             }
@@ -1817,7 +1816,7 @@ functions.disconnect = new Object({
           }
 
           // remove stream if it is a target for the stream relay
-          if (typeof target[streamid] != 'undefined') {
+          if (typeof target[streamid] !== 'undefined') {
             for (stream in streamrelay) {
               if (streamid in streamrelay[stream]) {
               // send dropped message to senders
@@ -1830,13 +1829,13 @@ functions.disconnect = new Object({
 
           // remove streams from user session list
           for (token in tokens) {
-            if (tokens[token].streams.indexOf(streamid) != -1) {
+            if (tokens[token].streams.indexOf(streamid) !== -1) {
               tokens[token].streams.splice(tokens[token].streams.indexOf(streamid), 1)
             }
           }
           // remove streams from apps session list
           for (token in apps) {
-            if (apps[token].streams.indexOf(streamid) != -1) {
+            if (apps[token].streams.indexOf(streamid) !== -1) {
               apps[token].streams.splice(apps[token].streams.indexOf(streamid), 1)
             }
           }
@@ -1914,7 +1913,7 @@ functions.expire = new Object({
                 response = getErrorMessage(4);
         } else
             if('token' in message)
-                if(typeof apps[message['token']] != 'undefined') {
+                if(typeof apps[message['token']] !== 'undefined') {
                     response['token'] = message['token']
                     response['ip'] = ip;
                     apps[response['token']]['time'] = Date.now(); // timeout data
@@ -2008,30 +2007,30 @@ serverfunctions.update = new Object({
     // var t = [];
     for (u in target) {
       if (target[u].alert
-          && (target[u].room == room)
-          && ((target[u].type.length == 0)
+          && (target[u].room === room)
+          && ((target[u].type.length === 0)
           || (target[u].type.includes(source[streamid].type)))) {
         response.receiverid = u
         update = JSON.stringify(response)
         for (token in tokens) {
           if (tokens[token].streams.includes(u)) {
-            if (((users[tokens[token].user].username != response.user)
-                                && (target[u].echo != true))
-                                || (target[u].echo == true)) {
+            if (((users[tokens[token].user].username !== response.user)
+                                && (target[u].echo !== true))
+                                || (target[u].echo === true)) {
               console.log(`updating client: ${token} : ${u}`)
               if (typeof tokens[token].conn.write === 'function') tokens[token].conn.write(update)
-              if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState != 'undefined') && (tokens[token].conn.readyState == 1)) tokens[token].conn.send(update)
+              if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState !== 'undefined') && (tokens[token].conn.readyState === 1)) tokens[token].conn.send(update)
             } else console.log('skipping stream from same user.')
           }
         }
         for (token in apps) {
           if (apps[token].streams.includes(u)) {
             if ((!response.apps.includes(apps[token].name)
-                                && (target[u].echo != true))
-                                || (target[u].echo == true)) {
+                                && (target[u].echo !== true))
+                                || (target[u].echo === true)) {
               console.log(`updating app client: ${token} : ${u}`)
               if (typeof apps[token].conn.write === 'function') apps[token].conn.write(update)
-              if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState != 'undefined') && (apps[token].conn.readyState == 1)) apps[token].conn.send(update)
+              if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState !== 'undefined') && (apps[token].conn.readyState === 1)) apps[token].conn.send(update)
             } else console.log('skipping stream from same app.')
           }
         }
@@ -2099,11 +2098,11 @@ serverfunctions.subscriber = new Object({
     for (token in tokens) {
       if (tokens[token].streams.includes(senderid)) {
         usertoken = token
-        if (typeof response.user != 'undefined') break
+        if (typeof response.user !== 'undefined') break
       }
       if (tokens[token].streams.includes(receiverid)) {
         response.user = users[tokens[token].user].username
-        if (typeof usertoken != 'undefined') break
+        if (typeof usertoken !== 'undefined') break
       }
     }
 
@@ -2111,11 +2110,11 @@ serverfunctions.subscriber = new Object({
     for (token in apps) {
       if (apps[token].streams.includes(senderid)) {
         apptoken = token
-        if (typeof response.app != 'undefined') break
+        if (typeof response.app !== 'undefined') break
       }
       if (apps[token].streams.includes(receiverid)) {
         response.app = apps[token].name
-        if (typeof apptoken != 'undefined') break
+        if (typeof apptoken !== 'undefined') break
       }
     }
 
@@ -2125,21 +2124,21 @@ serverfunctions.subscriber = new Object({
     console.log('trying to send subscriber update ', update)
 
     // send update to sender
-    if (typeof usertoken != 'undefined') {
+    if (typeof usertoken !== 'undefined') {
       console.log(`updating sender: ${usertoken} : ${senderid}`)
       if (typeof tokens[usertoken].conn.write === 'function') {
         tokens[usertoken].conn.write(update)
         console.log('Finished subscriber update (1).')
       }
-      if ((typeof tokens[usertoken].conn.send === 'function') && (typeof tokens[usertoken].conn.readyState != 'undefined') && (tokens[usertoken].conn.readyState == 1)) {
+      if ((typeof tokens[usertoken].conn.send === 'function') && (typeof tokens[usertoken].conn.readyState !== 'undefined') && (tokens[usertoken].conn.readyState === 1)) {
         tokens[usertoken].conn.send(update)
         console.log('Finished subscriber update (2).')
       }
     }
-    if (typeof apptoken != 'undefined') {
+    if (typeof apptoken !== 'undefined') {
       console.log(`updating app client: ${apptoken} : ${senderid}`)
       if (typeof apps[apptoken].conn.write === 'function') apps[apptoken].conn.write(update)
-      if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState != 'undefined') && (apps[apptoken].conn.readyState == 1)) apps[apptoken].conn.send(update)
+      if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState !== 'undefined') && (apps[apptoken].conn.readyState === 1)) apps[apptoken].conn.send(update)
     }
   },
 })
@@ -2188,28 +2187,28 @@ serverfunctions.stale = new Object({
     // get subscribed targets and send update (only if receiver wants updates)
     // var t = [];
     for (u in target) {
-      if (target[u].alert && (target[u].room == room)
-          && ((target[u].type.length == 0)
+      if (target[u].alert && (target[u].room === room)
+          && ((target[u].type.length === 0)
           || (target[u].type.includes(source[streamid].type)))) {
         for (token in tokens) {
           if (tokens[token].streams.includes(u)) {
-            if (((users[tokens[token].user].username != response.user)
-                                && (target[u].echo != true))
-                                || (target[u].echo == true)) {
+            if (((users[tokens[token].user].username !== response.user)
+                                && (target[u].echo !== true))
+                                || (target[u].echo === true)) {
               console.log(`updating client: ${token} : ${u}`)
               if (typeof tokens[token].conn.write === 'function') tokens[token].conn.write(update)
-              if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState != 'undefined') && (tokens[token].conn.readyState == 1)) tokens[token].conn.send(update)
+              if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState !== 'undefined') && (tokens[token].conn.readyState === 1)) tokens[token].conn.send(update)
             } else console.log('skipping stream from same user.')
           }
         }
         for (token in apps) {
           if (apps[token].streams.includes(u)) {
             if ((!response.apps.includes(apps[token].name)
-                                && (target[u].echo != true))
-                                || (target[u].echo == true)) {
+                                && (target[u].echo !== true))
+                                || (target[u].echo === true)) {
               console.log(`updating app client: ${token} : ${u}`)
               if (typeof apps[token].conn.write === 'function') apps[token].conn.write(update)
-              if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState != 'undefined') && (apps[token].conn.readyState == 1)) apps[token].conn.send(update)
+              if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState !== 'undefined') && (apps[token].conn.readyState === 1)) apps[token].conn.send(update)
             } else console.log('skipping stream from same app.')
           }
         }
@@ -2271,15 +2270,15 @@ serverfunctions.dropped = new Object({
     }
 
     // send update to sender
-    if (typeof usertoken != 'undefined') {
+    if (typeof usertoken !== 'undefined') {
       console.log(`updating sender: ${usertoken} : ${sourceid}`)
       if (typeof tokens[usertoken].conn.write === 'function') tokens[usertoken].conn.write(update)
-      if ((typeof tokens[usertoken].conn.send === 'function') && (typeof tokens[usertoken].conn.readyState != 'undefined') && (tokens[usertoken].conn.readyState == 1)) tokens[usertoken].conn.send(update)
+      if ((typeof tokens[usertoken].conn.send === 'function') && (typeof tokens[usertoken].conn.readyState !== 'undefined') && (tokens[usertoken].conn.readyState === 1)) tokens[usertoken].conn.send(update)
     }
-    if (typeof apptoken != 'undefined') {
+    if (typeof apptoken !== 'undefined') {
       console.log(`updating app client: ${apptoken} : ${sourceid}`)
       if (typeof apps[apptoken].conn.write === 'function') apps[apptoken].conn.write(update)
-      if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState != 'undefined') && (apps[apptoken].conn.readyState == 1)) apps[apptoken].conn.send(update)
+      if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState !== 'undefined') && (apps[apptoken].conn.readyState === 1)) apps[apptoken].conn.send(update)
     }
   },
 })
@@ -2307,7 +2306,7 @@ function handleControlConnection(conn) {
       return
     }
     if ('function' in message) {
-      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
+      if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
       else send = JSON.stringify(await functions[message.function].process(message))
       console.log(`sending:${send}`)
       conn.write(send)
@@ -2388,7 +2387,7 @@ function relayData(msg, remoteAddress, remotePort) {
   if (msg.length > 6) {
     headerSize = msg.readUInt16LE(0)
     dataSize = msg.readUInt32LE(2)
-    if (msg.length != 6 + headerSize + dataSize) {
+    if (msg.length !== 6 + headerSize + dataSize) {
       console.log(`Packet has the wrong size (${msg.length} vs. ${6 + headerSize + dataSize}).`)
       return console.error(`Packet has the wrong size (${msg.length} vs. ${6 + headerSize + dataSize}).`)
     }
@@ -2457,30 +2456,30 @@ function relayData(msg, remoteAddress, remotePort) {
     if (header.id in streamrelay) {
       source[header.id].time = last
       for (targetid in streamrelay[header.id]) {
-        if ((typeof target[targetid] != 'undefined') && (typeof target[targetid].ip != 'undefined') && (target[targetid].ip != '')) {
-          if ((typeof target[targetid] != 'undefined') && (typeof target[targetid].port != 'undefined') && (target[targetid].port != 0)) {
+        if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
+          if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].port !== 'undefined') && (target[targetid].port !== 0)) {
             if (debug) {
               console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
             // console.log(data)
             }
             target[targetid].time = last
-            if (target[targetid].proto == 'udp') {
+            if (target[targetid].proto === 'udp') {
               UDPDataServer.send(msg, target[targetid].port, target[targetid].ip, (err) => {
                 if (err) console.log('socket error', err)
               })
-            } else if (target[targetid].proto == 'tcp') {
-              if (typeof target[targetid].conn == 'undefined') console.log('!!!! tcp connection not defined, dropping packet')
+            } else if (target[targetid].proto === 'tcp') {
+              if (typeof target[targetid].conn === 'undefined') console.log('!!!! tcp connection not defined, dropping packet')
               else target[targetid].conn.write(msg)
             } else {
-              if ((typeof target[targetid].conn == 'undefined') || (target[targetid].conn.readyState != 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
+              if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
               else target[targetid].conn.send(msg)
             }
           } else {
-            if (typeof target[targetid] == 'undefined') console.log(`${targetid} is not registered at all`)
+            if (typeof target[targetid] === 'undefined') console.log(`${targetid} is not registered at all`)
             else {
               types = ''
               for (type in target.targetid) {
-                if (types == '') types = type
+                if (types === '') types = type
                 else types = `${types}, ${type}`
               }
               console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
@@ -2492,15 +2491,15 @@ function relayData(msg, remoteAddress, remotePort) {
       if (header.id in target) {
         if (debug) console.log(target[header.id].ip)
         console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
-        if (remoteAddress == target[header.id].ip) {
-          if (target[header.id].port == 0) {
+        if (remoteAddress === target[header.id].ip) {
+          if (target[header.id].port === 0) {
             console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
             target[header.id].port = remotePort
-            if ((target[header.id].proto == 'tcp') || (target[header.id].proto == 'ws')) {
+            if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
               console.log(header.id, 'adding the connection')
               target[header.id].conn = connections[remoteAddress][remotePort].conn
               delete connections[remoteAddress][remotePort]
-              if (connections[remoteAddress].length == 0) delete connections[remoteAddress]
+              if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
             }
           }
         }
@@ -2518,7 +2517,7 @@ function handleDataConnection(conn) {
   var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
   var { remotePort } = conn
 
-  if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
+  if (typeof connections[remoteAddress] === 'undefined') connections[remoteAddress] = []
   connections[remoteAddress][remotePort] = []
   connections[remoteAddress][remotePort].conn = conn
   connections[remoteAddress][remotePort].time = Date.now()
@@ -2578,7 +2577,7 @@ wsControlServer.on('connection', (conn, req) => {
       return
     }
     if ('function' in message) {
-      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
+      if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
       else send = JSON.stringify(await functions[message.function].process(message))
       console.log(`sending:${send}`)
 
@@ -2627,7 +2626,7 @@ WSDataServer.on('connection', (conn, req) => {
   const { remotePort } = req.connection
   console.log(`Connected new WS client from ${remoteAddress} port ${remotePort}`)
 
-  if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
+  if (typeof connections[remoteAddress] === 'undefined') connections[remoteAddress] = []
   connections[remoteAddress][remotePort] = []
   connections[remoteAddress][remotePort].conn = conn
   connections[remoteAddress][remotePort].time = Date.now()
@@ -2639,14 +2638,14 @@ WSDataServer.on('connection', (conn, req) => {
   conn.once('close', () => {
     // todo: unset the array element for the connection
     delete connections[remoteAddress][remotePort]
-    if (connections[remoteAddress].length == 0) delete connections[remoteAddress]
+    if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
     console.log('---------------WS data connection from %s closed', remoteAddress)
   })
 
   conn.on('error', (err) => {
     // todo: unset the array element for the connection
     delete connections[remoteAddress][remotePort]
-    if (connections[remoteAddress].length == 0) delete connections[remoteAddress]
+    if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
     console.log('WS data connection %s error: %s', remoteAddress, err.message)
   })
 })
@@ -2670,7 +2669,7 @@ function timeoutConnections() {
     //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
       if (connections[ip][port].time + connectTimeout < currentTime) {
         delete connections[ip][port]
-        if (connections[ip].length == 0) delete connections[ip]
+        if (connections[ip].length === 0) delete connections[ip]
       }
     }
   }
@@ -2699,8 +2698,8 @@ function timeoutConnections() {
     //   +streamTimeout - currentTime);
     if (target[id].time + streamTimeout < currentTime) {
       for (sid in streamrelay) {
-        for (tid in streamrelay) if (tid == id) delete streamrelay[sid][tid]
-        if (streamrelay[sid].length == 0) delete streamrelay[sid]
+        for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
+        if (streamrelay[sid].length === 0) delete streamrelay[sid]
       }
       delete target[id]
     }
