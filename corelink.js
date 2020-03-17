@@ -28,9 +28,11 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle
- * @version V4.2.0.0
+ * @version V4.3.0.0
  */
-
+const serverVersion = 'v4.3.0.0'
+// v4.3.0.0
+// - ws control connections encrypted
 // v4.2.0.0
 // - added signaling of subscribed and dropped streams to senders
 // v4.1.0.0
@@ -62,8 +64,23 @@ const crypto = require('crypto')
 const dgram = require('dgram')
 var net = require('net')
 var Ws = require('ws').Server
+const fs = require('fs')
+const https = require('https')
+const config = require('./config/configure')
 const knex = require('./knex/knex.js')
 
+const httpsOptions = {
+  key: fs.readFileSync(config.key),
+  cert: fs.readFileSync(config.cert),
+}
+
+console.log(config.ca)
+console.log(typeof config.ca)
+if (typeof config.ca !== 'undefined') {
+  httpsOptions.ca = fs.readFileSync(config.ca)
+}
+
+console.log(httpsOptions)
 // ******** setup default setting
 // timeouts for sync server
 const controlTimeout = 10 * 60 * 60 * 1000 // (10 hours timeout for the control connection)
@@ -2259,7 +2276,14 @@ function handleControlConnection(conn) {
 // WS control setup
 console.log(`trying to bind WS control port ${WSControl}`)
 
-var wsControlServer = new Ws({ port: WSControl })
+const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
+  console.log(req.connection.remoteAddress+' '+req.method+' '+req.url)
+  res.writeHead(200)
+  res.end(`Corelink Server ${serverVersion}`)
+})
+httpsControlServer.listen(WSControl)
+
+var wsControlServer = new Ws({ server: httpsControlServer })
 
 wsControlServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
@@ -2274,7 +2298,7 @@ wsControlServer.on('connection', (conn, req) => {
   // at this point we have a new connection that is not yet authenticated
   console.log('new client WS control connection from %s:%s', remoteAddress, remotePort)
 
-  conn.on('message', (data) => {
+  conn.on('message', async (data) => {
     console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
     try {
       var message = JSON.parse(data)
@@ -2283,8 +2307,8 @@ wsControlServer.on('connection', (conn, req) => {
       return
     }
     if ('function' in message) {
-      if (message.function == 'auth') send = JSON.stringify(functions[message.function].process(message, remoteAddress, conn))
-      else send = JSON.stringify(functions[message.function].process(message))
+      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
+      else send = JSON.stringify(await functions[message.function].process(message))
       console.log('sending:' + send)
       conn.send(send)
     } else console.log('Key function not given')
@@ -2583,7 +2607,7 @@ function relayData(msg, remoteAddress, remotePort) {
       } else console.log('StreamID (' + header.id + ') not authorized to send')
     }
   }
-  return console.log('relaydata end')
+  return 'relaydata end'
 }
 
 // process.on('SIGINT', process.exit());
