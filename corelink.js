@@ -15,7 +15,7 @@
 /* eslint-disable no-var */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-lonely-if */
-/* eslint-disable prefer-destructuring */
+// /* eslint-disable prefer-destructuring */
 
 /* eslint-disable no-new-object */
 /* eslint-disable no-shadow */
@@ -2311,7 +2311,7 @@ TCPControlServer.listen(TCPControl, () => {
 function handleControlConnection(conn) {
   var message
   var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
-  var remotePort = conn.remotePort
+  var { remotePort } = conn
   var send = ''
   // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
   // controlConnection[remoteAddress] = [];
@@ -2363,8 +2363,8 @@ wsControlServer = new Ws({ server: httpsControlServer })
 
 wsControlServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
-  const remoteAddress = req.connection.remoteAddress
-  const remotePort = req.connection.remotePort
+  const { remoteAddress } = req.connection
+  const { remotePort } = req.connection
   var send = ''
   var message
   // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
@@ -2444,7 +2444,7 @@ TCPDataServer.listen(port.tcp, () => {
 
 function handleDataConnection(conn) {
   var remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
-  var remotePort = conn.remotePort
+  var { remotePort } = conn
 
   if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
   connections[remoteAddress][remotePort] = []
@@ -2479,8 +2479,8 @@ WSDataServer = new Ws({ port: port.ws })
 WSDataServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
-  const remoteAddress = req.connection.remoteAddress
-  const remotePort = req.connection.remotePort
+  const { remoteAddress } = req.connection
+  const { remotePort } = req.connection
   console.log(`Connected new WS client from ${remoteAddress} port ${remotePort}`)
 
   if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
