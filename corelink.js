@@ -5,19 +5,14 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable func-names */
-/* eslint-disable block-scoped-var */
-/* eslint-disable no-undef */ // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef
+/*  eslint-disable no-undef */ // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
-/* eslint-disable prefer-template */
-
-/* eslint-disable no-redeclare */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-lonely-if */
 /* eslint-disable prefer-destructuring */
 
 /* eslint-disable no-new-object */
-/* eslint-disable object-shorthand */
 /* eslint-disable no-shadow */
 /* eslint-disable no-param-reassign */
 
@@ -273,7 +268,7 @@ sha512 = function (password, salt) {
   hash.update(password)
   value = hash.digest('hex')
   return {
-    salt: salt,
+    salt,
     passwordHash: value,
   }
 }
@@ -298,7 +293,6 @@ function listStreams() {
   var token
   var user
   var s
-  var token
   var key
   var sr
   var t
@@ -309,8 +303,8 @@ function listStreams() {
   console.log('Listing Streams')
   // console.log(tokens);
   // console.log(source);
-  for (token in tokens) console.log('Token: ' + token + ', user: ' + users[tokens[token].user].username + ', streams: ' + tokens[token].streams.toString() + ', time: ' + tokens[token].time)
-  for (token in apps) console.log('Token: ' + token + ', app: ' + apps[token].name + ', streams: ' + apps[token].streams.toString() + ', time: ' + apps[token].time)
+  for (token in tokens) console.log(`Token: ${token}, user: ${users[tokens[token].user].username}, streams: ${tokens[token].streams.toString()}, time: ${tokens[token].time}`)
+  for (token in apps) console.log(`Token: ${token}, app: ${apps[token].name}, streams: ${apps[token].streams.toString()}, time: ${apps[token].time}`)
 
   for (s in source) {
     for (token in tokens) {
@@ -321,12 +315,12 @@ function listStreams() {
         }
       }
     }
-    console.log('Source: ' + s + ', User: ' + user + ', IP: ' + source[s].ip + ':' + source[s].port + ', proto: ' + source[s].proto + ', room: ' + source[s].room + ', alert: ' + source[s].alert + ', type: ' + source[s].type + ', time: ' + source[s].time + ', from: ' + source[s].from)
+    console.log(`Source: ${s}, User: ${user}, IP: ${source[s].ip}:${source[s].port}, proto: ${source[s].proto}, room: ${source[s].room}, alert: ${source[s].alert}, type: ${source[s].type}, time: ${source[s].time}, from: ${source[s].from}`)
   }
 
-  for (t in target) console.log('Target: ' + t + ', IP: ' + target[t].ip + ':' + target[t].port + ', proto: ' + target[t].proto + ', room: ' + target[t].room + ', alert: ' + target[t].alert + ', type: ' + target[t].type + ', time: ' + target[t].time)
-  for (sr in streamrelay) for (tsr in streamrelay[sr]) console.log('Relaying ' + sr + ' -> ' + tsr)
-  for (ip in connections) for (connectionPort in connections[ip]) console.log('Connection stored for ' + ip + ':' + connectionPort)
+  for (t in target) console.log(`Target: ${t}, IP: ${target[t].ip}:${target[t].port}, proto: ${target[t].proto}, room: ${target[t].room}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
+  for (sr in streamrelay) for (tsr in streamrelay[sr]) console.log(`Relaying ${sr} -> ${tsr}`)
+  for (ip in connections) for (connectionPort in connections[ip]) console.log(`Connection stored for ${ip}:${connectionPort}`)
 }
 
 stdin.on('data', (key) => {
@@ -518,7 +512,7 @@ functions.listfunctions = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var response = {}
     var data = checkAuth(message)
     response.statuscode = 0
@@ -573,7 +567,7 @@ functions.describefunction = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var response = {}
     if (typeof data !== 'object') {
@@ -627,7 +621,7 @@ functions.listworkspaces = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var response = {}
     // **** ToDo: list only workspaces that user has access to.
@@ -677,7 +671,7 @@ functions.addworkspace = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var response = {}
     if (typeof data !== 'object') {
@@ -734,7 +728,7 @@ functions.rmworkspace = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var response = {}
     if (typeof data !== 'object') {
@@ -841,12 +835,11 @@ functions.sender = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var i
     var streamid
     var token
-    var i
     var response = {}
     console.log('datatype', typeof data)
     if (typeof data !== 'object') {
@@ -854,7 +847,7 @@ functions.sender = new Object({
       if (('workspace' in message) && ('proto' in message) && ('type' in message) && ((message.proto == 'udp') || (message.proto == 'tcp') || (message.proto == 'ws'))) {
         if (('senderid' in message) && (message.senderid != '') && (typeof source[message.senderid] != 'undefined')) {
           streamid = message.senderid
-          console.log('used existing sender streamid: ' + streamid)
+          console.log(`used existing sender streamid: ${streamid}`)
         } else {
           streamid = null
           while ((streamid == null) || (typeof source[streamid] != 'undefined')) {
@@ -862,7 +855,7 @@ functions.sender = new Object({
               .update(message.workspace + message.proto + (new Date().getTime()))
               .digest('hex').substr(0, 7)
           }
-          console.log('created new sender streamid: ' + streamid)
+          console.log(`created new sender streamid: ${streamid}`)
           streamrelay[streamid] = []
         }
         if ((typeof source[streamid] === 'undefined')
@@ -969,7 +962,7 @@ functions.liststream = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var response = {}
     var workspace
@@ -1071,7 +1064,7 @@ functions.streaminfo = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var streamid
     var response
@@ -1153,7 +1146,7 @@ function findApps(streamid) {
       break
     }
   }
-  return { user: user, apps: apps }
+  return { user, apps }
 }
 
 functions.receiver = new Object({
@@ -1268,7 +1261,7 @@ functions.receiver = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var sourceid
     var stream
@@ -1321,7 +1314,7 @@ functions.receiver = new Object({
                           || ((typeof apps[message.token] != 'undefined')
                           && ((!('echo' in message)) || (('echo' in message) && (message.echo != true))))) {
             message.streamlist.push(streamlistelement)
-          } else console.log('skipping stream from same user ' + message.streamid[stream])
+          } else console.log(`skipping stream from same user ${message.streamid[stream]}`)
         }
 
         // give error message if we dont have a streamid and are also not
@@ -1335,7 +1328,7 @@ functions.receiver = new Object({
 
         if (('receiverid' in message) && (message.receiverid != '') && (typeof target[message.receiverid] != 'undefined')) {
           streamid = message.receiverid
-          console.log('used existing receiver streamid: ' + streamid)
+          console.log(`used existing receiver streamid: ${streamid}`)
           // console.log(target[streamid]);
         } else {
           // create a new target streamID
@@ -1345,7 +1338,7 @@ functions.receiver = new Object({
               .update(message.workspace + message.proto + (new Date().getTime()))
               .digest('hex').substr(0, 7)
           }
-          console.log('created new receiver streamid: ' + streamid)
+          console.log(`created new receiver streamid: ${streamid}`)
         }
 
         if ((typeof target[streamid] === 'undefined')
@@ -1473,7 +1466,7 @@ functions.subscribe = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var sourceid
     var s
@@ -1594,7 +1587,7 @@ functions.unsubscribe = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var s
     var t
@@ -1706,7 +1699,7 @@ functions.disconnect = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
     var streamids = []
     var allstreams = []
@@ -1775,7 +1768,7 @@ functions.disconnect = new Object({
         streamid = streamids[streamkey]
         console.log('deleting', streamid)
         if ((typeof source[streamid] != 'undefined') || (typeof target[streamid] != 'undefined')) {
-          console.log('Cleaning up stream ' + streamid)
+          console.log(`Cleaning up stream ${streamid}`)
           // *** ToDo: in addition we need to make sure that the actual connection is disconnected
           if ((typeof source[streamid] != 'undefined')
                             && (typeof source[streamid].ip != 'undefined')
@@ -1860,7 +1853,7 @@ functions.expire = new Object({
       },
     },
   },
-  process: async function (message) {
+  async process(message) {
     var data = checkAuth(message)
 
     if (typeof data !== 'object') {
@@ -1965,7 +1958,7 @@ serverfunctions.update = new Object({
       },
     },
   },
-  process: async function (streamid) {
+  async process(streamid) {
     // prep response
     var response = {}
     var update = ''
@@ -1998,7 +1991,7 @@ serverfunctions.update = new Object({
             if (((users[tokens[token].user].username != response.user)
                                 && (target[u].echo != true))
                                 || (target[u].echo == true)) {
-              console.log('updating client: ' + token + ' : ' + u)
+              console.log(`updating client: ${token} : ${u}`)
               if (typeof tokens[token].conn.write === 'function') tokens[token].conn.write(update)
               if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState != 'undefined') && (tokens[token].conn.readyState == 1)) tokens[token].conn.send(update)
             } else console.log('skipping stream from same user.')
@@ -2009,7 +2002,7 @@ serverfunctions.update = new Object({
             if ((!response.apps.includes(apps[token].name)
                                 && (target[u].echo != true))
                                 || (target[u].echo == true)) {
-              console.log('updating app client: ' + token + ' : ' + u)
+              console.log(`updating app client: ${token} : ${u}`)
               if (typeof apps[token].conn.write === 'function') apps[token].conn.write(update)
               if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState != 'undefined') && (apps[token].conn.readyState == 1)) apps[token].conn.send(update)
             } else console.log('skipping stream from same app.')
@@ -2065,7 +2058,7 @@ serverfunctions.subscriber = new Object({
       },
     },
   },
-  process: async function (senderid, receiverid) {
+  async process(senderid, receiverid) {
     var token
     var usertoken
     var update
@@ -2106,7 +2099,7 @@ serverfunctions.subscriber = new Object({
 
     // send update to sender
     if (typeof usertoken != 'undefined') {
-      console.log('updating sender: ' + usertoken + ' : ' + senderid)
+      console.log(`updating sender: ${usertoken} : ${senderid}`)
       if (typeof tokens[usertoken].conn.write === 'function') {
         tokens[usertoken].conn.write(update)
         console.log('Finished subscriber update (1).')
@@ -2117,7 +2110,7 @@ serverfunctions.subscriber = new Object({
       }
     }
     if (typeof apptoken != 'undefined') {
-      console.log('updating app client: ' + apptoken + ' : ' + senderid)
+      console.log(`updating app client: ${apptoken} : ${senderid}`)
       if (typeof apps[apptoken].conn.write === 'function') apps[apptoken].conn.write(update)
       if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState != 'undefined') && (apps[apptoken].conn.readyState == 1)) apps[apptoken].conn.send(update)
     }
@@ -2150,7 +2143,7 @@ serverfunctions.stale = new Object({
       },
     },
   },
-  process: async function (streamid) {
+  async process(streamid) {
     var update
     var room
     var u
@@ -2174,7 +2167,7 @@ serverfunctions.stale = new Object({
             if (((users[tokens[token].user].username != response.user)
                                 && (target[u].echo != true))
                                 || (target[u].echo == true)) {
-              console.log('updating client: ' + token + ' : ' + u)
+              console.log(`updating client: ${token} : ${u}`)
               if (typeof tokens[token].conn.write === 'function') tokens[token].conn.write(update)
               if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState != 'undefined') && (tokens[token].conn.readyState == 1)) tokens[token].conn.send(update)
             } else console.log('skipping stream from same user.')
@@ -2185,7 +2178,7 @@ serverfunctions.stale = new Object({
             if ((!response.apps.includes(apps[token].name)
                                 && (target[u].echo != true))
                                 || (target[u].echo == true)) {
-              console.log('updating app client: ' + token + ' : ' + u)
+              console.log(`updating app client: ${token} : ${u}`)
               if (typeof apps[token].conn.write === 'function') apps[token].conn.write(update)
               if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState != 'undefined') && (apps[token].conn.readyState == 1)) apps[token].conn.send(update)
             } else console.log('skipping stream from same app.')
@@ -2222,7 +2215,7 @@ serverfunctions.dropped = new Object({
       },
     },
   },
-  process: async function (sourceid, receiverid) {
+  async process(sourceid, receiverid) {
     var update
     var token
     var response = {}
@@ -2250,12 +2243,12 @@ serverfunctions.dropped = new Object({
 
     // send update to sender
     if (typeof usertoken != 'undefined') {
-      console.log('updating sender: ' + usertoken + ' : ' + sourceid)
+      console.log(`updating sender: ${usertoken} : ${sourceid}`)
       if (typeof tokens[usertoken].conn.write === 'function') tokens[usertoken].conn.write(update)
       if ((typeof tokens[usertoken].conn.send === 'function') && (typeof tokens[usertoken].conn.readyState != 'undefined') && (tokens[usertoken].conn.readyState == 1)) tokens[usertoken].conn.send(update)
     }
     if (typeof apptoken != 'undefined') {
-      console.log('updating app client: ' + apptoken + ' : ' + sourceid)
+      console.log(`updating app client: ${apptoken} : ${sourceid}`)
       if (typeof apps[apptoken].conn.write === 'function') apps[apptoken].conn.write(update)
       if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState != 'undefined') && (apps[apptoken].conn.readyState == 1)) apps[apptoken].conn.send(update)
     }
@@ -2305,13 +2298,13 @@ function handleControlConnection(conn) {
     try {
       message = JSON.parse(data)
     } catch (e) {
-      console.log('Received message not a proper JSON:' + data.toString())
+      console.log(`Received message not a proper JSON:${data.toString()}`)
       return
     }
     if ('function' in message) {
       if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
       else send = JSON.stringify(await functions[message.function].process(message))
-      console.log('sending:' + send)
+      console.log(`sending:${send}`)
       conn.write(send)
     } else console.log('Key function not given')
   })
@@ -2351,13 +2344,13 @@ wsControlServer.on('connection', (conn, req) => {
     try {
       message = JSON.parse(data)
     } catch (e) {
-      console.log('Received message not a proper JSON:' + data.toString())
+      console.log(`Received message not a proper JSON:${data.toString()}`)
       return
     }
     if ('function' in message) {
       if (message.function == 'auth') send = JSON.stringify(functions[message.function].process(message, remoteAddress, conn))
       else send = JSON.stringify(functions[message.function].process(message))
-      console.log('sending:' + send)
+      console.log(`sending:${send}`)
       conn.send(send)
     } else console.log('Key function not given')
   })
@@ -2451,7 +2444,7 @@ WSDataServer.on('connection', (conn, req) => {
 
   const remoteAddress = req.connection.remoteAddress
   const remotePort = req.connection.remotePort
-  console.log('Connected new WS client from ' + remoteAddress + ' port ' + remotePort)
+  console.log(`Connected new WS client from ${remoteAddress} port ${remotePort}`)
 
   if (typeof connections[remoteAddress] == 'undefined') connections[remoteAddress] = []
   connections[remoteAddress][remotePort] = []
@@ -2557,8 +2550,8 @@ function relayData(msg, remoteAddress, remotePort) {
     headerSize = msg.readUInt16LE(0)
     dataSize = msg.readUInt32LE(2)
     if (msg.length != 6 + headerSize + dataSize) {
-      console.log('Packet has the wrong size (' + msg.length + ' vs. ' + (6 + headerSize + dataSize) + ').')
-      return console.error('Packet has the wrong size (' + msg.length + ' vs. ' + (6 + headerSize + dataSize) + ').')
+      console.log(`Packet has the wrong size (${msg.length} vs. ${6 + headerSize + dataSize}).`)
+      return console.error(`Packet has the wrong size (${msg.length} vs. ${6 + headerSize + dataSize}).`)
     }
     header = msg.toString('ascii', 6, headerSize + 6)
     // var data = Buffer.allocUnsafe(dataSize);
@@ -2582,7 +2575,7 @@ function relayData(msg, remoteAddress, remotePort) {
     msg.copy(data, 0, 6 + headerSize)
     // console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize},
     // header: ${JSON.stringify(header)} to ${target[targetid]['ip']}:${target[targetid]['port']}`);
-    console.log('Receiving ' + header.id + ` b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to `)
+    console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to `)
     // console.log(data)
   }
   // if we see the 'stamp' variable we will return a ping with the server stamped time
@@ -2619,7 +2612,7 @@ function relayData(msg, remoteAddress, remotePort) {
       default:
         console.log('wrong stream')
     }
-    if (debug) console.log('sending back ' + stream.proto + ' ping:' + JSON.stringify(header) + ', ip:' + remoteAddress + ', port' + remotePort)
+    if (debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
   } else {
     // console.log(header['id']);
     if (header.id in streamrelay) {
@@ -2628,7 +2621,7 @@ function relayData(msg, remoteAddress, remotePort) {
         if ((typeof target[targetid] != 'undefined') && (typeof target[targetid].ip != 'undefined') && (target[targetid].ip != '')) {
           if ((typeof target[targetid] != 'undefined') && (typeof target[targetid].port != 'undefined') && (target[targetid].port != 0)) {
             if (debug) {
-              console.log('Sending ' + header.id + ` b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
+              console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
             // console.log(data)
             }
             target[targetid].time = last
@@ -2644,25 +2637,25 @@ function relayData(msg, remoteAddress, remotePort) {
               else target[targetid].conn.send(msg)
             }
           } else {
-            if (typeof target[targetid] == 'undefined') console.log(targetid + ' is not registered at all')
+            if (typeof target[targetid] == 'undefined') console.log(`${targetid} is not registered at all`)
             else {
               types = ''
               for (type in target.targetid) {
                 if (types == '') types = type
-                else types = types + ', ' + type
+                else types = `${types}, ${type}`
               }
-              console.log('no port for stream ' + targetid + ' [' + types + '], IP:' + target[targetid].ip + ', Timeout:' + target[targetid].time)
+              console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
             }
           }
-        } else console.log('no ip for stream ' + header.id)
+        } else console.log(`no ip for stream ${header.id}`)
       }
     } else {
       if (header.id in target) {
         if (debug) console.log(target[header.id].ip)
-        console.log('Trying to assign port and connections for ' + header.id + ', ' + remoteAddress + ':' + remotePort)
+        console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
         if (remoteAddress == target[header.id].ip) {
           if (target[header.id].port == 0) {
-            console.log('Setting target port for ' + remoteAddress + ' to ' + remotePort + ' protocol ' + target[header.id].proto)
+            console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
             target[header.id].port = remotePort
             if ((target[header.id].proto == 'tcp') || (target[header.id].proto == 'ws')) {
               console.log(header.id, 'adding the connection')
@@ -2672,7 +2665,7 @@ function relayData(msg, remoteAddress, remotePort) {
             }
           }
         }
-      } else console.log('StreamID (' + header.id + ') not authorized to send')
+      } else console.log(`StreamID (${header.id}) not authorized to send`)
     }
   }
   return console.log('relaydata end')
