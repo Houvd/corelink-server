@@ -5,14 +5,11 @@
 /* eslint-disable no-restricted-syntax */
 
 /* eslint-disable block-scoped-var */
-/* eslint-disable no-undef */
 //     965:25 error 'app' is not defined no-undef
 //     966:51 error 'app' is not defined no-undef
 //    2371:40 error 'streamid' is not defined no-undef
 /* eslint-disable no-var */
-// /* eslint-disable no-use-before-define */
 /* eslint-disable no-lonely-if */
-// /* eslint-disable prefer-destructuring */
 
 /* eslint-disable no-new-object */
 /* eslint-disable no-shadow */
@@ -1048,8 +1045,8 @@ functions.liststream = new Object({
                 for (token in apps) {
                   for (key1 in apps[token].streams) {
                     // app is never defined as still checked , I am not sure what to do
-                    if (app[token].streams[key1] === streamlistelement.streamid) {
-                      streamlistelement.apps = app[token].name
+                    if (apps[token].streams[key1] === streamlistelement.streamid) {
+                      streamlistelement.apps = apps[token].name
                       break
                     }
                   }
@@ -1758,6 +1755,7 @@ functions.disconnect = new Object({
     var streamid
     var stream
     var streamkey
+    let response
 
 
     if (typeof data !== 'object') {
@@ -2117,6 +2115,7 @@ serverfunctions.subscriber = new Object({
     var token
     var usertoken
     var update
+    let apptoken
     // prep response
     var response = {}
     response.function = 'subscriber'
@@ -2713,7 +2712,7 @@ function timeoutConnections() {
     if (source[id].time + streamTimeout < currentTime) {
       // notify clients of stale streams
       // streamid not defined  but used
-      serverfunctions.stale.process(streamid)
+      serverfunctions.stale.process(id)
 
       // remove stream information from the relay
       delete streamrelay[id]
