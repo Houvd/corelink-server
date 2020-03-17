@@ -5,7 +5,15 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable func-names */
+<<<<<<< server/corelink.js
 /*  eslint-disable no-undef */ // 965:25 error 'app' is not defined no-undef 966:51 error 'app' is not defined no-undef 2371:40 error 'streamid' is not defined no-undef
+=======
+/* eslint-disable block-scoped-var */
+/* eslint-disable no-undef */
+//     965:25 error 'app' is not defined no-undef
+//     966:51 error 'app' is not defined no-undef
+//    2371:40 error 'streamid' is not defined no-undef
+>>>>>>> server/corelink.js
 /* eslint-disable eqeqeq */
 /* eslint-disable no-var */
 /* eslint-disable no-use-before-define */
@@ -22,9 +30,11 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle
- * @version V4.2.0.0
+ * @version V4.3.0.0
  */
-
+const serverVersion = 'v4.3.0.0'
+// v4.3.0.0
+// - ws control connections encrypted
 // v4.2.0.0
 // - added signaling of subscribed and dropped streams to senders
 // v4.1.0.0
@@ -56,7 +66,15 @@ const crypto = require('crypto')
 const dgram = require('dgram')
 var net = require('net')
 var Ws = require('ws').Server
+const fs = require('fs')
+const https = require('https')
+const config = require('./config/configure')
 const knex = require('./knex/knex.js')
+
+const httpsOptions = {
+  key: fs.readFileSync(config.key),
+  cert: fs.readFileSync(config.cert),
+}
 
 var userlist = []
 var TCPControlServer
@@ -241,6 +259,11 @@ apps['!gfhdgh'] = []
 apps['!gfhdgh'].time = 0
 apps['!gfhdgh'].name = 'Hanging out on the Holodeck'
 apps['!gfhdgh'].streams = []
+
+// setting root ca certificate for self signed server certificates
+if (typeof config.ca !== 'undefined') {
+  httpsOptions.ca = fs.readFileSync(config.ca)
+}
 
 //* ****************  Utility functions */
 /**
@@ -1734,13 +1757,15 @@ functions.disconnect = new Object({
           // check if streamid is in correct room and of correct type
           for (streamid in allstreams) {
             if ((typeof source[allstreams[streamid]] != 'undefined')
-                        && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
-                        && (workspaces.includes(source[allstreams[streamid]].room) || workspaces.length == 0)) {
+                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(source[allstreams[streamid]].room)
+                || workspaces.length == 0)) {
               streamids = streamids.concat([allstreams[streamid]])
             }
             if ((typeof target[allstreams[streamid]] != 'undefined')
-                                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
-                                && (workspaces.includes(target[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(target[allstreams[streamid]].room)
+                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
           }
         }
 
@@ -1751,11 +1776,13 @@ functions.disconnect = new Object({
             if (debug) console.log('disconnect streamid', allstreams[streamid])
             // check if streamid is in correct room and of correct type
             if ((typeof source[allstreams[streamid]] != 'undefined')
-                                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
-                                && (workspaces.includes(source[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                && (types.includes(source[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(source[allstreams[streamid]].room)
+                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
             if ((typeof target[allstreams[streamid]] != 'undefined')
-                                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
-                                && (workspaces.includes(target[allstreams[streamid]].room) || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
+                && (types.includes(target[allstreams[streamid]].type) || types.length == 0)
+                && (workspaces.includes(target[allstreams[streamid]].room)
+                || workspaces.length == 0)) streamids = streamids.concat([allstreams[streamid]])
           }
         }
       } else {
@@ -1983,7 +2010,10 @@ serverfunctions.update = new Object({
     // get targets that requested an alert and send update
     // var t = [];
     for (u in target) {
-      if (target[u].alert && (target[u].room == room) && ((target[u].type.length == 0) || (target[u].type.includes(source[streamid].type)))) {
+      if (target[u].alert
+          && (target[u].room == room)
+          && ((target[u].type.length == 0)
+          || (target[u].type.includes(source[streamid].type)))) {
         response.receiverid = u
         update = JSON.stringify(response)
         for (token in tokens) {
@@ -2161,7 +2191,9 @@ serverfunctions.stale = new Object({
     // get subscribed targets and send update (only if receiver wants updates)
     // var t = [];
     for (u in target) {
-      if (target[u].alert && (target[u].room == room) && ((target[u].type.length == 0) || (target[u].type.includes(source[streamid].type)))) {
+      if (target[u].alert && (target[u].room == room)
+          && ((target[u].type.length == 0)
+          || (target[u].type.includes(source[streamid].type)))) {
         for (token in tokens) {
           if (tokens[token].streams.includes(u)) {
             if (((users[tokens[token].user].username != response.user)
@@ -2323,7 +2355,14 @@ function handleControlConnection(conn) {
 // WS control setup
 console.log(`trying to bind WS control port ${WSControl}`)
 
-wsControlServer = new Ws({ port: WSControl })
+const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
+  console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
+  res.writeHead(200)
+  res.end(`Corelink Server ${serverVersion}`)
+})
+httpsControlServer.listen(WSControl)
+
+wsControlServer = new Ws({ server: httpsControlServer })
 
 wsControlServer.on('connection', (conn, req) => {
 // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
@@ -2339,7 +2378,7 @@ wsControlServer.on('connection', (conn, req) => {
   // at this point we have a new connection that is not yet authenticated
   console.log('new client WS control connection from %s:%s', remoteAddress, remotePort)
 
-  conn.on('message', (data) => {
+  conn.on('message', async (data) => {
     console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
     try {
       message = JSON.parse(data)
@@ -2348,9 +2387,15 @@ wsControlServer.on('connection', (conn, req) => {
       return
     }
     if ('function' in message) {
-      if (message.function == 'auth') send = JSON.stringify(functions[message.function].process(message, remoteAddress, conn))
-      else send = JSON.stringify(functions[message.function].process(message))
+<<<<<<< server/corelink.js
+      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
+      else send = JSON.stringify(await functions[message.function].process(message))
       console.log(`sending:${send}`)
+=======
+      if (message.function == 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
+      else send = JSON.stringify(await functions[message.function].process(message))
+      console.log('sending:' + send)
+>>>>>>> server/corelink.js
       conn.send(send)
     } else console.log('Key function not given')
   })
@@ -2668,7 +2713,7 @@ function relayData(msg, remoteAddress, remotePort) {
       } else console.log(`StreamID (${header.id}) not authorized to send`)
     }
   }
-  return console.log('relaydata end')
+  return 'relaydata end'
 }
 
 // process.on('SIGINT', process.exit());

@@ -4,7 +4,7 @@ exports.up = (knex) => knex.schema.createTable('groups', (table) => {
   table.foreign('owner_id').references('id').inTable('users')
     .onUpdate('CASCADE')
     .onDelete('RESTRICT')
-  table.string('group_name').notNullable()
+  table.string('groupname').notNullable()
   table.timestamp('created_at').default(knex.fn.now())
   table.timestamp('updated_at').default(knex.fn.now())
 })
