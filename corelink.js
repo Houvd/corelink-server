@@ -1,10 +1,8 @@
-/* eslint-disable linebreak-style */
 /* eslint no-console: ["error", { allow: ["log", "warn", "error"] }] */
 /* eslint-disable global-require */
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-/* eslint-disable func-names */
 
 /* eslint-disable block-scoped-var */
 /* eslint-disable no-undef */
@@ -457,15 +455,31 @@ functions.auth = new Object({
       // saving function in case of rollback
       // for (var key in users) if ((users[key]['username'] === message['username'])
       //  && (users[key]['password'] === message['password'])) authenticated = key
-      const user = await knex
-        .from('users')
-        .first('id', 'password', 'salt')
+      const user = await knex('users')
+        .first('id', 'password', 'salt', 'token', 'time')
         .where('username', message.username)
+        .catch((error) => {
+          throw error
+        })
 
-      if (sha512(message.password, user.salt).passwordHash === user.password) {
-        response.token = crypto.createHash('sha256')
-          .update(message.username + message.passwod + (new Date().getTime()))
-          .digest('hex')
+      if ((typeof user !== 'undefined') && (sha512(message.password, user.salt).passwordHash === user.password)) {
+        if (user.time + sessionTimeout < Date.now()) {
+          response.token = crypto.createHash('sha256')
+            .update(message.username + message.passwod + (new Date().getTime()))
+            .digest('hex')
+        } else response.token = user.token
+
+        await knex('users')
+          .where({ id: user.id })
+          .update({
+            token: response.token,
+            time: Date.now(),
+            ip,
+            updated_at: knex.fn.now(),
+          })
+          .catch((error) => {
+            throw error
+          })
         response.ip = ip
         tokens[response.token] = []
         tokens[response.token].time = Date.now() // timeout data
@@ -474,15 +488,30 @@ functions.auth = new Object({
         tokens[response.token].conn = conn
         return (response)
       }
-      console.log('error message type', typeof getErrorMessage(8))
       return (getErrorMessage(4))
     }
     if ('token' in message) {
-      if (typeof apps[message.token] !== 'undefined') {
+      const app = await knex('apps')
+        .first('id')
+        .where('token', message.token)
+        .catch((error) => {
+          throw error
+        })
+      if ((typeof app !== 'undefined')) {
+        await knex('apps')
+          .where({ id: app.id })
+          .update({
+            time: Date.now(),
+            ip,
+            updated_at: knex.fn.now(),
+          })
+          .catch((error) => {
+            throw error
+          })
         response.token = message.token
         response.ip = ip
-        apps[response.token].time = Date.now() // timeout data
-        apps[response.token].conn = conn
+        apps[message.token].time = Date.now() // timeout data
+        apps[message.token].conn = conn
       } else return (getErrorMessage(8))
     } else {
       response = getErrorMessage(3)
