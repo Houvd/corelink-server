@@ -1,3 +1,6 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable guard-for-in */
+/* eslint-disable no-restricted-syntax */
 // V1.0.0.0
 
 // set the token to the value that matches the access token in the Corelink
@@ -15,11 +18,15 @@ const senderType = 'skeleton'
 
 const run = async () => {
   if (await control.connect({ token }, config).catch((err) => { console.log(err) })) {
+    let received
     // cleaning all previous streams from this app
     await control.disconnect()
 
-    received = await control.createReceiver(workspace, protocol, [], receiverType, true).catch((err) => { console.log(err) })
-    for (const stream in received) { patched[received[stream].streamid] = await control.createSender(workspace, protocol, senderType, '', received[stream].streamid) }
+    received = await control.createReceiver(workspace, protocol, [], receiverType, true)
+      .catch((err) => { console.log(err) })
+    for (const stream in received) {
+      patched[received[stream].streamid] = await control.createSender(workspace, protocol, senderType, '', received[stream].streamid)
+    }
 
     control.on('close', () => {
       console.log('Control connection closed.')
@@ -36,7 +43,8 @@ const run = async () => {
 
     control.on('data', (streamid, data, timestamp) => {
       console.log(`received: d${data.length}, stream ${streamid}, t${timestamp}`)
-      // here is the actual work that the app is doing... in this case it adds two exclemation marks to the payload
+      // here is the actual work that the app is doing...
+      // in this case it adds two exclemation marks to the payload
       control.send(patched[streamid], Buffer.from(`!!${data.toString()}`))
     })
   }
