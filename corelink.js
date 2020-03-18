@@ -89,6 +89,7 @@ let debug
 let errorList = [] // holds all error messages
 const functions = [] // holds all objects for functions in use
 // all receiver connections via TCP or WS
+
 const connections = []
 // connections[ip][port]['conn'] = handle for the connection
 // connections[ip][port]['time'] = creation time for stream, used for timeout
@@ -135,6 +136,7 @@ const streamrelay = [] // holds all information to relay
 streamrelay[ids] = [] // source stream id
 streamrelay[ids][idt] = conn // connection to send data to
 */
+
 // Allowed packet size
 const MTU = 20000 // overall size incl. header is not allowed to be larger than this number
 //             in the future server could drop packets that are not complying with this
@@ -145,12 +147,18 @@ let serverfunctions = []
 port.udp = 20011
 port.tcp = 20011
 port.ws = 20013
+
+// **** ToDo: Remove legacy code once setup was completely changed to database
 rooms.Holodeck = []
 rooms.Holodeck.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
 rooms.Holodeck.owner = '1'
 rooms.Chalktalk = []
 rooms.Chalktalk.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
 rooms.Chalktalk.owner = '13'
+
+// initial way to persist changes is loading them from the database
+// **** ToDo: Remove legacy code once setup was completely changed to database
+
 
 // Should there also be groups to manage users better?
 // Should there be a web interface to manage users?
@@ -362,6 +370,7 @@ errorList[5] = 'Workspace does already exist.'
 errorList[6] = 'Workspace does not exist.'
 errorList[7] = 'Wrong StreamID.'
 errorList[8] = 'Invalid app token, access denied.'
+errorList[9] = 'Database error'
 
 function getErrorMessage(code) {
   const response = {}
@@ -596,7 +605,7 @@ functions.describefunction = new Object({
       functionname: {
         description: 'function to get info about',
         type: 'string',
-        sample: 'functionlist',
+        sample: 'listfunctions',
       },
       token: {
         description: 'token for the user to authenticate',
@@ -686,7 +695,16 @@ functions.listworkspaces = new Object({
     const response = {}
     // **** ToDo: list only workspaces that user has access to.
     if (typeof data !== 'object') {
-      response.workspacelist = Object.keys(rooms)
+      const rooms = await knex('rooms')
+        .select('roomname')
+        .catch((error) => {
+          throw error
+        })
+      const result = []
+      for (const room in rooms) {
+        result.push(rooms[room].roomname)
+      }
+      response.workspacelist = result
       response.statuscode = 0
       return (response)
     }
@@ -737,12 +755,26 @@ functions.addworkspace = new Object({
         throw error
       })
     const response = {}
-    if (typeof data !== 'object') {
+    if (typeof data === 'number') {
       if ('workspace' in message) {
+        // **** ToDo: remove legacy storage
         if (typeof rooms[message.workspace] === 'undefined') {
           rooms[message.workspace] = []
           rooms[message.workspace].owner = data
           rooms[message.workspace].users = [data]
+        }
+        // **** ToDo: need to sanitize room name befor inserting to database
+        const room = await knex('rooms')
+          .first('id')
+          .where('roomname', message.workspace)
+          .catch((error) => {
+            throw error
+          })
+        if (typeof room === 'undefined') {
+          await knex('rooms').insert({ owner_id: data, roomname: message.workspace })
+            .catch((error) => {
+              throw error
+            })
           response.statuscode = 0
           return (response)
         }
@@ -799,7 +831,15 @@ functions.rmworkspace = new Object({
     const response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
+        const room = await knex('rooms')
+          .where('roomname', message.workspace)
+          .del()
+          .catch((error) => {
+            throw error
+          })
+        console.log(room)
         if (typeof rooms[message.workspace] !== 'undefined') {
+
           // **** ToDo: make sure that all existing connections to this workspace will be terminated
           delete rooms[message.workspace]
 
