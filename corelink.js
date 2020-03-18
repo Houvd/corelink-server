@@ -370,15 +370,28 @@ function getErrorMessage(code) {
   return (response)
 }
 
-function checkAuth(message) {
-  let authenticated
+async function checkAuth(message) {
   console.log('token: ', message.token)
   if ('token' in message) {
-    authenticated = 0
-    if (typeof tokens[message.token] !== 'undefined') if ((Date.now() - controlTimeout) < tokens[message.token].time) authenticated = tokens[message.token].user
-    if (typeof apps[message.token] !== 'undefined') authenticated = message.token
-    if (authenticated === 0) return getErrorMessage(4)
-    return (authenticated)
+    // check if token is valid for a user
+    const user = await knex('users')
+      .first('id', 'time')
+      .where('token', message.token)
+      .catch((error) => {
+        throw error
+      })
+    if ((typeof user !== 'undefined') && ((Date.now() - controlTimeout) < user.time)) return user.id
+
+    // check if token is valid for an app
+    const app = await knex('apps')
+      .first('id', 'time')
+      .where('token', message.token)
+      .catch((error) => {
+        throw error
+      })
+    if (typeof app !== 'undefined') return message.token
+
+    return getErrorMessage(4)
   }
   return getErrorMessage(3)
 }
@@ -552,7 +565,10 @@ functions.listfunctions = new Object({
   },
   async process(message) {
     const response = {}
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     response.statuscode = 0
     if (typeof data !== 'object') {
       response.functionlist = Object.keys(functions)
@@ -606,7 +622,10 @@ functions.describefunction = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     let response = {}
     if (typeof data !== 'object') {
       if ('functionname' in message) {
@@ -660,7 +679,10 @@ functions.listworkspaces = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     const response = {}
     // **** ToDo: list only workspaces that user has access to.
     if (typeof data !== 'object') {
@@ -710,7 +732,10 @@ functions.addworkspace = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     const response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
@@ -767,7 +792,10 @@ functions.rmworkspace = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     const response = {}
     if (typeof data !== 'object') {
       if ('workspace' in message) {
@@ -874,12 +902,14 @@ functions.sender = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     let i
     let streamid
     let token
     const response = {}
-    console.log('datatype', typeof data)
     if (typeof data !== 'object') {
       console.log('*** sender ***')
       if (('workspace' in message) && ('proto' in message) && ('type' in message) && ((message.proto === 'udp') || (message.proto === 'tcp') || (message.proto === 'ws'))) {
@@ -1001,7 +1031,10 @@ functions.liststream = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     const response = {}
     let workspace
     const streamlistelement = {}
@@ -1103,7 +1136,10 @@ functions.streaminfo = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     let streamid
     let response
     let token
@@ -1300,7 +1336,10 @@ functions.receiver = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     let sourceid
     let stream
     let streamlistelement = {}
@@ -1505,7 +1544,10 @@ functions.subscribe = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     let sourceid
     let s
     let t
@@ -1626,7 +1668,10 @@ functions.unsubscribe = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     let s
     let t
     let streamlistelement = {}
@@ -1738,7 +1783,10 @@ functions.disconnect = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
     let streamids = []
     let allstreams = []
     let types = []
@@ -1897,7 +1945,10 @@ functions.expire = new Object({
     },
   },
   async process(message) {
-    const data = checkAuth(message)
+    const data = await checkAuth(message)
+      .catch((error) => {
+        throw error
+      })
 
     if (typeof data !== 'object') {
       console.log('*** expire not implemented ***')
