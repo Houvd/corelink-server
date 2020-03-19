@@ -50,6 +50,7 @@ node corelink.js
 
 # Upgrade instructions for the Corelink Server
 
+
 ### Pull latest version
 ```bash
 cd networktest
@@ -59,15 +60,26 @@ git pull
 ### Update database to latest table version 
 ```bash
 cd server/config
-node ../../node_modules/knex/bin/cli.js migrate:up
+node ../../node_modules/knex/bin/cli.js migrate:latest
 ```
+
 # Upgrade instructions for the Corelink Server DURING DEVELOPMENT
+simply run from within networktest
+> `Warning: All existing data inside the database will be deleted.`
+```bash
+npm run devinstall
+```
+
+you can also use separate commands to do the migrations:
 run the rollback until you are at the beginning of the migrations
+> `Warning: All existing data inside the database will be deleted.`
 ```bash
 cd server/config
 node ../../node_modules/knex/bin/cli.js migrate:rollback
 ```
+
 then migrate and seed
+> `Warning: All existing data inside the database will be deleted.`
 ```bash
 cd server/config
 node ../../node_modules/knex/bin/cli.js migrate:latest
