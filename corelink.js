@@ -1,13 +1,8 @@
-// /* eslint-disable guard-for-in */
-
 /* eslint-disable no-restricted-syntax */
-
-
 /* eslint-disable no-lonely-if */
-
-/* eslint-disable no-new-object */
-/* eslint-disable no-shadow */
-/* eslint-disable no-param-reassign */
+// need help with 1 set if 
+/* eslint-disable no-new-object */ // this is very difficult 
+/* eslint-disable no-param-reassign */ // not able to rectify 
 
 
 /**
@@ -716,14 +711,14 @@ functions.listworkspaces = new Object({
     const response = {}
     // **** ToDo: list only workspaces that user has access to.
     if (typeof data !== 'object') {
-      const rooms = await knex('rooms')
+      const room = await knex('rooms')
         .select('roomname')
         .catch((error) => {
           throw error
         })
       const result = []
-      for (const room in rooms) {
-        if (room) result.push(rooms[room].roomname)
+      for (const rm in room) {
+        if (rm) result.push(room[rm].roomname)
       }
       response.workspacelist = result
       response.statuscode = 0
@@ -1270,16 +1265,15 @@ functions.streaminfo = new Object({
 
 function findApps(streamid) {
   let user = ''
-  let apps
+  let app = []
   let userApps
   let token
   if (debug) console.log('findApps', streamid)
   user = ''
-  apps = []
   if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
     userApps = findApps(source[streamid].from)
     if (userApps.user !== '') user = userApps.user
-    if (userApps.apps.length > 0) apps = userApps.apps
+    if (userApps.apps.length > 0) app = userApps.apps
   } else {
     for (token in tokens) {
       if (tokens[token].streams.includes(streamid)) {
@@ -1288,13 +1282,13 @@ function findApps(streamid) {
       }
     }
   }
-  for (token in apps) {
-    if (apps[token].streams.includes(streamid)) {
-      apps.push(apps[token].name)
+  for (token in app) {
+    if (app[token].streams.includes(streamid)) {
+      app.push(app[token].name)
       break
     }
   }
-  return { user, apps }
+  return { user, app }
 }
 
 functions.receiver = new Object({
@@ -2645,41 +2639,35 @@ function relayData(msg, remoteAddress, remotePort) {
             } else if (target[targetid].proto === 'tcp') {
               if (typeof target[targetid].conn === 'undefined') console.log('!!!! tcp connection not defined, dropping packet')
               else target[targetid].conn.write(msg)
-            } else {
-              if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
-              else target[targetid].conn.send(msg)
+            } else if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
+            else target[targetid].conn.send(msg)
+          } else if (typeof target[targetid] === 'undefined') console.log(`${targetid} is not registered at all`)
+          else {
+            types = ''
+            for (type in target.targetid) {
+              if (types === '') types = type
+              else types = `${types}, ${type}`
             }
-          } else {
-            if (typeof target[targetid] === 'undefined') console.log(`${targetid} is not registered at all`)
-            else {
-              types = ''
-              for (type in target.targetid) {
-                if (types === '') types = type
-                else types = `${types}, ${type}`
-              }
-              console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
-            }
+            console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
           }
         } else console.log(`no ip for stream ${header.id}`)
       }
-    } else {
-      if (header.id in target) {
-        if (debug) console.log(target[header.id].ip)
-        console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
-        if (remoteAddress === target[header.id].ip) {
-          if (target[header.id].port === 0) {
-            console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
-            target[header.id].port = remotePort
-            if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
-              console.log(header.id, 'adding the connection')
-              target[header.id].conn = connections[remoteAddress][remotePort].conn
-              delete connections[remoteAddress][remotePort]
-              if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
-            }
+    } else if (header.id in target) {
+      if (debug) console.log(target[header.id].ip)
+      console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
+      if (remoteAddress === target[header.id].ip) {
+        if (target[header.id].port === 0) {
+          console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
+          target[header.id].port = remotePort
+          if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
+            console.log(header.id, 'adding the connection')
+            target[header.id].conn = connections[remoteAddress][remotePort].conn
+            delete connections[remoteAddress][remotePort]
+            if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
           }
         }
-      } else console.log(`StreamID (${header.id}) not authorized to send`)
-    }
+      }
+    } else console.log(`StreamID (${header.id}) not authorized to send`)
   }
   return 'relaydata end'
 }
@@ -2832,7 +2820,7 @@ WSDataServer.on('listening', () => {
 
 function timeoutConnections() {
   let ip
-  let port
+  let prt
   let token
   let id
   let sid
@@ -2840,11 +2828,11 @@ function timeoutConnections() {
   const currentTime = Date.now()
   for (ip in connections) {
     if (ip) {
-      for (port in connections[ip]) {
+      for (prt in connections[ip]) {
       // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
       //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
-        if (connections[ip][port].time + connectTimeout < currentTime) {
-          delete connections[ip][port]
+        if (connections[ip][prt].time + connectTimeout < currentTime) {
+          delete connections[ip][prt]
           if (connections[ip].length === 0) delete connections[ip]
         }
       }
