@@ -1462,11 +1462,11 @@ functions.receiver = new Object({
 
             // receive streams of the same user if echo is enabled
             if (((typeof tokens[message.token] !== 'undefined')
-                            && (users[tokens[message.token].user].username !== streamlistelement.user)
-                            && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))
-                            || (('echo' in message) && (message.echo === true))
-                            || ((typeof apps[message.token] !== 'undefined')
-                            && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))) {
+                && (users[tokens[message.token].user].username !== streamlistelement.user)
+                && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))
+                || (('echo' in message) && (message.echo === true))
+                || ((typeof apps[message.token] !== 'undefined')
+                && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))) {
               message.streamlist.push(streamlistelement)
             } else console.log(`skipping stream from same user ${message.streamid[stream]}`)
           }
@@ -1497,14 +1497,14 @@ functions.receiver = new Object({
         }
 
         if ((typeof target[streamid] === 'undefined')
-                    || ((target[streamid].proto === 'ws')
-                        && ((typeof target[streamid].conn === 'undefined')
-                        || (typeof target[streamid].conn.readyState === 'undefined')
-                        || (target[streamid].conn.readyState !== 1)))
+                      || ((target[streamid].proto === 'ws')
+                    && ((typeof target[streamid].conn === 'undefined')
+                      || (typeof target[streamid].conn.readyState === 'undefined')
+                      || (target[streamid].conn.readyState !== 1)))
                     || ((target[streamid].proto === 'udp')
-                     && (target[streamid].port === 0))
+                      && (target[streamid].port === 0))
                     || ((target[streamid].proto === 'tcp')
-                     && (target[streamid].port === 0))) {
+                      && (target[streamid].port === 0))) {
           // put data into the target stream array & overwrite if existing
           target[streamid] = []
           target[streamid].ip = message.ip
