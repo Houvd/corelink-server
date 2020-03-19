@@ -1460,11 +1460,11 @@ functions.receiver = new Object({
 
             // receive streams of the same user if echo is enabled
             if (((typeof tokens[message.token] !== 'undefined')
-                            && (users[tokens[message.token].user].username !== streamlistelement.user)
-                            && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))
-                            || (('echo' in message) && (message.echo === true))
-                            || ((typeof apps[message.token] !== 'undefined')
-                            && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))) {
+                          && (users[tokens[message.token].user].username !== streamlistelement.user)
+                          && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))
+                          || (('echo' in message) && (message.echo === true))
+                          || ((typeof apps[message.token] !== 'undefined')
+                          && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))) {
               message.streamlist.push(streamlistelement)
             } else console.log(`skipping stream from same user ${message.streamid[stream]}`)
           }
@@ -1937,16 +1937,18 @@ functions.disconnect = new Object({
         if (typeof apps[message.token] !== 'undefined') {
           allstreams = apps[message.token].streams
           for (streamid in allstreams) {
-            if (debug) console.log('disconnect streamid', allstreams[streamid])
-            // check if streamid is in correct room and of correct type
-            if ((typeof source[allstreams[streamid]] !== 'undefined')
-                && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
-                && (workspaces.includes(source[allstreams[streamid]].room)
-                || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
-            if ((typeof target[allstreams[streamid]] !== 'undefined')
-                && (types.includes(target[allstreams[streamid]].type) || types.length === 0)
-                && (workspaces.includes(target[allstreams[streamid]].room)
-                || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
+            if (streamid) {
+              if (debug) console.log('disconnect streamid', allstreams[streamid])
+              // check if streamid is in correct room and of correct type
+              if ((typeof source[allstreams[streamid]] !== 'undefined')
+                  && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
+                  && (workspaces.includes(source[allstreams[streamid]].room)
+                  || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
+              if ((typeof target[allstreams[streamid]] !== 'undefined')
+                  && (types.includes(target[allstreams[streamid]].type) || types.length === 0)
+                  && (workspaces.includes(target[allstreams[streamid]].room)
+                  || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
+            }
           }
         }
       } else {
@@ -1956,59 +1958,61 @@ functions.disconnect = new Object({
       response = {}
       response.statuscode = 0
       for (streamkey in streamids) {
-        streamid = streamids[streamkey]
-        console.log('deleting', streamid)
-        if ((typeof source[streamid] !== 'undefined') || (typeof target[streamid] !== 'undefined')) {
-          console.log(`Cleaning up stream ${streamid}`)
-          // *** ToDo: in addition we need to make sure that the actual connection is disconnected
-          if ((typeof source[streamid] !== 'undefined')
-                            && (typeof source[streamid].ip !== 'undefined')
-                            && (typeof source[streamid].port !== 'undefined')) {
-            if ((typeof connections[source[streamid].ip] !== 'undefined')
-                            && (typeof connections[source[streamid].ip][source[streamid].port] !== 'undefined')
-                            && (typeof connections[source[streamid].ip][source[streamid].port].conn !== 'undefined')) {
-              delete connections[source[streamid].ip][source[streamid].port].conn
-              delete connections[source[streamid].ip][source[streamid].port].time
-              delete connections[source[streamid].ip][source[streamid].port]
-              if (connections[source[streamid].ip].length === 0) {
-                delete connections[source[streamid].ip]
+        if (streamkey) {
+          streamid = streamids[streamkey]
+          console.log('deleting', streamid)
+          if ((typeof source[streamid] !== 'undefined') || (typeof target[streamid] !== 'undefined')) {
+            console.log(`Cleaning up stream ${streamid}`)
+            // *** ToDo: in addition we need to make sure that the actual connection is disconnected
+            if ((typeof source[streamid] !== 'undefined')
+                              && (typeof source[streamid].ip !== 'undefined')
+                              && (typeof source[streamid].port !== 'undefined')) {
+              if ((typeof connections[source[streamid].ip] !== 'undefined')
+                              && (typeof connections[source[streamid].ip][source[streamid].port] !== 'undefined')
+                              && (typeof connections[source[streamid].ip][source[streamid].port].conn !== 'undefined')) {
+                delete connections[source[streamid].ip][source[streamid].port].conn
+                delete connections[source[streamid].ip][source[streamid].port].time
+                delete connections[source[streamid].ip][source[streamid].port]
+                if (connections[source[streamid].ip].length === 0) {
+                  delete connections[source[streamid].ip]
+                }
+              }
+              // *** ToDo: disconnect all receivers as well
+              // announce to receivers that the stream is stale
+              serverfunctions.stale.process(streamid)
+
+              delete streamrelay[streamid]
+              delete source[streamid]
+              // *** ToDo: also delete all receivers that have only this source?
+            }
+
+            // remove stream if it is a target for the stream relay
+            if (typeof target[streamid] !== 'undefined') {
+              for (stream in streamrelay) {
+                if (streamid in streamrelay[stream]) {
+                // send dropped message to senders
+                  serverfunctions.dropped.process(stream, streamid)
+                  delete streamrelay[stream][streamid]
+                }
+              }
+              delete target[streamid]
+            }
+
+            // remove streams from user session list
+            for (token in tokens) {
+              if (tokens[token].streams.indexOf(streamid) !== -1) {
+                tokens[token].streams.splice(tokens[token].streams.indexOf(streamid), 1)
               }
             }
-            // *** ToDo: disconnect all receivers as well
-            // announce to receivers that the stream is stale
-            serverfunctions.stale.process(streamid)
-
-            delete streamrelay[streamid]
-            delete source[streamid]
-            // *** ToDo: also delete all receivers that have only this source?
-          }
-
-          // remove stream if it is a target for the stream relay
-          if (typeof target[streamid] !== 'undefined') {
-            for (stream in streamrelay) {
-              if (streamid in streamrelay[stream]) {
-              // send dropped message to senders
-                serverfunctions.dropped.process(stream, streamid)
-                delete streamrelay[stream][streamid]
+            // remove streams from apps session list
+            for (token in apps) {
+              if (apps[token].streams.indexOf(streamid) !== -1) {
+                apps[token].streams.splice(apps[token].streams.indexOf(streamid), 1)
               }
             }
-            delete target[streamid]
-          }
-
-          // remove streams from user session list
-          for (token in tokens) {
-            if (tokens[token].streams.indexOf(streamid) !== -1) {
-              tokens[token].streams.splice(tokens[token].streams.indexOf(streamid), 1)
-            }
-          }
-          // remove streams from apps session list
-          for (token in apps) {
-            if (apps[token].streams.indexOf(streamid) !== -1) {
-              apps[token].streams.splice(apps[token].streams.indexOf(streamid), 1)
-            }
-          }
-          listStreams()
-        } else return getErrorMessage(3)
+            listStreams()
+          } else return getErrorMessage(3)
+        }
       }
       return (response)
     }
@@ -2266,25 +2270,29 @@ serverfunctions.subscriber = new Object({
 
     // get user or app name
     for (token in tokens) {
-      if (tokens[token].streams.includes(senderid)) {
-        usertoken = token
-        if (typeof response.user !== 'undefined') break
-      }
-      if (tokens[token].streams.includes(receiverid)) {
-        response.user = users[tokens[token].user].username
-        if (typeof usertoken !== 'undefined') break
+      if (token) {
+        if (tokens[token].streams.includes(senderid)) {
+          usertoken = token
+          if (typeof response.user !== 'undefined') break
+        }
+        if (tokens[token].streams.includes(receiverid)) {
+          response.user = users[tokens[token].user].username
+          if (typeof usertoken !== 'undefined') break
+        }
       }
     }
 
 
     for (token in apps) {
-      if (apps[token].streams.includes(senderid)) {
-        apptoken = token
-        if (typeof response.app !== 'undefined') break
-      }
-      if (apps[token].streams.includes(receiverid)) {
-        response.app = apps[token].name
-        if (typeof apptoken !== 'undefined') break
+      if (token) {
+        if (apps[token].streams.includes(senderid)) {
+          apptoken = token
+          if (typeof response.app !== 'undefined') break
+        }
+        if (apps[token].streams.includes(receiverid)) {
+          response.app = apps[token].name
+          if (typeof apptoken !== 'undefined') break
+        }
       }
     }
 
@@ -2831,12 +2839,14 @@ function timeoutConnections() {
   let tid
   const currentTime = Date.now()
   for (ip in connections) {
-    for (port in connections[ip]) {
-    // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
-    //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
-      if (connections[ip][port].time + connectTimeout < currentTime) {
-        delete connections[ip][port]
-        if (connections[ip].length === 0) delete connections[ip]
+    if (ip) {
+      for (port in connections[ip]) {
+      // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
+      //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
+        if (connections[ip][port].time + connectTimeout < currentTime) {
+          delete connections[ip][port]
+          if (connections[ip].length === 0) delete connections[ip]
+        }
       }
     }
   }
@@ -2865,8 +2875,10 @@ function timeoutConnections() {
     //   +streamTimeout - currentTime);
     if (target[id].time + streamTimeout < currentTime) {
       for (sid in streamrelay) {
-        for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
-        if (streamrelay[sid].length === 0) delete streamrelay[sid]
+        if (sid) {
+          for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
+          if (streamrelay[sid].length === 0) delete streamrelay[sid]
+        }
       }
       delete target[id]
     }
