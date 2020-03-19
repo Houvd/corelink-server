@@ -1918,16 +1918,18 @@ functions.disconnect = new Object({
           }
           // check if streamid is in correct room and of correct type
           for (streamid in allstreams) {
-            if ((typeof source[allstreams[streamid]] !== 'undefined')
-                && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
-                && (workspaces.includes(source[allstreams[streamid]].room)
-                || workspaces.length === 0)) {
-              streamids = streamids.concat([allstreams[streamid]])
+            if (streamid) {
+              if ((typeof source[allstreams[streamid]] !== 'undefined')
+                  && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
+                  && (workspaces.includes(source[allstreams[streamid]].room)
+                  || workspaces.length === 0)) {
+                streamids = streamids.concat([allstreams[streamid]])
+              }
+              if ((typeof target[allstreams[streamid]] !== 'undefined')
+                  && (types.includes(target[allstreams[streamid]].type) || types.length === 0)
+                  && (workspaces.includes(target[allstreams[streamid]].room)
+                  || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
             }
-            if ((typeof target[allstreams[streamid]] !== 'undefined')
-                && (types.includes(target[allstreams[streamid]].type) || types.length === 0)
-                && (workspaces.includes(target[allstreams[streamid]].room)
-                || workspaces.length === 0)) streamids = streamids.concat([allstreams[streamid]])
           }
         }
 
