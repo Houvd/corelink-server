@@ -1489,14 +1489,14 @@ functions.receiver = new Object({
         }
 
         if ((typeof target[streamid] === 'undefined')
-                    || ((target[streamid].proto === 'ws')
-                        && ((typeof target[streamid].conn === 'undefined')
-                        || (typeof target[streamid].conn.readyState === 'undefined')
-                        || (target[streamid].conn.readyState !== 1)))
+                      || ((target[streamid].proto === 'ws')
+                    && ((typeof target[streamid].conn === 'undefined')
+                      || (typeof target[streamid].conn.readyState === 'undefined')
+                      || (target[streamid].conn.readyState !== 1)))
                     || ((target[streamid].proto === 'udp')
-                     && (target[streamid].port === 0))
+                      && (target[streamid].port === 0))
                     || ((target[streamid].proto === 'tcp')
-                     && (target[streamid].port === 0))) {
+                      && (target[streamid].port === 0))) {
           // put data into the target stream array & overwrite if existing
           target[streamid] = []
           target[streamid].ip = message.ip
