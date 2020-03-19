@@ -61,3 +61,17 @@ git pull
 cd server/config
 node ../../node_modules/knex/bin/cli.js migrate:up
 ```
+# Upgrade instructions for the Corelink Server DURING DEVELOPMENT
+run the rollback until you are at the beginning of the migrations
+```bash
+cd server/config
+node ../../node_modules/knex/bin/cli.js migrate:rollback
+```
+then migrate and seed
+```bash
+cd server/config
+node ../../node_modules/knex/bin/cli.js migrate:latest
+node ../../node_modules/knex/bin/cli.js seed:run
+```
+
+

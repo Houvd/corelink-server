@@ -15,6 +15,7 @@ exports.up = (knex) => knex.schema.createTable('users', (table) => {
   table.boolean('admin').notNullable().default(false)
   table.string('token')
   table.bigInteger('time').unsigned()
+  table.string('ip', 15)
   table.timestamp('created_at').notNullable().default(knex.fn.now())
   table.timestamp('updated_at').notNullable().default(knex.fn.now())
 })

@@ -10,7 +10,7 @@ exports.up = (knex) => knex.schema.createTable('apps', (table) => {
   table.string('token').notNullable()
   table.unique('token')
   table.bigInteger('time').unsigned()
-  table.string('ip')
+  table.string('ip', 15)
   table.timestamp('created_at').notNullable().default(knex.fn.now())
   table.timestamp('updated_at').notNullable().default(knex.fn.now())
 })
