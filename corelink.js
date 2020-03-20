@@ -2700,7 +2700,7 @@ async function run() {
           console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
           if (remoteAddress === target[header.id].ip) {
             console.log(target[header.id])
-            if (target[header.id].port === '0') {
+            if (target[header.id].port === 0) {
               console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
               target[header.id].port = remotePort
               if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
@@ -2710,7 +2710,7 @@ async function run() {
                 if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
               }
             }
-            console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
+            console.log(`no port for stream ${header.id} [${types}], IP:${target[header.id].ip}, Timeout:${target[header.id].time}`)
           }
         } else console.log(`StreamID (${header.id}) not authorized to send`)
       }
