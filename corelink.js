@@ -1,16 +1,10 @@
 /* eslint-disable guard-for-in */
-
 /* eslint-disable no-restricted-syntax */
-
-
 /* eslint-disable no-lonely-if */
+// need help with 1 set if
+/* eslint-disable no-new-object */ // this is very difficult
+/* eslint-disable no-param-reassign */ // not able to rectify
 
-/* eslint-disable no-new-object */
-/* eslint-disable no-shadow */
-/* eslint-disable no-param-reassign */
-
-// I was not able to push, so i added these again:
-// /* eslint-disable guard-for-in */
 
 /**
  * @file NodeJS Corelink core server
@@ -297,50 +291,50 @@ function saltHashPassword(userpassword) {
 //* **************** Server */
 async function run() {
   // pre-setting arrays with data while we convert the server to use only the database
-  let data = await knex('rooms')
+  let content = await knex('rooms')
     .select('roomname', 'rooms.owner_id', 'group_user.user_id')
     .leftJoin('group_room', 'room_id', '=', 'rooms.id')
     .leftJoin('group_user', 'group_room.group_id', '=', 'group_user.group_id')
     .catch((err) => console.log(err))
 
   const rooms = []
-  for (const key in data) {
+  for (const key in content) {
     if (key) {
-      if (typeof rooms[data[key].roomname] === 'undefined') {
-        rooms[data[key].roomname] = []
+      if (typeof rooms[content[key].roomname] === 'undefined') {
+        rooms[content[key].roomname] = []
       }
-      if (typeof rooms[data[key].roomname].users === 'undefined') {
-        rooms[data[key].roomname].users = []
+      if (typeof rooms[content[key].roomname].users === 'undefined') {
+        rooms[content[key].roomname].users = []
       }
-      if (data[key].user_id !== null) {
-        rooms[data[key].roomname].users.push(data[key].user_id.toString())
+      if (content[key].user_id !== null) {
+        rooms[content[key].roomname].users.push(content[key].user_id.toString())
       }
-      rooms[data[key].roomname].owner = data[key].owner_id.toString()
+      rooms[content[key].roomname].owner = content[key].owner_id.toString()
     }
   }
 
   const users = []
-  data = await knex('users')
+  content = await knex('users')
     .select('username')
     .orderBy('id')
     .catch((err) => console.log(err))
 
-  for (const key in data) {
-    const { username } = data[key]
+  for (const key in content) {
+    const { username } = content[key]
     users[key] = []
     users[key].username = username
   }
 
   const apps = []
-  data = await knex('apps')
+  content = await knex('apps')
     .select('appname', 'token', 'time')
     .orderBy('id')
     .catch((err) => console.log(err))
 
-  for (const key in data) {
-    const { appname } = data[key]
-    const { token } = data[key]
-    let { time } = data[key]
+  for (const key in content) {
+    const { appname } = content[key]
+    const { token } = content[key]
+    let { time } = content[key]
 
     if (time == null) time = 0
     apps[token] = []
@@ -776,14 +770,14 @@ async function run() {
       const response = {}
       // **** ToDo: list only workspaces that user has access to.
       if (typeof data !== 'object') {
-        const rooms = await knex('rooms')
+        const workspaces = await knex('rooms')
           .select('roomname')
           .catch((error) => {
             throw error
           })
         const result = []
-        for (const room in rooms) {
-          if (room) result.push(rooms[room].roomname)
+        for (const workspace in workspaces) {
+          if (workspace) result.push(workspaces[workspace].roomname)
         }
         response.workspacelist = result
         response.statuscode = 0
@@ -2704,7 +2698,8 @@ async function run() {
           if (debug) console.log(target[header.id].ip)
           console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
           if (remoteAddress === target[header.id].ip) {
-            if (target[header.id].port === 0) {
+            console.log(target[header.id])
+            if (target[header.id].port === '0') {
               console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
               target[header.id].port = remotePort
               if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
@@ -2714,6 +2709,7 @@ async function run() {
                 if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
               }
             }
+            console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
           }
         } else console.log(`StreamID (${header.id}) not authorized to send`)
       }
