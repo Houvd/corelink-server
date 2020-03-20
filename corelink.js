@@ -1328,6 +1328,7 @@ async function run() {
 
   function findApps(streamid) {
     let user = ''
+    // eslint-disable-next-line no-shadow
     let apps
     let userApps
     let token
@@ -2865,6 +2866,7 @@ async function run() {
 
   function timeoutConnections() {
     let ip
+    // eslint-disable-next-line no-shadow
     let port
     let token
     let id
