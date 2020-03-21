@@ -1,0 +1,15 @@
+exports.up = (knex) => knex.schema.createTable('tokens', (table) => {
+  table.increments()
+  table.integer('user_id').unsigned()
+  table.foreign('user_id').references('id').inTable('users')
+    .onUpdate('CASCADE')
+    .onDelete('CASCADE')
+  table.string('token')
+  table.bigInteger('time').unsigned()
+  table.string('ip', 15)
+  table.integer('port')
+  table.timestamp('created_at').notNullable().default(knex.fn.now())
+  table.timestamp('updated_at').notNullable().default(knex.fn.now())
+})
+
+exports.down = (knex) => knex.schema.dropTable('tokens')
