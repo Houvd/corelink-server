@@ -447,6 +447,7 @@ async function run() {
   errorList[7] = 'Wrong StreamID.'
   errorList[8] = 'Invalid app token, access denied.'
   errorList[9] = 'Database error'
+  errorList[10] = 'Cannot update default workspace.'
 
   function getErrorMessage(code) {
     const response = {}
@@ -569,6 +570,8 @@ async function run() {
             })
 
           response.ip = ip
+
+          // *** ToDo: remove legacy token array
           tokens[response.token] = []
           tokens[response.token].time = Date.now() // timeout data
           tokens[response.token].user = user.id // holds the user id for the token
@@ -599,6 +602,8 @@ async function run() {
             })
           response.token = message.token
           response.ip = ip
+
+          // *** ToDo: remove legacy apps array
           apps[message.token].time = Date.now() // timeout data
           apps[message.token].conn = conn
         } else return (getErrorMessage(8))
@@ -834,12 +839,14 @@ async function run() {
       const response = {}
       if (typeof data === 'number') {
         if ('workspace' in message) {
-          // *** ToDo: remove legacy storage
+
+          // *** ToDo: remove legacy rooms array
           if (typeof rooms[message.workspace] === 'undefined') {
             rooms[message.workspace] = []
             rooms[message.workspace].owner = data
             rooms[message.workspace].users = [data]
           }
+
           // *** ToDo: need to sanitize room name befor inserting to database
           const room = await knex('rooms')
             .first('id')
@@ -858,6 +865,141 @@ async function run() {
           return getErrorMessage(5)
         }
         return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.setdefaultworkspace = new Object({
+    info: {
+      name: 'setdefaultworkspace',
+      description: 'set a default workspace',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'setdefaultworkspace',
+        },
+        workspace: {
+          description: 'name of the workspace',
+          type: 'string',
+          sample: 'newworkspace',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data === 'number') {
+        if ('workspace' in message) {
+          // *** ToDo: make sure we cannot set default workspace that user has no access to */
+          const room = await knex('rooms')
+            .first('id')
+            .where('roomname', message.workspace)
+            .catch((error) => {
+              throw error
+              // *** ToDo: throw correct error message
+              // return getErrorMessage(10)
+            })
+          if (typeof room === 'undefined') {
+            return getErrorMessage(10)
+          }
+          await knex('users')
+            .where({ id: data })
+            .update({
+              room_id: room.id,
+            })
+            .catch((error) => {
+              throw error
+            })
+          response.statuscode = 0
+          return (response)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.getdefaultworkspace = new Object({
+    info: {
+      name: 'getdefaultworkspace',
+      description: 'get a default workspace',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'getdefaultworkspace',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        workspace: {
+          description: 'the default workspace or empty if no default workspace is set',
+          type: 'string',
+          sample: 'newworkspace',
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data === 'number') {
+        const room = await knex('users')
+          .select('roomname')
+          .where('users.id', '=', data)
+          .leftJoin('rooms', 'room_id', '=', 'rooms.id')
+          .catch((err) => console.log(err))
+
+        if (typeof room !== 'undefined') {
+          response.workspace = room[0].roomname
+        } else response.workspace = ''
+
+        response.statuscode = 0
+        return (response)
       }
       return (data)
     },
@@ -916,7 +1058,9 @@ async function run() {
             })
           console.log(room)
           if (typeof rooms[message.workspace] !== 'undefined') {
+
             // *** ToDo: make sure that existing connections to this workspace will be terminated
+            // *** ToDo: remove legacy rooms array
             delete rooms[message.workspace]
 
             response.statuscode = 0
