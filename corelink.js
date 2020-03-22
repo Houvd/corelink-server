@@ -466,7 +466,7 @@ async function run() {
           throw error
         })
 
-      if ((typeof token !== 'undefined') && (token.time < (Date.now() - controlTimeout))) return token.user_id
+      if ((typeof token !== 'undefined') && ((Date.now() - controlTimeout) < token.time)) return token.user_id
 
       // check if token is valid for an app
       const app = await knex('apps')
@@ -560,7 +560,7 @@ async function run() {
             .insert({
               user_id: user.id,
               token: response.token,
-              time: 0,
+              time: Date.now(),
               ip,
               port: conn._peername.port,
             })
@@ -608,37 +608,6 @@ async function run() {
         return (response)
       }
       return (response)
-      /*
-  ********** Original authentication ************
-  if (('username' in message) && ('password' in message)) {
-      var authenticated = 0
-      // check password and username
-      // *** ToDo: authenticate via LDAP / oAuth
-      for (var key in users) if ((users[key]['username'] == message['username']) && (users[key]['password'] == message['password'])) authenticated = key
-      if (authenticated != 0) {
-        response['token'] = crypto.createHash('sha256')
-          .update(message['username'] + message['passwod'] + (new Date().getTime()))
-          .digest('hex')
-        response['ip'] = ip
-        tokens[response['token']] = []
-        tokens[response['token']]['time'] = Date.now() // timeout data
-        tokens[response['token']]['user'] = authenticated // holds the user id for the token
-        tokens[response['token']]['streams'] = [] // provision for streams that get added
-        tokens[response['token']]['conn'] = conn
-      } else response = getErrorMessage(4)
-    } else
-    if ('token' in message) {
-      if (typeof apps[message['token']] != 'undefined') {
-        response['token'] = message['token']
-        response['ip'] = ip
-        apps[response['token']]['time'] = Date.now() // timeout data
-        apps[response['token']]['conn'] = conn
-      } else response = getErrorMessage(8)
-    } else {
-      response = getErrorMessage(3)
-      response['message'] += ' (username or password missing)'
-    }
-*/
     },
   })
 
@@ -2243,7 +2212,7 @@ async function run() {
       response.meta = source[streamid].meta
       console.log('trying to send update ', response)
       // get correct room information
-      const { room } = source.streamid
+      const { room } = source[streamid]
 
       // get targets that requested an alert and send update
       // var t = [];
