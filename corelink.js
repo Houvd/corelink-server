@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 /* eslint-disable guard-for-in */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-lonely-if */
@@ -39,7 +40,7 @@ const serverVersion = 'v4.3.0.0'
 // V3.0.0.0
 // - new version of protocol
 
-// todo: check logic for reconnecting streams. could someone reconnect to a
+// *** ToDo: check logic for reconnecting streams. could someone reconnect to a
 // stream they are not authorized to?
 const crypto = require('crypto')
 const dgram = require('dgram')
@@ -137,7 +138,7 @@ port.udp = 20011
 port.tcp = 20011
 port.ws = 20013
 
-// **** ToDo: Remove legacy code once setup was completely changed to database
+// *** ToDo: Remove legacy code once setup was completely changed to database
 /*
 rooms.Holodeck = []
 rooms.Holodeck.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
@@ -148,7 +149,7 @@ rooms.Chalktalk.owner = '13'
 */
 
 // initial way to persist changes is loading them from the database
-// **** ToDo: Remove legacy code once setup was completely changed to database
+// *** ToDo: Remove legacy code once setup was completely changed to database
 
 // Should there also be groups to manage users better?
 // Should there be a web interface to manage users?
@@ -458,13 +459,14 @@ async function run() {
     console.log('token: ', message.token)
     if ('token' in message) {
       // check if token is valid for a user
-      const user = await knex('users')
-        .first('id', 'time')
+      const token = await knex('tokens')
+        .first('user_id', 'time')
         .where('token', message.token)
         .catch((error) => {
           throw error
         })
-      if ((typeof user !== 'undefined') && ((Date.now() - controlTimeout) < user.time)) return user.id
+
+      if ((typeof token !== 'undefined') && (token.time < (Date.now() - controlTimeout))) return token.user_id
 
       // check if token is valid for an app
       const app = await knex('apps')
@@ -538,35 +540,34 @@ async function run() {
       response.statuscode = 0
       if (('username' in message) && ('password' in message)) {
         // check password and username
-        // ToDo: authenticate via LDAP / oAuth
+        // *** ToDo: authenticate via LDAP / oAuth
         // saving function in case of rollback
         // for (var key in users) if ((users[key]['username'] === message['username'])
         //  && (users[key]['password'] === message['password'])) authenticated = key
         const user = await knex('users')
-          .first('id', 'password', 'salt', 'token', 'time')
+          .first('id', 'password', 'salt')
           .where('username', message.username)
           .catch((error) => {
             throw error
           })
 
         if ((typeof user !== 'undefined') && (hashSha512(message.password, user.salt).passwordHash === user.password)) {
-          if (user.time + sessionTimeout < Date.now()) {
-            response.token = crypto.createHash('sha256')
-              .update(message.username + message.passwod + (new Date().getTime()))
-              .digest('hex')
-          } else response.token = user.token
+          response.token = crypto.createHash('sha256')
+            .update(message.username + message.passwod + (new Date().getTime()))
+            .digest('hex')
 
-          await knex('users')
-            .where({ id: user.id })
-            .update({
+          await knex('tokens')
+            .insert({
+              user_id: user.id,
               token: response.token,
-              time: Date.now(),
+              time: 0,
               ip,
-              updated_at: knex.fn.now(),
+              port: conn._peername.port,
             })
             .catch((error) => {
               throw error
             })
+
           response.ip = ip
           tokens[response.token] = []
           tokens[response.token].time = Date.now() // timeout data
@@ -584,6 +585,7 @@ async function run() {
           .catch((error) => {
             throw error
           })
+        // *** ToDo: App can only be run once, since it has only one token...
         if ((typeof app !== 'undefined')) {
           await knex('apps')
             .where({ id: app.id })
@@ -606,6 +608,37 @@ async function run() {
         return (response)
       }
       return (response)
+      /*
+  ********** Original authentication ************
+  if (('username' in message) && ('password' in message)) {
+      var authenticated = 0
+      // check password and username
+      // *** ToDo: authenticate via LDAP / oAuth
+      for (var key in users) if ((users[key]['username'] == message['username']) && (users[key]['password'] == message['password'])) authenticated = key
+      if (authenticated != 0) {
+        response['token'] = crypto.createHash('sha256')
+          .update(message['username'] + message['passwod'] + (new Date().getTime()))
+          .digest('hex')
+        response['ip'] = ip
+        tokens[response['token']] = []
+        tokens[response['token']]['time'] = Date.now() // timeout data
+        tokens[response['token']]['user'] = authenticated // holds the user id for the token
+        tokens[response['token']]['streams'] = [] // provision for streams that get added
+        tokens[response['token']]['conn'] = conn
+      } else response = getErrorMessage(4)
+    } else
+    if ('token' in message) {
+      if (typeof apps[message['token']] != 'undefined') {
+        response['token'] = message['token']
+        response['ip'] = ip
+        apps[response['token']]['time'] = Date.now() // timeout data
+        apps[response['token']]['conn'] = conn
+      } else response = getErrorMessage(8)
+    } else {
+      response = getErrorMessage(3)
+      response['message'] += ' (username or password missing)'
+    }
+*/
     },
   })
 
@@ -768,7 +801,7 @@ async function run() {
           throw error
         })
       const response = {}
-      // **** ToDo: list only workspaces that user has access to.
+      // *** ToDo: list only workspaces that user has access to.
       if (typeof data !== 'object') {
         const workspaces = await knex('rooms')
           .select('roomname')
@@ -832,13 +865,13 @@ async function run() {
       const response = {}
       if (typeof data === 'number') {
         if ('workspace' in message) {
-          // **** ToDo: remove legacy storage
+          // *** ToDo: remove legacy storage
           if (typeof rooms[message.workspace] === 'undefined') {
             rooms[message.workspace] = []
             rooms[message.workspace].owner = data
             rooms[message.workspace].users = [data]
           }
-          // **** ToDo: need to sanitize room name befor inserting to database
+          // *** ToDo: need to sanitize room name befor inserting to database
           const room = await knex('rooms')
             .first('id')
             .where('roomname', message.workspace)
@@ -914,7 +947,7 @@ async function run() {
             })
           console.log(room)
           if (typeof rooms[message.workspace] !== 'undefined') {
-            // **** ToDo: make sure that existing connections to this workspace will be terminated
+            // *** ToDo: make sure that existing connections to this workspace will be terminated
             delete rooms[message.workspace]
 
             response.statuscode = 0
@@ -1164,7 +1197,7 @@ async function run() {
       let token
       let key1
 
-      // **** ToDo: list only streams that user has access to
+      // *** ToDo: list only streams that user has access to
       if (typeof data !== 'object') {
         if (!('workspace' in message)) message.workspace = []
 
@@ -1439,7 +1472,7 @@ async function run() {
           description: 'array of streamid/user/apps/type/meta of the streams that will be sent',
           type: 'array',
         },
-        /* ** ToDo: IP is not returned at the moment, because the detection of
+        /* *** ToDo: IP is not returned at the moment, because the detection of
               the localhost IP is not working perfectly.
               It will be important for load balanced connections with several masters.
 
@@ -2101,7 +2134,7 @@ async function run() {
           if(('username' in message) && ('password' in message)) {
               var authenticated = 0;
   // check password and username
-  // ToDo: authenticate via LDAP / oAuth
+  // *** ToDo: authenticate via LDAP / oAuth
               for(var key in users)
                   if((users[key]['username']==message['username'])
                     && (users[key]['password']==message['password']))
@@ -2520,12 +2553,12 @@ async function run() {
     })
 
     conn.once('close', () => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       console.log('TCP control connection from %s closed', remoteAddress)
     })
 
     conn.on('error', (err) => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       console.log('TCP control connection %s error: %s', remoteAddress, err.message)
     })
   }
@@ -2740,12 +2773,12 @@ async function run() {
     })
 
     conn.once('close', () => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       console.log('TCP data connection from %s closed', remoteAddress)
     })
 
     conn.on('error', (err) => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       console.log('TCP data connection %s error: %s', remoteAddress, err.message)
     })
   }
@@ -2795,12 +2828,12 @@ async function run() {
     })
 
     conn.once('close', () => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       console.log('WS control connection from %s closed', remoteAddress)
     })
 
     conn.on('error', (err) => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       console.log('WS control connection %s error: %s', remoteAddress, err.message)
     })
   })
@@ -2845,14 +2878,14 @@ async function run() {
     })
 
     conn.once('close', () => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       delete connections[remoteAddress][remotePort]
       if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
       console.log('---------------WS data connection from %s closed', remoteAddress)
     })
 
     conn.on('error', (err) => {
-      // todo: unset the array element for the connection
+      // *** ToDo: unset the array element for the connection
       delete connections[remoteAddress][remotePort]
       if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
       console.log('WS data connection %s error: %s', remoteAddress, err.message)
