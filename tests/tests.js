@@ -13,6 +13,8 @@ const username = 'Testuser' // username to connect as
 const password = 'Testpassword' // password to coinnect with
 // End Setup ---
 
+const results = []
+
 const os = require('os')
 
 const ifaces = os.networkInterfaces()
@@ -160,14 +162,31 @@ tests.describefunction = {
 }
 
 function createRequest(name) {
+  console.log('createRequest', name)
+  function replaceSample(sample) {
+    const result = sample
+    if (Array.isArray(result)) {
+      for (const i in result) {
+        result[i] = replaceSample(result[i])
+      }
+    } else {
+      let content = results
+      if (result.indexOf('$$') !== -1) {
+        const k = result.substr(result.indexOf('$$') + 2).split('.')
+        for (const j in k) {
+          content = content[k[j]]
+        }
+        return content
+      }
+    }
+    return result
+  }
+
   const request = {}
   for (const i in info[name].arguments) {
     switch (i) {
       case 'token':
         request[i] = token
-        break
-      case 'streamid':
-        if (info[name].arguments[i].type === 'array') { request[i] = [streamid] } else { request[i] = streamid }
         break
       case 'ip':
         request[i] = IPSource
@@ -177,11 +196,13 @@ function createRequest(name) {
         request[i] = sendport
         break
       default:
-        if (typeof info[name].arguments[i].optional === 'undefined') { request[i] = info[name].arguments[i].sample }
+        if (typeof info[name].arguments[i].sample !== 'undefined') {
+          request[i] = replaceSample(info[name].arguments[i].sample)
+        }
     }
   }
-  console.log(`  Query function: ${request.function}`)
-  // console.log('  Request: '+JSON.stringify(request));
+  // console.log(`  Query function: ${request.function}`)
+  console.log(`  Request ${request.function}: ${JSON.stringify(request)}`)
   return (request)
 }
 
@@ -213,6 +234,7 @@ tests.autotest = {
   process(message) {
     checkResponse(lastinfo, message)
     console.log(`  Result: ${JSON.stringify(message)}`)
+    results[lastinfo] = message
     let key = null
     const keys = Object.keys(info)
     for (let i = 0; i < keys.length; i += 1) {
@@ -251,6 +273,7 @@ client.on('data', (data) => {
       console.log('  Function result was an error.')
       if ('message' in message) {
         console.log(`  ${message.message}`)
+        throw new Error(message.message)
       }
       runTests(lastfunction)
       return

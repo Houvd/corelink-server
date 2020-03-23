@@ -1386,6 +1386,7 @@ async function run() {
         streamid: {
           description: 'ID of the stream to get information about',
           type: 'string',
+          sample: '$$sender.streamid',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1799,12 +1800,13 @@ async function run() {
         receiverid: {
           description: 'set the existing receiver streamid',
           type: 'string',
-          default: '',
+          sample: '$$receiver.streamid',
         },
         streamid: {
           description: 'array of stream IDs to receive. new streams will be added to existing already subscribed streams.',
           type: 'array',
           default: [],
+          sample: ['$$sender.streamid'],
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1928,11 +1930,12 @@ async function run() {
         receiverid: {
           description: 'set the existing receiver streamid',
           type: 'string',
-          default: '',
+          sample: '$$receiver.streamid',
         },
         streamid: {
           description: 'array of stream IDs to unsubscribe.',
           type: 'array',
+          sample: ['$$sender.streamid'],
         },
         token: {
           description: 'token for the user to authenticate',
@@ -2035,19 +2038,16 @@ async function run() {
           description: 'name of the workspace to search for source streams (an empty array indicates all workspaces)',
           type: 'array',
           default: [],
-          sample: ['Holodeck'],
         },
         type: {
           description: 'source stream types to search (an empty array indicates all stream types)',
           type: 'array',
           default: [],
-          sample: ['3d'],
         },
         streamid: {
           description: 'id\'s of the streams to discard (if an empty array is given all source streams that match workspace and type will be discarded)',
           type: 'array',
           default: [],
-          sample: ['id'],
         },
         token: {
           description: 'token for the user to authenticate',
@@ -2210,6 +2210,11 @@ async function run() {
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
       arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'expire',
+        },
         token: {
           description: 'token of the user session to expire',
           type: 'string',
@@ -2237,7 +2242,9 @@ async function run() {
 
       if (typeof data !== 'object') {
         console.log('*** expire not implemented ***')
-
+        const response = {}
+        response.statuscode = 0
+        return response
         // make sure to remove all usersessions and streams,also notify clients of now stale streams
 
         // plugin/app tokens are not removed but all streams are expired
@@ -2283,6 +2290,7 @@ async function run() {
           return(response);
   */
       }
+      return getErrorMessage(3)
     },
   })
 
