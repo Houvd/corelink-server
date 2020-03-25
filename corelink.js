@@ -563,7 +563,7 @@ async function run() {
               token: response.token,
               time: Date.now(),
               ip,
-              port: conn._peername.port,
+//              port: conn._socket._peername.port,
             })
             .catch((error) => {
               throw error
@@ -2853,7 +2853,7 @@ async function run() {
           if (debug) console.log(target[header.id].ip)
           console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
           if (remoteAddress === target[header.id].ip) {
-            console.log(target[header.id])
+            // console.log(target[header.id])
             if (target[header.id].port === 0) {
               console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
               target[header.id].port = remotePort
