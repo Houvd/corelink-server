@@ -1983,12 +1983,14 @@ async function run() {
                   && (('streamid' in message) && (message.streamid.length > 0))) {
           // unsubscribe streams
           for (s in streamrelay) {
-            for (t in streamrelay[s]) {
-              if ((t === message.receiverid) && (message.streamid.includes(s))) {
-                delete streamrelay[s][t]
-                // send dropped message to sender streams that are newly subscribed to
-                serverfunctions.dropped.process(s, t)
-                if (streamrelay[s].length === 0) delete streamrelay[s]
+            if (s) {
+              for (t in streamrelay[s]) {
+                if ((t === message.receiverid) && (message.streamid.includes(s))) {
+                  delete streamrelay[s][t]
+                  // send dropped message to sender streams that are newly subscribed to
+                  serverfunctions.dropped.process(s, t)
+                  if (streamrelay[s].length === 0) delete streamrelay[s]
+                }
               }
             }
           }
@@ -1996,27 +1998,30 @@ async function run() {
           // create list of subscribed streams
           message.streamid = []
           for (s in streamrelay) {
-            for (t in streamrelay[s]) {
-              if (t === message.receiverid) message.streamid.push(s)
+            if (s) {
+              for (t in streamrelay[s]) { if (t === message.receiverid) message.streamid.push(s) }
             }
           }
 
           // add usernames to the specific streams
           message.streamlist = []
           for (stream in message.streamid) {
-            streamlistelement = {}
-            streamlistelement.streamid = message.streamid[stream]
-            streamlistelement.type = source[message.streamid[stream]].type
-            streamlistelement.meta = source[message.streamid[stream]].meta
+            if (stream) {
+              streamlistelement = {}
+              streamlistelement.streamid = message.streamid[stream]
+              streamlistelement.type = source[message.streamid[stream]].type
+              streamlistelement.meta = source[message.streamid[stream]].meta
 
-            // add apps processing list for streams that are processed, otherwise leave empty
-            // walk through source from tags until we find user, add apps and user
-            userApps = findApps(message.streamid[stream])
-            streamlistelement.user = userApps.user
-            streamlistelement.apps = userApps.apps
+              // add apps processing list for streams that are processed, otherwise leave empty
+              // walk through source from tags until we find user, add apps and user
+              userApps = findApps(message.streamid[stream])
+              streamlistelement.user = userApps.user
+              streamlistelement.apps = userApps.apps
 
-            message.streamlist.push(streamlistelement)
+              message.streamlist.push(streamlistelement)
+            }
           }
+
 
           // create result for client to connect as a receiver
           response = {}
