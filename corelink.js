@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 /* eslint-disable no-restricted-syntax */
-/* eslint-disable no-lonely-if */
+// /* eslint-disable no-lonely-if */
 // need help with 1 set if
 /* eslint-disable no-new-object */ // this is very difficult
 /* eslint-disable no-param-reassign */ // not able to rectify
@@ -2836,57 +2836,57 @@ async function run() {
           console.log('wrong stream')
       }
       if (debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
-    } else {
-      // console.log(header['id']);
-      if (header.id in streamrelay) {
-        source[header.id].time = last
-        for (targetid in streamrelay[header.id]) {
-          if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
-            if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].port !== 'undefined') && (target[targetid].port !== 0)) {
-              if (debug) {
-                console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
-              // console.log(data)
-              }
-              target[targetid].time = last
-              if (target[targetid].proto === 'udp') {
-                UDPDataServer.send(msg, target[targetid].port, target[targetid].ip, (err) => {
-                  if (err) console.log('socket error', err)
-                })
-              } else if (target[targetid].proto === 'tcp') {
-                if (typeof target[targetid].conn === 'undefined') console.log('!!!! tcp connection not defined, dropping packet')
-                else target[targetid].conn.write(msg)
-              } else if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
-              else target[targetid].conn.send(msg)
-            } else if (typeof target[targetid] === 'undefined') console.log(`${targetid} is not registered at all`)
-            else {
-              types = ''
-              for (type in target.targetid) {
-                if (types === '') types = type
-                else types = `${types}, ${type}`
-              }
-              console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
-            }
-          } else console.log(`no ip for stream ${header.id}`)
-        }
-      } else if (header.id in target) {
-        if (debug) console.log(target[header.id].ip)
-        console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
-        if (remoteAddress === target[header.id].ip) {
-          // console.log(target[header.id])
-          if (target[header.id].port === 0) {
-            console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
-            target[header.id].port = remotePort
-            if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
-              console.log(header.id, 'adding the connection')
-              target[header.id].conn = connections[remoteAddress][remotePort].conn
-              delete connections[remoteAddress][remotePort]
-              if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
-            }
-          }
-          console.log(`no port for stream ${header.id} [${types}], IP:${target[header.id].ip}, Timeout:${target[header.id].time}`)
-        }
-      } else console.log(`StreamID (${header.id}) not authorized to send`)
     }
+    // console.log(header['id']);
+    else if (header.id in streamrelay) {
+      source[header.id].time = last
+      for (targetid in streamrelay[header.id]) {
+        if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
+          if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].port !== 'undefined') && (target[targetid].port !== 0)) {
+            if (debug) {
+              console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
+              // console.log(data)
+            }
+            target[targetid].time = last
+            if (target[targetid].proto === 'udp') {
+              UDPDataServer.send(msg, target[targetid].port, target[targetid].ip, (err) => {
+                if (err) console.log('socket error', err)
+              })
+            } else if (target[targetid].proto === 'tcp') {
+              if (typeof target[targetid].conn === 'undefined') console.log('!!!! tcp connection not defined, dropping packet')
+              else target[targetid].conn.write(msg)
+            } else if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
+            else target[targetid].conn.send(msg)
+          } else if (typeof target[targetid] === 'undefined') console.log(`${targetid} is not registered at all`)
+          else {
+            types = ''
+            for (type in target.targetid) {
+              if (types === '') types = type
+              else types = `${types}, ${type}`
+            }
+            console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
+          }
+        } else console.log(`no ip for stream ${header.id}`)
+      }
+    } else if (header.id in target) {
+      if (debug) console.log(target[header.id].ip)
+      console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
+      if (remoteAddress === target[header.id].ip) {
+        // console.log(target[header.id])
+        if (target[header.id].port === 0) {
+          console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
+          target[header.id].port = remotePort
+          if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
+            console.log(header.id, 'adding the connection')
+            target[header.id].conn = connections[remoteAddress][remotePort].conn
+            delete connections[remoteAddress][remotePort]
+            if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
+          }
+        }
+        console.log(`no port for stream ${header.id} [${types}], IP:${target[header.id].ip}, Timeout:${target[header.id].time}`)
+      }
+    } else console.log(`StreamID (${header.id}) not authorized to send`)
+
     return 'relaydata end'
   }
 
