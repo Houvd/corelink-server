@@ -3053,12 +3053,14 @@ async function run() {
     let tid
     const currentTime = Date.now()
     for (ip in connections) {
-      for (port in connections[ip]) {
-      // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
-      //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
-        if (connections[ip][port].time + connectTimeout < currentTime) {
-          delete connections[ip][port]
-          if (connections[ip].length === 0) delete connections[ip]
+      if (ip) {
+        for (port in connections[ip]) {
+        // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
+        //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
+          if (connections[ip][port].time + connectTimeout < currentTime) {
+            delete connections[ip][port]
+            if (connections[ip].length === 0) delete connections[ip]
+          }
         }
       }
     }
@@ -3087,8 +3089,10 @@ async function run() {
       //   +streamTimeout - currentTime);
       if (target[id].time + streamTimeout < currentTime) {
         for (sid in streamrelay) {
-          for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
-          if (streamrelay[sid].length === 0) delete streamrelay[sid]
+          if (sid) {
+            for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
+            if (streamrelay[sid].length === 0) delete streamrelay[sid]
+          }
         }
         delete target[id]
       }
