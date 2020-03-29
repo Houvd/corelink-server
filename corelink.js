@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
-/* eslint-disable guard-for-in */
+// /* eslint-disable guard-for-in */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-lonely-if */
 // need help with 1 set if
@@ -321,9 +321,11 @@ async function run() {
     .catch((err) => console.log(err))
 
   for (const key in content) {
-    const { username } = content[key]
-    users[key] = []
-    users[key].username = username
+    if (key) {
+      const { username } = content[key]
+      users[key] = []
+      users[key].username = username
+    }
   }
 
   const apps = []
@@ -333,15 +335,17 @@ async function run() {
     .catch((err) => console.log(err))
 
   for (const key in content) {
-    const { appname } = content[key]
-    const { token } = content[key]
-    let { time } = content[key]
+    if (key) {
+      const { appname } = content[key]
+      const { token } = content[key]
+      let { time } = content[key]
 
-    if (time == null) time = 0
-    apps[token] = []
-    apps[token].time = time
-    apps[token].name = appname
-    apps[token].streams = []
+      if (time == null) time = 0
+      apps[token] = []
+      apps[token].time = time
+      apps[token].name = appname
+      apps[token].streams = []
+    }
   }
 
 
@@ -563,7 +567,7 @@ async function run() {
               token: response.token,
               time: Date.now(),
               ip,
-//              port: conn._socket._peername.port,
+              //              port: conn._socket._peername.port,
             })
             .catch((error) => {
               throw error
@@ -839,7 +843,6 @@ async function run() {
       const response = {}
       if (typeof data === 'number') {
         if ('workspace' in message) {
-
           // *** ToDo: remove legacy rooms array
           if (typeof rooms[message.workspace] === 'undefined') {
             rooms[message.workspace] = []
@@ -1058,7 +1061,6 @@ async function run() {
             })
           console.log(room)
           if (typeof rooms[message.workspace] !== 'undefined') {
-
             // *** ToDo: make sure that existing connections to this workspace will be terminated
             // *** ToDo: remove legacy rooms array
             delete rooms[message.workspace]
