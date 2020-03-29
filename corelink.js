@@ -2160,31 +2160,33 @@ async function run() {
         response = {}
         response.statuscode = 0
         for (streamkey in streamids) {
-          streamid = streamids[streamkey]
-          console.log('deleting', streamid)
-          if ((typeof source[streamid] !== 'undefined') || (typeof target[streamid] !== 'undefined')) {
-            console.log(`Cleaning up stream ${streamid}`)
-            // *** ToDo: in addition we need to make sure that the actual connection is disconnected
-            if ((typeof source[streamid] !== 'undefined')
-                              && (typeof source[streamid].ip !== 'undefined')
-                              && (typeof source[streamid].port !== 'undefined')) {
-              if ((typeof connections[source[streamid].ip] !== 'undefined')
-                              && (typeof connections[source[streamid].ip][source[streamid].port] !== 'undefined')
-                              && (typeof connections[source[streamid].ip][source[streamid].port].conn !== 'undefined')) {
-                delete connections[source[streamid].ip][source[streamid].port].conn
-                delete connections[source[streamid].ip][source[streamid].port].time
-                delete connections[source[streamid].ip][source[streamid].port]
-                if (connections[source[streamid].ip].length === 0) {
-                  delete connections[source[streamid].ip]
+          if (streamkey) {
+            streamid = streamids[streamkey]
+            console.log('deleting', streamid)
+            if ((typeof source[streamid] !== 'undefined') || (typeof target[streamid] !== 'undefined')) {
+              console.log(`Cleaning up stream ${streamid}`)
+              // *** ToDo: in addition,need to make sure that the actual connection is disconnected
+              if ((typeof source[streamid] !== 'undefined')
+                                && (typeof source[streamid].ip !== 'undefined')
+                                && (typeof source[streamid].port !== 'undefined')) {
+                if ((typeof connections[source[streamid].ip] !== 'undefined')
+                                && (typeof connections[source[streamid].ip][source[streamid].port] !== 'undefined')
+                                && (typeof connections[source[streamid].ip][source[streamid].port].conn !== 'undefined')) {
+                  delete connections[source[streamid].ip][source[streamid].port].conn
+                  delete connections[source[streamid].ip][source[streamid].port].time
+                  delete connections[source[streamid].ip][source[streamid].port]
+                  if (connections[source[streamid].ip].length === 0) {
+                    delete connections[source[streamid].ip]
+                  }
                 }
-              }
-              // *** ToDo: disconnect all receivers as well
-              // announce to receivers that the stream is stale
-              serverfunctions.stale.process(streamid)
+                // *** ToDo: disconnect all receivers as well
+                // announce to receivers that the stream is stale
+                serverfunctions.stale.process(streamid)
 
-              delete streamrelay[streamid]
-              delete source[streamid]
-              // *** ToDo: also delete all receivers that have only this source?
+                delete streamrelay[streamid]
+                delete source[streamid]
+                // *** ToDo: also delete all receivers that have only this source?
+              }
             }
 
             // remove stream if it is a target for the stream relay
@@ -2478,25 +2480,29 @@ async function run() {
 
       // get user or app name
       for (token in tokens) {
-        if (tokens[token].streams.includes(senderid)) {
-          usertoken = token
-          if (typeof response.user !== 'undefined') break
-        }
-        if (tokens[token].streams.includes(receiverid)) {
-          response.user = users[tokens[token].user].username
-          if (typeof usertoken !== 'undefined') break
+        if (token) {
+          if (tokens[token].streams.includes(senderid)) {
+            usertoken = token
+            if (typeof response.user !== 'undefined') break
+          }
+          if (tokens[token].streams.includes(receiverid)) {
+            response.user = users[tokens[token].user].username
+            if (typeof usertoken !== 'undefined') break
+          }
         }
       }
 
 
       for (token in apps) {
-        if (apps[token].streams.includes(senderid)) {
-          apptoken = token
-          if (typeof response.app !== 'undefined') break
-        }
-        if (apps[token].streams.includes(receiverid)) {
-          response.app = apps[token].name
-          if (typeof apptoken !== 'undefined') break
+        if (token) {
+          if (apps[token].streams.includes(senderid)) {
+            apptoken = token
+            if (typeof response.app !== 'undefined') break
+          }
+          if (apps[token].streams.includes(receiverid)) {
+            response.app = apps[token].name
+            if (typeof apptoken !== 'undefined') break
+          }
         }
       }
 
