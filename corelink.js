@@ -1,7 +1,5 @@
 /* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 /* eslint-disable no-restricted-syntax */
-// /* eslint-disable no-lonely-if */
-// need help with 1 set if
 /* eslint-disable no-new-object */ // this is very difficult
 /* eslint-disable no-param-reassign */ // not able to rectify
 
@@ -1070,6 +1068,68 @@ async function run() {
           return getErrorMessage(6)
         }
         return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.listUser = new Object({
+    info: {
+      name: 'listUser',
+      description: 'list existing User',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'listUser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        workspacelist: {
+          description: 'array of available User',
+          type: 'array',
+          sample: [],
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      // *** ToDo: list only workspaces that user has access to.
+      if (typeof data !== 'object') {
+        const userList = await knex('rooms')
+          .select('username')
+          .catch((error) => {
+            throw error
+          })
+        const result = []
+        for (const usr in userList) {
+          if (usr) result.push(userList[usr].username)
+        }
+        response.usernameList = result
+        response.statuscode = 0
+        return (response)
       }
       return (data)
     },
@@ -2836,9 +2896,7 @@ async function run() {
           console.log('wrong stream')
       }
       if (debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
-    }
-    // console.log(header['id']);
-    else if (header.id in streamrelay) {
+    } else if (header.id in streamrelay) { // console.log(header['id']);
       source[header.id].time = last
       for (targetid in streamrelay[header.id]) {
         if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
