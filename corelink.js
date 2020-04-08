@@ -1116,9 +1116,9 @@ async function run() {
           throw error
         })
       const response = {}
-      // *** ToDo: list only workspaces that user has access to.
+      // *** ToDo: list only users in DB.
       if (typeof data !== 'object') {
-        const userList = await knex('rooms')
+        const userList = await knex('users')
           .select('username')
           .catch((error) => {
             throw error
