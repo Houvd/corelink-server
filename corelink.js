@@ -1073,6 +1073,75 @@ async function run() {
     },
   })
 
+  functions.rmUser = new Object({
+    info: {
+      name: 'rmUser',
+      description: 'remove an existing User',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'rmUser',
+        },
+        userName: {
+          description: 'name of the User',
+          type: 'string',
+          sample: 'rmUser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('userName' in message) {
+          console.log(message.userName)
+          const command = await knex('users')
+            .where('username', message.userName)
+            .del()
+            .catch((error) => {
+              throw error
+            })
+          console.log(command)
+          if (typeof users[message.userName] !== 'undefined') {
+            // *** ToDo: make sure that existing connections to this workspace will be terminated
+            // *** ToDo: remove legacy rooms array
+            delete users[message.userName]
+
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(6)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
   functions.listUser = new Object({
     info: {
       name: 'listUser',
