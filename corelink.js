@@ -1073,6 +1073,80 @@ async function run() {
     },
   })
 
+  functions.addUser = new Object({
+    info: {
+      name: 'addUser ',
+      description: 'add a new User',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'addUser',
+        },
+        nuser: {
+          description: 'name of the user',
+          type: 'string',
+          sample: 'newuser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('workspace' in message) {
+          // todo psspwrd with salt
+          const salt = '53b2843baa4b18f0'
+          const npassword = hashSha512(message.password, salt)
+          // *** ToDo: need to sanitize room name befor inserting to database
+          const olduser = await knex('users')
+            .first('id')
+            .where('username', message.nuser)
+            .catch((error) => {
+              throw error
+            })
+          if (typeof olduser === 'undefined') {
+            await knex('users').insert({
+              // eslint-disable-next-line max-len
+              username: message.nid, password: npassword.passwordHash, salt: npassword.salt, email: message.nemail, first: message.nfirst, last: message.nlast, admin: message.nadmin,
+            })
+              .catch((error) => {
+                throw error
+              })
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(5)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
   functions.rmUser = new Object({
     info: {
       name: 'rmUser',
