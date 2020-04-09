@@ -1117,18 +1117,22 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('workspace' in message) {
+        console.log('if type')
+        if ('nid' in message) {
+          console.log('corect type of nid')
           // todo psspwrd with salt
           const salt = '53b2843baa4b18f0'
-          const npassword = hashSha512(message.password, salt)
+          const npassword = hashSha512(message.npassword, salt)
+          console.log(npassword)
           // *** ToDo: need to sanitize room name befor inserting to database
           const olduser = await knex('users')
             .first('id')
-            .where('username', message.nuser)
+            .where('username', message.nid)
             .catch((error) => {
               throw error
             })
           if (typeof olduser === 'undefined') {
+            console.log('no old user found')
             await knex('users').insert({
               // eslint-disable-next-line max-len
               username: message.nid, password: npassword.passwordHash, salt: npassword.salt, email: message.nemail, first: message.nfirst, last: message.nlast, admin: message.nadmin,
