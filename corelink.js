@@ -9,7 +9,7 @@
  * @author Robert Pahle
  * @version V4.4.0.0
  */
-const serverVersion = 'v4.3.0.0'
+const serverVersion = 'v4.4.0.0'
 // v4.4.0.0
 // - ws data streams encryped
 // v4.3.0.0

@@ -18,6 +18,8 @@ services:
     networks:
       bridge:
         ipv4_address: 10.0.1.200
+    volumes:
+      - ../data:/app/data/
 
 networks:
   bridge:

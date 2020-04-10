@@ -2,9 +2,10 @@ FROM docker.io/node
 
 RUN apt update -y && apt install mc htop net-tools git -y
 ADD config/ /app/config/
+ADD knex/ /app/knex/
 ADD corelink.js /app/
 WORKDIR /app/
-RUN cd /app && npm install ws config https 
+RUN cd /app && npm install ws config https knex sqlite3
 
 
 #ADD shell.sh /shell.sh
