@@ -9,9 +9,11 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle
- * @version V4.3.0.0
+ * @version V4.4.0.0
  */
 const serverVersion = 'v4.3.0.0'
+// v4.4.0.0
+// - ws data streams encryped
 // v4.3.0.0
 // - ws control connections encrypted
 // v4.2.0.0
@@ -2997,8 +2999,14 @@ async function run() {
   // WS data transfer setup
   console.log(`trying to bind WS port ${port.ws}`)
 
+  const httpsDataServer = https.createServer(httpsOptions, (req, res) => {
+    console.log(`New Request... ${req.connection.remoteAddress} ${req.method} ${req.url}`)
+    res.writeHead(200)
+    res.end('Corelink Data Port')
+  })
+  httpsDataServer.listen(port.ws)
 
-  const WSDataServer = new Ws({ port: port.ws })
+  const WSDataServer = new Ws({ server: httpsDataServer })
 
   WSDataServer.on('connection', (conn, req) => {
   // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
