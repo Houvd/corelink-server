@@ -1766,7 +1766,9 @@ async function run() {
               if (typeof streamrelay[message.streamlist[stream].streamid][streamid] === 'undefined') {
                 serverfunctions.subscriber.process(message.streamlist[stream].streamid, streamid)
               }
-              streamrelay[message.streamlist[stream].streamid][streamid] = []
+              if (streamrelay[message.streamlist[stream].streamid] !== 'undefined') {
+                streamrelay[message.streamlist[stream].streamid][streamid] = []
+              }
             }
           }
 
