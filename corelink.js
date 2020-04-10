@@ -1,7 +1,5 @@
 /* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 /* eslint-disable no-restricted-syntax */
-// /* eslint-disable no-lonely-if */
-// need help with 1 set if
 /* eslint-disable no-new-object */ // this is very difficult
 /* eslint-disable no-param-reassign */ // not able to rectify
 
@@ -1072,6 +1070,215 @@ async function run() {
           return getErrorMessage(6)
         }
         return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.addUser = new Object({
+    info: {
+      name: 'addUser ',
+      description: 'add a new User',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'addUser',
+        },
+        nuser: {
+          description: 'name of the user',
+          type: 'string',
+          sample: 'newuser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+
+        if ('nid' in message) {
+
+          // todo psspwrd with salt
+          const salt = '53b2843baa4b18f0'
+          const npassword = hashSha512(message.npassword, salt)
+
+          // *** ToDo: need to sanitize room name befor inserting to database
+          const olduser = await knex('users')
+            .first('id')
+            .where('username', message.nid)
+            .catch((error) => {
+              throw error
+            })
+          if (typeof olduser === 'undefined') {
+            console.log('no old user found')
+            await knex('users').insert({
+              // eslint-disable-next-line max-len
+              username: message.nid, password: npassword.passwordHash, salt: npassword.salt, email: message.nemail, first: message.nfirst, last: message.nlast, admin: message.nadmin,
+            })
+              .catch((error) => {
+                throw error
+              })
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(5)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.rmUser = new Object({
+    info: {
+      name: 'rmUser',
+      description: 'remove an existing User',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'rmUser',
+        },
+        userName: {
+          description: 'name of the User',
+          type: 'string',
+          sample: 'rmUser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('userName' in message) {
+          console.log(message.userName)
+          const command = await knex('users')
+            .where('username', message.userName)
+            .del()
+            .catch((error) => {
+              throw error
+            })
+          console.log(command)
+          if (typeof users[message.userName] !== 'undefined') {
+            // *** ToDo: make sure that existing connections to this workspace will be terminated
+            // *** ToDo: remove legacy rooms array
+            delete users[message.userName]
+
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(6)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.listUser = new Object({
+    info: {
+      name: 'listUser',
+      description: 'list existing User',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'listUser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        workspacelist: {
+          description: 'array of available User',
+          type: 'array',
+          sample: [],
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      // *** ToDo: list only users in DB.
+      if (typeof data !== 'object') {
+        const userList = await knex('users')
+          .select('username')
+          .catch((error) => {
+            throw error
+          })
+        const result = []
+        for (const usr in userList) {
+          if (usr) result.push(userList[usr].username)
+        }
+        response.usernameList = result
+        response.statuscode = 0
+        return (response)
       }
       return (data)
     },
@@ -2840,9 +3047,7 @@ async function run() {
           console.log('wrong stream')
       }
       if (debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
-    }
-    // console.log(header['id']);
-    else if (header.id in streamrelay) {
+    } else if (header.id in streamrelay) { // console.log(header['id']);
       source[header.id].time = last
       for (targetid in streamrelay[header.id]) {
         if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
