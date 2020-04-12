@@ -203,7 +203,7 @@ users['16'].username = 'Xavier'
 users['16'].password = 'Testpassword'
 users['17'] = []
 users['17'].username = 'Ben'
-users['17'].password = 'Testpassword'
+users['17'].password = 'Test'
 */
 
 // ?? should a token be restricted to a specific IP/Port combination
@@ -1202,15 +1202,11 @@ async function run() {
               throw error
             })
           console.log(command)
-          if (typeof users[message.userName] !== 'undefined') {
-            // *** ToDo: make sure that existing connections to this workspace will be terminated
-            // *** ToDo: remove legacy rooms array
-            delete users[message.userName]
 
-            response.statuscode = 0
-            return (response)
-          }
-          return getErrorMessage(6)
+          response.statuscode = 0
+          return (response)
+
+          // return getErrorMessage(6)
         }
         return getErrorMessage(3)
       }
@@ -1282,6 +1278,77 @@ async function run() {
 
   // group functions  :
 
+  functions.addGroup = new Object({
+    info: {
+      name: 'addGroup ',
+      description: 'add a new Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'addGroup',
+        },
+        nGroup: {
+          description: 'name of the new Group',
+          type: 'string',
+          sample: 'Group',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('nGroup' in message) {
+          // *** ToDo: need to sanitize room name befor inserting to database
+          const oldGroup = await knex('groups')
+            .first('id')
+            .where('groupname', message.nGroup)
+            .catch((error) => {
+              throw error
+            })
+          if (typeof oldGroup === 'undefined') {
+            console.log('no old user found')
+            await knex('groups').insert({
+              owner_id: message.nId, groupname: message.nGroup,
+            })
+              .catch((error) => {
+                throw error
+              })
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(5)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
   functions.rmGroup = new Object({
     info: {
       name: 'rmGroup',
@@ -1336,12 +1403,8 @@ async function run() {
               throw error
             })
           console.log(command)
-
-
           response.statuscode = 0
           return (response)
-
-
         }
         return getErrorMessage(3)
       }
