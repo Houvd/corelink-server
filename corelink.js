@@ -1161,12 +1161,12 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'rmUser',
+          sample: 'User',
         },
         userName: {
           description: 'name of the User',
           type: 'string',
-          sample: 'rmUser',
+          sample: 'User',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1230,7 +1230,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'listUser',
+          sample: '', // no idea what to add
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1281,6 +1281,73 @@ async function run() {
   })
 
   // group functions  :
+
+  functions.rmGroup = new Object({
+    info: {
+      name: 'rmGroup',
+      description: 'remove an existing Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'Group',
+        },
+        rmGroup: {
+          description: 'name of the Group',
+          type: 'string',
+          sample: 'GroupName',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      console.log('rmgroup called')
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('rmGroup' in message) {
+          console.log(message.rmGroup)
+          const command = await knex('groups')
+            .where('groupname', message.rmGroup)
+            .del()
+            .catch((error) => {
+              throw error
+            })
+          console.log(command)
+
+
+          response.statuscode = 0
+          return (response)
+
+
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
 
   functions.listGroup = new Object({
     info: {
