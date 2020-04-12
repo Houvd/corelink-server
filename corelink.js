@@ -405,6 +405,7 @@ async function run() {
         for (tsr in streamrelay[sr]) if (tsr) console.log(`Relaying ${sr} -> ${tsr}`)
       }
     }
+
     for (ip in connections) {
       if (ip) {
         for (connectionPort in connections[ip]) {
@@ -1929,7 +1930,7 @@ async function run() {
           type: 'string',
           default: '',
         },
-        streamid: {
+        streamids: {
           description: 'array of stream IDs to receive. if the argument is omitted all streams of a type will be sent.',
           type: 'array',
           default: [],
@@ -2360,6 +2361,10 @@ async function run() {
           type: 'string',
           sample: 0,
         },
+        streamlist: {
+          description: 'array of streamid of the streams that were deleted',
+          type: 'array',
+        },
         message: {
           description: 'optional status message',
           optional: true,
@@ -2374,58 +2379,30 @@ async function run() {
         })
       let s
       let t
-      let streamlistelement = {}
-      let stream
-      let userApps
       let response = {}
 
       if (typeof data !== 'object') {
-        console.log('*** unsubscribe *** function untested')
+        console.log('*** unsubscribe ***')
         if ((('receiverid' in message) && (message.receiverid !== '') && (typeof target[message.receiverid] !== 'undefined'))
                   && (('streamid' in message) && (message.streamid.length > 0))) {
           // unsubscribe streams
+          message.streamlist = []
           for (s in streamrelay) {
             if (s) {
               for (t in streamrelay[s]) {
                 if ((t === message.receiverid) && (message.streamid.includes(s))) {
+                  message.streamlist.push(s)
                   delete streamrelay[s][t]
-                  // send dropped message to sender streams that are newly subscribed to
+                  // send dropped message to sender streams to inform them
+                  // the receiver stopped requesting that stream.
                   serverfunctions.dropped.process(s, t)
-                  if (streamrelay[s].length === 0) delete streamrelay[s]
+                  if (Object.keys(streamrelay[s]).length === 0) delete streamrelay[s]
                 }
               }
             }
           }
 
-          // create list of subscribed streams
-          message.streamid = []
-          for (s in streamrelay) {
-            if (s) {
-              for (t in streamrelay[s]) { if (t === message.receiverid) message.streamid.push(s) }
-            }
-          }
-
-          // add usernames to the specific streams
-          message.streamlist = []
-          for (stream in message.streamid) {
-            if (stream) {
-              streamlistelement = {}
-              streamlistelement.streamid = message.streamid[stream]
-              streamlistelement.type = source[message.streamid[stream]].type
-              streamlistelement.meta = source[message.streamid[stream]].meta
-
-              // add apps processing list for streams that are processed, otherwise leave empty
-              // walk through source from tags until we find user, add apps and user
-              userApps = findApps(message.streamid[stream])
-              streamlistelement.user = userApps.user
-              streamlistelement.apps = userApps.apps
-
-              message.streamlist.push(streamlistelement)
-            }
-          }
-
-
-          // create result for client to connect as a receiver
+          // create result with the list of all removed streams
           response = {}
           response.statuscode = 0
           response.streamlist = message.streamlist
