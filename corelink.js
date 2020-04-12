@@ -315,15 +315,14 @@ async function run() {
 
   const users = []
   content = await knex('users')
-    .select('username')
+    .select('id', 'username')
     .orderBy('id')
     .catch((err) => console.log(err))
-
   for (const key in content) {
     if (key) {
-      const { username } = content[key]
-      users[key] = []
-      users[key].username = username
+      const { id, username } = content[key]
+      users[id] = []
+      users[id].username = username
     }
   }
 
