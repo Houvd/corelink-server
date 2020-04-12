@@ -205,7 +205,7 @@ users['16'].username = 'Xavier'
 users['16'].password = 'Testpassword'
 users['17'] = []
 users['17'].username = 'Ben'
-users['17'].password = 'Testpassword'
+users['17'].password = 'Test'
 */
 
 // ?? should a token be restricted to a specific IP/Port combination
@@ -1119,9 +1119,7 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-
         if ('nid' in message) {
-
           // todo psspwrd with salt
           const salt = '53b2843baa4b18f0'
           const npassword = hashSha512(message.npassword, salt)
@@ -1165,12 +1163,12 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'rmUser',
+          sample: 'User',
         },
         userName: {
           description: 'name of the User',
           type: 'string',
-          sample: 'rmUser',
+          sample: 'User',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1206,15 +1204,11 @@ async function run() {
               throw error
             })
           console.log(command)
-          if (typeof users[message.userName] !== 'undefined') {
-            // *** ToDo: make sure that existing connections to this workspace will be terminated
-            // *** ToDo: remove legacy rooms array
-            delete users[message.userName]
 
-            response.statuscode = 0
-            return (response)
-          }
-          return getErrorMessage(6)
+          response.statuscode = 0
+          return (response)
+
+          // return getErrorMessage(6)
         }
         return getErrorMessage(3)
       }
@@ -1234,7 +1228,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'listUser',
+          sample: '', // no idea what to add
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1283,6 +1277,205 @@ async function run() {
       return (data)
     },
   })
+
+  // group functions  :
+
+  functions.addGroup = new Object({
+    info: {
+      name: 'addGroup ',
+      description: 'add a new Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'addGroup',
+        },
+        nGroup: {
+          description: 'name of the new Group',
+          type: 'string',
+          sample: 'Group',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('nGroup' in message) {
+          // *** ToDo: need to sanitize room name befor inserting to database
+          const oldGroup = await knex('groups')
+            .first('id')
+            .where('groupname', message.nGroup)
+            .catch((error) => {
+              throw error
+            })
+          if (typeof oldGroup === 'undefined') {
+            console.log('no old user found')
+            await knex('groups').insert({
+              owner_id: message.nId, groupname: message.nGroup,
+            })
+              .catch((error) => {
+                throw error
+              })
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(5)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.rmGroup = new Object({
+    info: {
+      name: 'rmGroup',
+      description: 'remove an existing Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'Group',
+        },
+        rmGroup: {
+          description: 'name of the Group',
+          type: 'string',
+          sample: 'GroupName',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      console.log('rmgroup called')
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('rmGroup' in message) {
+          console.log(message.rmGroup)
+          const command = await knex('groups')
+            .where('groupname', message.rmGroup)
+            .del()
+            .catch((error) => {
+              throw error
+            })
+          console.log(command)
+          response.statuscode = 0
+          return (response)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.listGroup = new Object({
+    info: {
+      name: 'listGroup',
+      description: 'list existing Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'listGroup',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        listGroup: {
+          description: 'array of available Group',
+          type: 'array',
+          sample: [],
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      // *** ToDo: list only users in DB.
+      if (typeof data !== 'object') {
+        const listGroup = await knex('groups')
+          .select('groupname')
+          .catch((error) => {
+            throw error
+          })
+        const result = []
+        for (const grp in listGroup) {
+          if (grp) result.push(listGroup[grp].groupname)
+        }
+        response.listGroup = result
+        response.statuscode = 0
+        return (response)
+      }
+      return (data)
+    },
+  })
+
 
   functions.sender = new Object({
     info: {
