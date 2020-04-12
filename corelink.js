@@ -2438,7 +2438,7 @@ async function run() {
           type: 'array',
           default: [],
         },
-        streamid: {
+        streamids: {
           description: 'id\'s of the streams to discard (if an empty array is given all source streams that match workspace and type will be discarded)',
           type: 'array',
           default: [],
@@ -2481,7 +2481,7 @@ async function run() {
       if (typeof data !== 'object') {
         console.log('*** disconnect ***')
         // first find all streamid's that we want to disconnect
-        if ((!('streamid' in message)) || (Array.isArray(message.streamid) && (message.streamid.length === 0))) {
+        if ((!('streamids' in message)) || (Array.isArray(message.streamids) && (message.streamids.length === 0))) {
           // make sure we can use the types and workspaces
           if (('type' in message) && Array.isArray(message.type) && (message.type.length > 0)) types = types.concat(message.type)
           if (('workspace' in message) && Array.isArray(message.workspace) && (message.workspace.length > 0)) workspaces = workspaces.concat(message.workspace)
@@ -2533,8 +2533,8 @@ async function run() {
             }
           }
         } else {
-          if (Array.isArray(message.streamid)) streamids = message.streamid
-          if (typeof message.streamid === 'string') streamids = [message.streamid]
+          if (Array.isArray(message.streamids)) streamids = message.streamids
+          if (typeof message.streamids === 'string') streamids = [message.streamids]
         }
         response = {}
         response.statuscode = 0
