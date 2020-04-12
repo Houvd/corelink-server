@@ -1117,9 +1117,7 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-
         if ('nid' in message) {
-
           // todo psspwrd with salt
           const salt = '53b2843baa4b18f0'
           const npassword = hashSha512(message.npassword, salt)
@@ -1281,6 +1279,71 @@ async function run() {
       return (data)
     },
   })
+
+  // group functions  :
+
+  functions.listGroup = new Object({
+    info: {
+      name: 'listGroup',
+      description: 'list existing Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'listGroup',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        listGroup: {
+          description: 'array of available Group',
+          type: 'array',
+          sample: [],
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      // *** ToDo: list only users in DB.
+      if (typeof data !== 'object') {
+        const listGroup = await knex('groups')
+          .select('groupname')
+          .catch((error) => {
+            throw error
+          })
+        const result = []
+        for (const grp in listGroup) {
+          if (grp) result.push(listGroup[grp].groupname)
+        }
+        response.listGroup = result
+        response.statuscode = 0
+        return (response)
+      }
+      return (data)
+    },
+  })
+
 
   functions.sender = new Object({
     info: {
