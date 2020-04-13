@@ -1214,7 +1214,7 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('rmUser' in message) {
-          console.log(message.userName)
+          console.log(message.rmUser)
           const command = await knex('users')
             .where('username', message.rmUser)
             .del()
@@ -1232,9 +1232,9 @@ async function run() {
     },
   })
 
-  functions.listUser = new Object({
+  functions.listuser = new Object({
     info: {
-      name: 'listUser',
+      name: 'listuser',
       description: 'list existing User',
       version: '1.0.0.0',
       author: 'Abhishek Khanna',
@@ -1244,7 +1244,6 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: '', // no idea what to add
         },
         token: {
           description: 'token for the user to authenticate',
