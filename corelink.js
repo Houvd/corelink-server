@@ -3073,6 +3073,11 @@ async function run() {
         if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
         else send = JSON.stringify(await functions[message.function].process(message))
         console.log(`sending:${send}`)
+        if ('id' in message) {
+          send = JSON.parse(send)
+          send.id = message.id
+          send = JSON.stringify(send)
+        }
         conn.write(send)
       } else console.log('Key function not given')
     })
