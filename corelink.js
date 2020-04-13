@@ -1169,11 +1169,11 @@ async function run() {
     },
   })
 
-  functions.rmUser = new Object({
+  functions.rmuser = new Object({
     info: {
-      name: 'rmUser',
+      name: 'rmuser',
       description: 'remove an existing User',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1183,8 +1183,8 @@ async function run() {
           type: 'string',
           sample: 'User',
         },
-        userName: {
-          description: 'name of the User',
+        rmuser: {
+          description: 'id of the User',
           type: 'string',
           sample: 'User',
         },
@@ -1213,10 +1213,10 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('userName' in message) {
+        if ('rmUser' in message) {
           console.log(message.userName)
           const command = await knex('users')
-            .where('username', message.userName)
+            .where('username', message.rmUser)
             .del()
             .catch((error) => {
               throw error
@@ -1225,8 +1225,6 @@ async function run() {
 
           response.statuscode = 0
           return (response)
-
-          // return getErrorMessage(6)
         }
         return getErrorMessage(3)
       }
