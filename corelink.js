@@ -270,7 +270,7 @@ var genRandomString = function (length) {
 * @param {string} password - List of required fields.
 * @param {string} salt - Data to be validated.
 */
-function hashSha512(password, salt) {
+function hashSha512(password, salt = '53b2843baa4b18f0') {
   const hash = crypto.createHmac('sha512', salt) /** Hashing algorithm sha512 */
   hash.update(password)
   const value = hash.digest('hex')
@@ -451,6 +451,7 @@ async function run() {
   errorList[8] = 'Invalid app token, access denied.'
   errorList[9] = 'Database error'
   errorList[10] = 'Cannot update default workspace.'
+  errorList[11] = 'user already found in database'
 
   function getErrorMessage(code) {
     const response = {}
@@ -1075,11 +1076,11 @@ async function run() {
     },
   })
 
-  functions.addUser = new Object({
+  functions.adduser = new Object({
     info: {
-      name: 'addUser ',
+      name: 'adduser',
       description: 'add a new User',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1087,12 +1088,34 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'addUser',
+          sample: 'adduser',
         },
-        nuser: {
+        user: {
           description: 'name of the user',
           type: 'string',
           sample: 'newuser',
+        },
+        password: {
+          description: 'password of the user',
+          type: 'password',
+        },
+        admin: {
+          description: 'user is an admin',
+          type: 'string',
+          sample: 0,
+        },
+        first: {
+          description: 'first name of the user',
+          type: 'string',
+        },
+        last: {
+          description: 'last name of the user',
+          type: 'string',
+        },
+        email: {
+          description: 'email of the user',
+          type: 'string',
+          sample: 'test@gmail.com',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1119,15 +1142,12 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('nid' in message) {
+        if ('id' in message) {
           // todo psspwrd with salt
-          const salt = '53b2843baa4b18f0'
-          const npassword = hashSha512(message.npassword, salt)
-
-          // *** ToDo: need to sanitize room name befor inserting to database
+          const password = hashSha512(message.password)
           const olduser = await knex('users')
             .first('id')
-            .where('username', message.nid)
+            .where('username', message.id)
             .catch((error) => {
               throw error
             })
@@ -1135,7 +1155,7 @@ async function run() {
             console.log('no old user found')
             await knex('users').insert({
               // eslint-disable-next-line max-len
-              username: message.nid, password: npassword.passwordHash, salt: npassword.salt, email: message.nemail, first: message.nfirst, last: message.nlast, admin: message.nadmin,
+              username: message.id, password: password.passwordHash, salt: password.salt, email: message.email, first: message.first, last: message.last, admin: message.admin,
             })
               .catch((error) => {
                 throw error
@@ -1143,7 +1163,7 @@ async function run() {
             response.statuscode = 0
             return (response)
           }
-          return getErrorMessage(5)
+          return getErrorMessage(11)
         }
         return getErrorMessage(3)
       }
@@ -1151,11 +1171,11 @@ async function run() {
     },
   })
 
-  functions.rmUser = new Object({
+  functions.rmuser = new Object({
     info: {
-      name: 'rmUser',
+      name: 'rmuser',
       description: 'remove an existing User',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1165,8 +1185,8 @@ async function run() {
           type: 'string',
           sample: 'User',
         },
-        userName: {
-          description: 'name of the User',
+        rmuser: {
+          description: 'id of the User',
           type: 'string',
           sample: 'User',
         },
@@ -1195,10 +1215,10 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('userName' in message) {
-          console.log(message.userName)
+        if ('rmUser' in message) {
+          console.log(message.rmUser)
           const command = await knex('users')
-            .where('username', message.userName)
+            .where('username', message.rmUser)
             .del()
             .catch((error) => {
               throw error
@@ -1207,8 +1227,6 @@ async function run() {
 
           response.statuscode = 0
           return (response)
-
-          // return getErrorMessage(6)
         }
         return getErrorMessage(3)
       }
@@ -1216,9 +1234,9 @@ async function run() {
     },
   })
 
-  functions.listUser = new Object({
+  functions.listuser = new Object({
     info: {
-      name: 'listUser',
+      name: 'listuser',
       description: 'list existing User',
       version: '1.0.0.0',
       author: 'Abhishek Khanna',
@@ -1228,7 +1246,6 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: '', // no idea what to add
         },
         token: {
           description: 'token for the user to authenticate',
