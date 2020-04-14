@@ -1299,11 +1299,11 @@ async function run() {
 
   // group functions  :
 
-  functions.addGroup = new Object({
+  functions.addgroup = new Object({
     info: {
-      name: 'addGroup ',
+      name: 'addgroup ',
       description: 'add a new Group',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1313,10 +1313,13 @@ async function run() {
           type: 'string',
           sample: 'addGroup',
         },
-        nGroup: {
+        group: {
           description: 'name of the new Group',
           type: 'string',
-          sample: 'Group',
+        },
+        id: {
+          description: 'name of the id that attached to the new Group',
+          type: 'string',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1343,18 +1346,17 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('nGroup' in message) {
-          // *** ToDo: need to sanitize room name befor inserting to database
+        if ('group' in message) {
           const oldGroup = await knex('groups')
             .first('id')
-            .where('groupname', message.nGroup)
+            .where('groupname', message.group)
             .catch((error) => {
               throw error
             })
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: message.nId, groupname: message.nGroup,
+              owner_id: message.id, groupname: message.group,
             })
               .catch((error) => {
                 throw error
@@ -1370,9 +1372,9 @@ async function run() {
     },
   })
 
-  functions.rmGroup = new Object({
+  functions.rmgroup = new Object({
     info: {
-      name: 'rmGroup',
+      name: 'rmgroup',
       description: 'remove an existing Group',
       version: '1.0.0.0',
       author: 'Abhishek Khanna',
@@ -1384,10 +1386,10 @@ async function run() {
           type: 'string',
           sample: 'Group',
         },
-        rmGroup: {
+        rmgroup: {
           description: 'name of the Group',
           type: 'string',
-          sample: 'GroupName',
+          sample: 'Groupname',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1415,10 +1417,10 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('rmGroup' in message) {
+        if ('rmgroup' in message) {
           console.log(message.rmGroup)
           const command = await knex('groups')
-            .where('groupname', message.rmGroup)
+            .where('groupname', message.rmgroup)
             .del()
             .catch((error) => {
               throw error
@@ -1433,11 +1435,11 @@ async function run() {
     },
   })
 
-  functions.listGroup = new Object({
+  functions.listgroup = new Object({
     info: {
-      name: 'listGroup',
+      name: 'listgroup',
       description: 'list existing Group',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
