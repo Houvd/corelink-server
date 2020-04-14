@@ -73,8 +73,18 @@ const WSControl = 20012
 const port = []
 // const rooms = []
 // const users = []
+// ?? should a token be restricted to a specific IP/Port combination
+// users can have several tokens that are in use
+// tokens time out separately
+
 const tokens = [] // holds all token related information
-// const apps = [] // holds all tokens and related information for apps
+// tokens[token] = [] // information for specific token
+// tokens[token]['time'] = 342523; // holds the timeout time stamp for the tokens
+// tokens[token]['user'] = 1; // holds the user id for the token
+// tokens[token]['streams'] = []; // stream id of the stream that the token was used for
+// tokens[token]['conn'] = %Socket; // control connection for the tcp control channel
+// we can expand other token information with
+// tokens[token]['other'] = [];
 
 let debug
 let errorList = [] // holds all error messages
@@ -210,21 +220,12 @@ users['17'].username = 'Ben'
 users['17'].password = 'Test'
 */
 
-// ?? should a token be restricted to a specific IP/Port combination
-// users can have several tokens that are in use
-// tokens time out separately
 
-// tokens[token] = [] // information for specific token
-// tokens[token]['time'] = 342523; // holds the timeout time stamp for the tokens
-// tokens[token]['user'] = 1; // holds the user id for the token
-// tokens[token]['streams'] = []; // stream id of the stream that the token was used for
-// tokens[token]['conn'] = %Socket; // control connection for the tcp control channel
-// we can expand other token information with
-// tokens[token]['other'] = [];
 
 // app can work as a app (e.g. user is the app)
 // app can work as a user (e.g. user is the user)
 
+// const apps = [] // holds all tokens and related information for apps
 // apps[atoken] = [] // information for a specific pre shared app token, always starts with an !
 // apps[atoken]['time'] = 0 // holds timeout time stamp for token, 0 for no timeout
 // apps[atoken]['name'] = '' // holds app name for the app
@@ -1092,7 +1093,7 @@ async function run() {
           type: 'string',
           sample: 'adduser',
         },
-        user: {
+        username: {
           description: 'name of the user',
           type: 'string',
           sample: 'newuser',
