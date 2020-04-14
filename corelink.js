@@ -9,7 +9,9 @@
  * @author Robert Pahle
  * @version V4.4.0.0
  */
-const serverVersion = 'v4.4.0.0'
+const serverVersion = 'v4.5.0.0'
+// v4.5.0.0
+// - support id to allow ordering of control packets
 // v4.4.0.0
 // - ws data streams encryped
 // v4.3.0.0
@@ -2058,29 +2060,29 @@ async function run() {
           // process.exit();
 
           // get appropriate streamids
-          if (!('streamid' in message) || (message.streamid.length === 0)) {
-            message.streamid = []
-            for (sourceid in source) if (!('type' in message) || (message.type.length === 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
+          if (!('streamids' in message) || (message.streamids.length === 0)) {
+            message.streamids = []
+            for (sourceid in source) if (!('type' in message) || (message.type.length === 0) || (message.type.includes(source[sourceid].type))) message.streamids.push(sourceid)
           }
 
           // remove all streamids that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes to
           // query and bring them up...)
-          for (stream in message.streamid) {
-            if (typeof source[message.streamid[stream]] === 'undefined') message.streamid.splice(stream, 1)
+          for (stream in message.streamids) {
+            if (typeof source[message.streamids[stream]] === 'undefined') message.streamids.splice(stream, 1)
           }
           // add usernames to the specific streams
           message.streamlist = []
-          for (stream in message.streamid) {
+          for (stream in message.streamids) {
             if (stream) {
               streamlistelement = {}
-              streamlistelement.streamid = message.streamid[stream]
-              streamlistelement.type = source[message.streamid[stream]].type
-              streamlistelement.meta = source[message.streamid[stream]].meta
+              streamlistelement.streamid = message.streamids[stream]
+              streamlistelement.type = source[message.streamids[stream]].type
+              streamlistelement.meta = source[message.streamids[stream]].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(message.streamid[stream])
+              userApps = findApps(message.streamids[stream])
               streamlistelement.user = userApps.user
               streamlistelement.apps = userApps.apps
 
@@ -2092,14 +2094,14 @@ async function run() {
                   || ((typeof apps[message.token] !== 'undefined')
                   && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))) {
                 message.streamlist.push(streamlistelement)
-              } else console.log(`skipping stream from same user ${message.streamid[stream]}`)
+              } else console.log(`skipping stream from same user ${message.streamids[stream]}`)
             }
           }
 
           // give error message if we dont have a streamid and are also not
           // expecting updates on streams
           // var t =  typeof message['alert'] !== 'undefined';
-          if ((message.streamid.length < 1) && ((typeof message.alert === 'undefined')
+          if ((message.streamids.length < 1) && ((typeof message.alert === 'undefined')
               || !((typeof message.alert !== 'undefined') && (message.alert === true)))) {
             // console.log(message);
             return getErrorMessage(7)
@@ -3089,12 +3091,12 @@ async function run() {
       if ('function' in message) {
         if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
         else send = JSON.stringify(await functions[message.function].process(message))
-        console.log(`sending:${send}`)
         if ('id' in message) {
           send = JSON.parse(send)
           send.id = message.id
           send = JSON.stringify(send)
         }
+        console.log(`sending:${send}`)
         conn.write(send)
       } else console.log('Key function not given')
     })
@@ -3360,8 +3362,12 @@ async function run() {
       if ('function' in message) {
         if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
         else send = JSON.stringify(await functions[message.function].process(message))
+        if ('id' in message) {
+          send = JSON.parse(send)
+          send.id = message.id
+          send = JSON.stringify(send)
+        }
         console.log(`sending:${send}`)
-
         conn.send(send)
       } else console.log('Key function not given')
     })
