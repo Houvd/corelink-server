@@ -4,6 +4,7 @@ RUN apt update -y && apt install mc htop net-tools git -y
 ADD config/ /app/config/
 ADD knex/ /app/knex/
 ADD corelink.js /app/
+ADD dockerlog.js.sample /app/dockerlog.js
 WORKDIR /app/
 RUN cd /app && npm install ws config https knex sqlite3
 

@@ -52,6 +52,17 @@ const https = require('https')
 const config = require('./config/configure')
 const knex = require('./knex/knex.js')
 
+// go to docker logging of the dockerlog file is available
+try {
+  // eslint-disable-next-line global-require, import/no-unresolved
+  require('./dockerlog')
+} catch (e) {
+  if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
+    console.log('Selecting Console to log.')
+  } else throw e
+}
+
+
 const httpsOptions = {
   key: fs.readFileSync(config.key),
   cert: fs.readFileSync(config.cert),
