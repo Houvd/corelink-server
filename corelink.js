@@ -3343,9 +3343,9 @@ async function run() {
             } else if (target[targetid].proto === 'tcp') {
               if (typeof target[targetid].conn === 'undefined' && (header.id !== 'log')) console.log('!!!! tcp connection not defined, dropping packet')
               else target[targetid].conn.write(msg)
-            } else if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
+            } else if (((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) && (header.id !== 'log')) console.log('!!!! websocket connection not defined or closed, dropping packet')
             else target[targetid].conn.send(msg)
-          } else if (typeof target[targetid] === 'undefined'  && (header.id !== 'log')) console.log(`${targetid} is not registered at all`)
+          } else if (typeof target[targetid] === 'undefined' && (header.id !== 'log')) console.log(`${targetid} is not registered at all`)
           else {
             types = ''
             for (type in target.targetid) {
