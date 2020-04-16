@@ -1182,16 +1182,18 @@ async function run() {
         },
         admin: {
           description: 'user is an admin',
-          type: 'string',
-          sample: 0,
+          type: 'boolean',
+          sample: false,
         },
         first: {
           description: 'first name of the user',
           type: 'string',
+          sample: 'first',
         },
         last: {
           description: 'last name of the user',
           type: 'string',
+          sample: 'last',
         },
         email: {
           description: 'email of the user',
@@ -1228,7 +1230,7 @@ async function run() {
           const password = hashSha512(message.password)
           const olduser = await knex('users')
             .first('id')
-            .where('username', message.id)
+            .where('username', message.username)
             .catch((error) => {
               throw error
             })
@@ -1236,7 +1238,7 @@ async function run() {
             console.log('no old user found')
             await knex('users').insert({
               // eslint-disable-next-line max-len
-              username: message.id, password: password.passwordHash, salt: password.salt, email: message.email, first: message.first, last: message.last, admin: message.admin,
+              username: message.username, password: password.passwordHash, salt: password.salt, email: message.email, first: message.first, last: message.last, admin: message.admin,
             })
               .catch((error) => {
                 throw error
@@ -1315,9 +1317,9 @@ async function run() {
     },
   })
 
-  functions.listuser = new Object({
+  functions.listusers = new Object({
     info: {
-      name: 'listuser',
+      name: 'listusers',
       description: 'list existing User',
       version: '1.0.0.0',
       author: 'Abhishek Khanna',
