@@ -2263,10 +2263,10 @@ async function run() {
           for (stream in message.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamrelay[message.streamlist[stream].streamid][streamid] === 'undefined') {
-                serverfunctions.subscriber.process(message.streamlist[stream].streamid, streamid)
-              }
               if (streamrelay[message.streamlist[stream].streamid] !== 'undefined') {
+                if (typeof streamrelay[message.streamlist[stream].streamid][streamid] === 'undefined') {
+                  serverfunctions.subscriber.process(message.streamlist[stream].streamid, streamid)
+                }
                 streamrelay[message.streamlist[stream].streamid][streamid] = []
               }
             }
