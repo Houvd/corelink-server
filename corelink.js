@@ -1397,10 +1397,12 @@ async function run() {
         group: {
           description: 'name of the new Group',
           type: 'string',
+          sample: 'group',
         },
         id: {
           description: 'name of the id that attached to the new Group',
           type: 'string',
+          sample: 4,
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1437,7 +1439,7 @@ async function run() {
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: message.id, groupname: message.group,
+              owner_id: message.owner, groupname: message.group,
             })
               .catch((error) => {
                 throw error
@@ -3345,7 +3347,7 @@ async function run() {
               else target[targetid].conn.write(msg)
             } else if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
             else target[targetid].conn.send(msg)
-          } else if (typeof target[targetid] === 'undefined'  && (header.id !== 'log')) console.log(`${targetid} is not registered at all`)
+          } else if (typeof target[targetid] === 'undefined' && (header.id !== 'log')) console.log(`${targetid} is not registered at all`)
           else {
             types = ''
             for (type in target.targetid) {
