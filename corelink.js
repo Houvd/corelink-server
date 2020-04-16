@@ -7,7 +7,7 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle
- * @version V4.4.0.0
+ * @version V4.5.0.0
  */
 const serverVersion = 'v4.5.0.0'
 // v4.5.0.0
@@ -52,23 +52,25 @@ const https = require('https')
 const config = require('./config/configure')
 const knex = require('./knex/knex.js')
 
-// go to docker logging of the dockerlog file is available
-try {
-  // eslint-disable-next-line global-require, import/no-unresolved
-  require('./dockerlog')
-} catch (e) {
-  if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
-    console.log('Selecting Console to log.')
-  } else throw e
-}
 
+// should the server output be piped into a corelink stream
+// to logging to file copy dockerlog.js.sample to dockerlog.js
+const logstream = true
+let logfile = true
+let logstdout = true
+
+// Check if the file exists in the current directory, and if it is writable.
+fs.access('dockerlog', fs.constants.F_OK, (err) => {
+  if (!err) {
+    logfile = true
+    logstdout = false
+  }
+})
 
 const httpsOptions = {
   key: fs.readFileSync(config.key),
   cert: fs.readFileSync(config.cert),
 }
-
-const userlist = []
 
 // ******** setup default setting
 // timeouts for sync server
@@ -231,12 +233,10 @@ users['17'].username = 'Ben'
 users['17'].password = 'Test'
 */
 
-
-
 // app can work as a app (e.g. user is the app)
 // app can work as a user (e.g. user is the user)
 
-// const apps = [] // holds all tokens and related information for apps
+const apps = [] // holds all tokens and related information for apps
 // apps[atoken] = [] // information for a specific pre shared app token, always starts with an !
 // apps[atoken]['time'] = 0 // holds timeout time stamp for token, 0 for no timeout
 // apps[atoken]['name'] = '' // holds app name for the app
@@ -304,6 +304,54 @@ function saltHashPassword(userpassword) {
 
 //* **************** Server */
 async function run() {
+  // setup logging
+
+  // setup file logging of the dockerlog.js file is available
+  let log
+  if (logfile) {
+    const timestamp = new Date(Date.now())
+    const timestring = `${timestamp.getFullYear()}_${timestamp
+      .getMonth().toString().padStart(2, '0')}_${timestamp
+      .getDate().toString().padStart(2, '0')}_${timestamp
+      .getHours().toString().padStart(2, '0')}_${timestamp
+      .getMinutes().toString().padStart(2, '0')}_${timestamp
+      .getSeconds().toString().padStart(2, '0')}`
+    log = await fs.createWriteStream(`data/${timestring}_node.access.log`, { flags: 'a' })
+
+    console.log(`Selecting ${timestring}_node.access.log to log.`)
+  }
+
+  const stdout = process.stdout.write
+
+  function write(...args) {
+    if (logstdout) stdout.apply(process.stdout, args)
+    if (logfile) log.write(...args)
+    const data = Buffer.from(args[0])
+    const headerSize = Buffer.alloc(6)
+    let header = {
+      id: 'log',
+      time: Date.now(),
+    }
+    header = JSON.stringify(header)
+    header = Buffer.from(header)
+
+    headerSize.writeUInt16LE(header.length, 0)
+    headerSize.writeUInt32LE(data.length, 2)
+
+    const packet = [headerSize, header, data]
+    const message = Buffer.concat(packet)
+    // eslint-disable-next-line no-use-before-define
+    if (logstream) relayData(message)
+  }
+
+  process.stdout.write = write
+
+  // catch exceptions
+  process.on('uncaughtException', (e) => {
+    console.error((e && e.stack) ? e.stack : e)
+  })
+
+
   // pre-setting arrays with data while we convert the server to use only the database
   let content = await knex('rooms')
     .select('roomname', 'rooms.owner_id', 'group_user.user_id')
@@ -340,7 +388,6 @@ async function run() {
     }
   }
 
-  const apps = []
   content = await knex('apps')
     .select('appname', 'token', 'time')
     .orderBy('id')
@@ -358,6 +405,24 @@ async function run() {
       apps[token].name = appname
       apps[token].streams = []
     }
+  }
+
+  // making sure that the apps cannot be overwritten
+  if (logstream) {
+    source.log = []
+    source.log.ip = ''
+    source.log.port = 0
+    source.log.proto = 'local'
+    source.log.room = 'Log'
+    source.log.type = 'LogStream'
+    source.log.alert = false
+    source.log.time = Date.now()
+    source.log.from = 'LogStream'
+
+    apps['!log'].streams.push('log')
+    apps['!log'].conn = []
+
+    streamrelay.log = []
   }
 
 
@@ -3082,55 +3147,58 @@ async function run() {
 
   function handleControlConnection(conn) {
     let message
-    const remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
-    const { remotePort } = conn
-    let send = ''
-    // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
-    // controlConnection[remoteAddress] = [];
-    // controlConnection[remoteAddress][remotePort]=conn;
-    // console.log(controlConnection[remoteAddress][remotePort]);
+    if (typeof conn.remoteAddress !== 'undefined') {
+      const remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
+      const { remotePort } = conn
+      let send = ''
+      // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
+      // controlConnection[remoteAddress] = [];
+      // controlConnection[remoteAddress][remotePort]=conn;
+      // console.log(controlConnection[remoteAddress][remotePort]);
 
-    // at this point we have a new connection that is not yet authenticated
-    console.log('new client TCP control connection from %s :%s', remoteAddress, remotePort)
-    conn.setNoDelay(true)
+      // at this point we have a new connection that is not yet authenticated
+      console.log('new client TCP control connection from %s :%s', remoteAddress, remotePort)
+      conn.setNoDelay(true)
+      conn.setKeepAlive(true)
 
-    conn.on('data', async (data) => {
-      console.log('TCP control connection data from %s :%j', remoteAddress, data.toString('utf8'))
-      try {
-        message = JSON.parse(data)
-      } catch (e) {
-        console.log(`Received message not a proper JSON:${data.toString()}`)
-        return
-      }
-      if ('function' in message) {
-        if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
-        else send = JSON.stringify(await functions[message.function].process(message))
-        if ('id' in message) {
-          send = JSON.parse(send)
-          send.id = message.id
-          send = JSON.stringify(send)
+      conn.on('data', async (data) => {
+        console.log('TCP control connection data from %s :%j', remoteAddress, data.toString('utf8'))
+        try {
+          message = JSON.parse(data)
+        } catch (e) {
+          console.log(`Received message not a proper JSON:${data.toString()}`)
+          return
         }
-        console.log(`sending:${send}`)
-        conn.write(send)
-      } else console.log('Key function not given')
-    })
+        if ('function' in message) {
+          if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
+          else send = JSON.stringify(await functions[message.function].process(message))
+          if ('id' in message) {
+            send = JSON.parse(send)
+            send.id = message.id
+            send = JSON.stringify(send)
+          }
+          console.log(`sending:${send}`)
+          conn.write(send)
+        } else console.log('Key function not given')
+      })
 
-    conn.once('close', () => {
-      // *** ToDo: unset the array element for the connection
-      console.log('TCP control connection from %s closed', remoteAddress)
-    })
+      conn.once('close', () => {
+        // *** ToDo: unset the array element for the connection
+        console.log('TCP control connection from %s closed', remoteAddress)
+      })
 
-    conn.on('error', (err) => {
-      // *** ToDo: unset the array element for the connection
-      console.log('TCP control connection %s error: %s', remoteAddress, err.message)
-    })
+      conn.on('error', (err) => {
+        // *** ToDo: unset the array element for the connection
+        console.log('TCP control connection %s error: %s', remoteAddress, err.message)
+      })
+    }
   }
 
   // fill data list with available objects
   functions.listfunctions.info.responses.functionlist.sample = Object.keys(functions)
   functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
 
-
+  const userlist = []
   users.forEach((user) => {
     userlist.push(user.username)
   })
@@ -3210,13 +3278,13 @@ async function run() {
       console.log(`error during parsing ${e}`)
       return console.error(e)
     }
-    if (debug) {
+    if (debug && header.id !== 'log') {
       dataSize = msg.readUInt32LE(2)
       data = Buffer.allocUnsafe(dataSize)
       msg.copy(data, 0, 6 + headerSize)
       // console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize},
       // header:${JSON.stringify(header)}to${target[targetid]['ip']}:${target[targetid]['port']}`);
-      console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to `)
+      if (header.id !== 'log') console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to `)
       // console.log(data)
     }
     // if we see the 'stamp' variable we will return a ping with the server stamped time
@@ -3259,49 +3327,49 @@ async function run() {
       for (targetid in streamrelay[header.id]) {
         if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
           if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].port !== 'undefined') && (target[targetid].port !== 0)) {
-            if (debug) {
+            if (debug && header.id !== 'log') {
               console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
               // console.log(data)
             }
             target[targetid].time = last
             if (target[targetid].proto === 'udp') {
               UDPDataServer.send(msg, target[targetid].port, target[targetid].ip, (err) => {
-                if (err) console.log('socket error', err)
+                if (err && (header.id !== 'log')) console.log('socket error', err)
               })
             } else if (target[targetid].proto === 'tcp') {
-              if (typeof target[targetid].conn === 'undefined') console.log('!!!! tcp connection not defined, dropping packet')
+              if (typeof target[targetid].conn === 'undefined' && (header.id !== 'log')) console.log('!!!! tcp connection not defined, dropping packet')
               else target[targetid].conn.write(msg)
             } else if ((typeof target[targetid].conn === 'undefined') || (target[targetid].conn.readyState !== 1)) console.log('!!!! websocket connection not defined or closed, dropping packet')
             else target[targetid].conn.send(msg)
-          } else if (typeof target[targetid] === 'undefined') console.log(`${targetid} is not registered at all`)
+          } else if (typeof target[targetid] === 'undefined'  && (header.id !== 'log')) console.log(`${targetid} is not registered at all`)
           else {
             types = ''
             for (type in target.targetid) {
               if (types === '') types = type
               else types = `${types}, ${type}`
             }
-            console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
+            if (header.id !== 'log') console.log(`no port for stream ${targetid} [${types}], IP:${target[targetid].ip}, Timeout:${target[targetid].time}`)
           }
-        } else console.log(`no ip for stream ${header.id}`)
+        } else if (header.id !== 'log') console.log(`no ip for stream ${header.id}`)
       }
     } else if (header.id in target) {
-      if (debug) console.log(target[header.id].ip)
+      if (debug && (header.id !== 'log')) console.log(target[header.id].ip)
       console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
       if (remoteAddress === target[header.id].ip) {
         // console.log(target[header.id])
         if (target[header.id].port === 0) {
-          console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
+          if (header.id !== 'log') console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
           target[header.id].port = remotePort
           if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
-            console.log(header.id, 'adding the connection')
+            if (header.id !== 'log') console.log(header.id, 'adding the connection')
             target[header.id].conn = connections[remoteAddress][remotePort].conn
             delete connections[remoteAddress][remotePort]
             if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
           }
         }
-        console.log(`no port for stream ${header.id} [${types}], IP:${target[header.id].ip}, Timeout:${target[header.id].time}`)
+        if (header.id !== 'log') console.log(`no port for stream ${header.id} [${types}], IP:${target[header.id].ip}, Timeout:${target[header.id].time}`)
       }
-    } else console.log(`StreamID (${header.id}) not authorized to send`)
+    } else if (header.id !== 'log') console.log(`StreamID (${header.id}) not authorized to send`)
 
     return 'relaydata end'
   }
@@ -3463,6 +3531,8 @@ async function run() {
   })
 
   function timeoutConnections() {
+    if (typeof log !== 'undefined') source.log.time = Date.now()
+
     let ip
     // eslint-disable-next-line no-shadow
     let port

@@ -4,6 +4,12 @@ exports.seed = (knex) => knex('app_room')
   // Inserts seed entries
   .then(() => knex('app_room').insert([
     {
+      id: 0,
+      owner_id: 1,
+      app_id: 0,
+      room_id: 0,
+    },
+    {
       id: 1,
       owner_id: 1,
       app_id: 1,

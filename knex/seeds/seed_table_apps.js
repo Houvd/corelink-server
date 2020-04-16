@@ -4,6 +4,13 @@ exports.seed = (knex) => knex('apps')
   // Inserts seed entries
   .then(() => knex('apps').insert([
     {
+      id: 0,
+      owner_id: 1,
+      appname: 'LogStream',
+      description: 'Provides one stream with the current log data of the server',
+      token: '!log',
+    },
+    {
       id: 1,
       owner_id: 1,
       appname: 'Test App',
