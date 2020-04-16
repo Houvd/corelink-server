@@ -7,9 +7,11 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle
- * @version V4.5.0.0
+ * @version V4.6.0.0
  */
-const serverVersion = 'v4.5.0.0'
+const serverVersion = 'v4.6.0.0'
+// v4.6.0.0
+// - enable logging to file and to stream
 // v4.5.0.0
 // - support id to allow ordering of control packets
 // v4.4.0.0
