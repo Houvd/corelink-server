@@ -1401,10 +1401,12 @@ async function run() {
         group: {
           description: 'name of the new Group',
           type: 'string',
+          sample: 'group',
         },
         id: {
           description: 'name of the id that attached to the new Group',
           type: 'string',
+          sample: 4,
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1441,7 +1443,7 @@ async function run() {
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: message.id, groupname: message.group,
+              owner_id: message.owner, groupname: message.group,
             })
               .catch((error) => {
                 throw error
