@@ -353,6 +353,10 @@ async function run() {
     console.error((e && e.stack) ? e.stack : e)
   })
 
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error(reason, promise)
+  })
+
 
   // pre-setting arrays with data while we convert the server to use only the database
   let content = await knex('rooms')
@@ -2266,6 +2270,9 @@ async function run() {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
               if (streamrelay[message.streamlist[stream].streamid] !== 'undefined') {
+                console.log('line 2270', stream)
+                console.log('line 2271', message.streamlist[stream])
+                console.log('line 2272', streamrelay[message.streamlist[stream].streamid])
                 if (typeof streamrelay[message.streamlist[stream].streamid][streamid] === 'undefined') {
                   serverfunctions.subscriber.process(message.streamlist[stream].streamid, streamid)
                 }
