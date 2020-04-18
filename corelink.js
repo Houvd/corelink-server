@@ -1486,6 +1486,107 @@ async function run() {
     },
   })
 
+  functions.rmusertogroup = new Object({
+    info: {
+      name: 'rmusertogroup ',
+      description: 'add a user to a Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'Group',
+        },
+        group: {
+          description: 'name of the Group',
+          type: 'string',
+          sample: 'group',
+        },
+        user: {
+          description: ' user that need to remove from that Group',
+          type: 'string',
+          sample: 'user',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('group' in message) {
+          const oldGroup = await knex('groups')
+            .first('id', 'owner_id')
+            .where('groupname', message.group)
+            .catch((error) => {
+              throw error
+            })
+
+          if (typeof oldGroup !== 'undefined') {
+            console.log('group found')
+            console.log(oldGroup)
+            const olduser = await knex('users')
+              .first('id')
+              .where('username', message.user)
+              .catch((error) => {
+                throw error
+              })
+            if (typeof olduser !== 'undefined') {
+              const admin = await knex('users')
+                .first('admin')
+                .where('id', tokens[message.token].user)
+                .catch((error) => {
+                  throw error
+                })
+              console.log('owner details')
+              console.log(admin)
+              if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
+                console.log('login user is either the admin or owner')
+                const command = await knex('group_user')
+                  .where('user_id', oldGroup.id).where('group_id', olduser.id)
+                  .del()
+                  .catch((error) => {
+                    throw error
+                  })
+                console.log('kjdnkjkwejbkjbvkjbrekjbv')
+                console.log(command)
+                console.log('drmamaamam')
+                response.statuscode = 0
+                return (response)
+              }
+              return getErrorMessage(13)
+            }
+            return getErrorMessage(14)
+          }
+          return getErrorMessage(12)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
 
   functions.addgroup = new Object({
     info: {
