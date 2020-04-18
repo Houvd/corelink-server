@@ -2271,7 +2271,7 @@ async function run() {
           for (stream in message.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (streamrelay[message.streamlist[stream].streamid] !== 'undefined') {
+              if (typeof streamrelay[message.streamlist[stream].streamid] !== 'undefined') {
                 console.log('line 2270', stream)
                 console.log('line 2271', message.streamlist[stream])
                 console.log('line 2272', streamrelay[message.streamlist[stream].streamid])
