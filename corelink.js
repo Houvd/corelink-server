@@ -102,7 +102,6 @@ const tokens = [] // holds all token related information
 // tokens[token]['other'] = [];
 
 let debug
-let errorList = [] // holds all error messages
 const functions = [] // holds all objects for functions in use
 // all receiver connections via TCP or WS
 
@@ -521,7 +520,8 @@ async function run() {
   })
 
 
-  errorList = [] // holds all error messages
+  // holds all error messages
+  const errorList = []
   errorList[1] = 'Key Functionname not set'
   errorList[2] = 'Function does not exist.'
   errorList[3] = 'Required key not supplied'
@@ -533,6 +533,9 @@ async function run() {
   errorList[9] = 'Database error'
   errorList[10] = 'Cannot update default workspace.'
   errorList[11] = 'user already found in database'
+  errorList[12] = 'group doesnt exist in the database'
+  errorList[13] = 'login user doesnt have right to add user to the group'
+  errorList[14] = 'user does not exist in Database'
 
   function getErrorMessage(code) {
     const response = {}
@@ -1379,6 +1382,106 @@ async function run() {
   })
 
   // group functions  :
+
+  functions.addusertogroup = new Object({
+    info: {
+      name: 'addusertogroup ',
+      description: 'add a user to a Group',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'addGroup',
+        },
+        group: {
+          description: 'name of the  Group',
+          type: 'string',
+          sample: 'group',
+        },
+        user: {
+          description: 'name user attached to the  Group',
+          type: 'string',
+          sample: 'user',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('group' in message) {
+          const oldGroup = await knex('groups')
+            .first('id', 'owner_id')
+            .where('groupname', message.group)
+            .catch((error) => {
+              throw error
+            })
+
+          if (typeof oldGroup !== 'undefined') {
+            console.log('group found')
+            console.log(oldGroup)
+            const olduser = await knex('users')
+              .first('id')
+              .where('username', message.user)
+              .catch((error) => {
+                throw error
+              })
+            if (typeof olduser !== 'undefined') {
+              const admin = await knex('users')
+                .first('admin')
+                .where('id', tokens[message.token].user)
+                .catch((error) => {
+                  throw error
+                })
+              console.log('owner details')
+              console.log(admin)
+              if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
+                console.log('login user is either the admin or owner')
+
+                await knex('group_user').insert({
+                  owner_id: tokens[message.token].user, group_id: oldGroup.id, user_id: olduser.id,
+                })
+                  .catch((error) => {
+                    throw error
+                  })
+                response.statuscode = 0
+                return (response)
+              }
+              return getErrorMessage(13)
+            }
+            return getErrorMessage(14)
+          }
+          return getErrorMessage(12)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
 
   functions.addgroup = new Object({
     info: {
