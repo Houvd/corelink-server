@@ -1564,14 +1564,12 @@ async function run() {
               if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
                 console.log('login user is either the admin or owner')
                 const command = await knex('group_user')
-                  .where('user_id', oldGroup.id).where('group_id', olduser.id)
+                  .where('user_id', olduser.id).where('group_id', oldGroup.id)
                   .del()
                   .catch((error) => {
                     throw error
                   })
-                console.log('kjdnkjkwejbkjbvkjbrekjbv')
                 console.log(command)
-                console.log('drmamaamam')
                 response.statuscode = 0
                 return (response)
               }
