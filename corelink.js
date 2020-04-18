@@ -1399,7 +1399,7 @@ async function run() {
           type: 'string',
           sample: 'group',
         },
-        id: {
+        userid: {
           description: 'name of the id that attached to the new Group',
           type: 'string',
           sample: 4,
@@ -1439,7 +1439,7 @@ async function run() {
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: message.owner, groupname: message.group,
+              owner_id: message.userid, groupname: message.group,
             })
               .catch((error) => {
                 throw error
@@ -1518,9 +1518,9 @@ async function run() {
     },
   })
 
-  functions.listgroup = new Object({
+  functions.listgroups = new Object({
     info: {
-      name: 'listgroup',
+      name: 'listgroups',
       description: 'list existing Group',
       version: '1.0.0.1',
       author: 'Abhishek Khanna',
@@ -1572,7 +1572,7 @@ async function run() {
         for (const grp in listGroup) {
           if (grp) result.push(listGroup[grp].groupname)
         }
-        response.listGroup = result
+        response.listGroups = result
         response.statuscode = 0
         return (response)
       }
