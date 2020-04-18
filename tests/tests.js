@@ -171,7 +171,8 @@ function createRequest(name) {
       }
     } else {
       let content = results
-      if (result.indexOf('$$') !== -1) {
+      console.log('attribute', result, typeof result)
+      if ((typeof result === 'string') && (result.indexOf('$$') !== -1)) {
         const k = result.substr(result.indexOf('$$') + 2).split('.')
         for (const j in k) {
           content = content[k[j]]

@@ -1164,7 +1164,7 @@ async function run() {
     },
   })
 
-  functions.adduser = new Object({
+  functions.addUser = new Object({
     info: {
       name: 'adduser',
       description: 'add a new User',
@@ -1185,7 +1185,8 @@ async function run() {
         },
         password: {
           description: 'password of the user',
-          type: 'password',
+          type: 'string',
+          sample: 'password',
         },
         admin: {
           description: 'user is an admin',
@@ -1195,12 +1196,12 @@ async function run() {
         first: {
           description: 'first name of the user',
           type: 'string',
-          sample: 'first',
+          sample: 'firstname',
         },
         last: {
           description: 'last name of the user',
           type: 'string',
-          sample: 'last',
+          sample: 'lastname',
         },
         email: {
           description: 'email of the user',
@@ -1232,7 +1233,7 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('id' in message) {
+        if ('username' in message) {
           // todo psspwrd with salt
           const password = hashSha512(message.password)
           const olduser = await knex('users')
@@ -1273,12 +1274,12 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'User',
+          sample: 'rmuser',
         },
-        rmuser: {
-          description: 'id of the User',
+        username: {
+          description: 'name of the User',
           type: 'string',
-          sample: 'User',
+          sample: 'newuser',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1305,10 +1306,10 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        if ('rmUser' in message) {
-          console.log(message.rmUser)
+        if ('username' in message) {
+          console.log('Removing User:', message.username)
           const command = await knex('users')
-            .where('username', message.rmUser)
+            .where('username', message.username)
             .del()
             .catch((error) => {
               throw error
@@ -1327,7 +1328,7 @@ async function run() {
   functions.listusers = new Object({
     info: {
       name: 'listusers',
-      description: 'list existing User',
+      description: 'list existing users',
       version: '1.0.0.0',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
@@ -1336,6 +1337,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
+          sample: 'listusers',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1343,8 +1345,8 @@ async function run() {
         },
       },
       responses: {
-        workspacelist: {
-          description: 'array of available User',
+        userlist: {
+          description: 'array of available users',
           type: 'array',
           sample: [],
         },
@@ -1377,7 +1379,7 @@ async function run() {
         for (const usr in userList) {
           if (usr) result.push(userList[usr].username)
         }
-        response.usernameList = result
+        response.userlist = result
         response.statuscode = 0
         return (response)
       }
@@ -2296,7 +2298,7 @@ async function run() {
           type: 'string',
         },
         streamlist: {
-          description: 'array of streamid/user/apps/type/meta of the streams that will be sent',
+          description: 'array of streamid/user/apps [array of app names]/type/meta of the streams that will be sent',
           type: 'array',
         },
         /* *** ToDo: IP is not returned at the moment, because the detection of
