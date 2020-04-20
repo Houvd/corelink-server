@@ -540,6 +540,7 @@ async function run() {
   errorList[12] = 'group doesnt exist in the database'
   errorList[13] = 'login user doesnt have right to add user to the group'
   errorList[14] = 'user does not exist in Database'
+  errorList[15] = 'password not provided'
 
   function getErrorMessage(code) {
     const response = {}
@@ -1227,7 +1228,6 @@ async function run() {
       },
     },
     async process(message) {
-      console.log("reacehd ")
       const data = await checkAuth(message)
         .catch((error) => {
           throw error
@@ -1237,7 +1237,6 @@ async function run() {
         console.log('in type')
         if ('username' in message) {
           // todo psspwrd with salt
-          console.log('prt2 ')
           const password = hashSha512(message.password)
           const olduser = await knex('users')
             .first('id')
@@ -1260,6 +1259,71 @@ async function run() {
           return getErrorMessage(11)
         }
         return getErrorMessage(3)
+      }
+      return (data)
+    },
+  })
+
+  functions.password = new Object({
+    info: {
+      name: 'password',
+      description: 'change password for an existing User',
+      version: '1.0.0.1',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'password',
+        },
+        passwrod: {
+          description: 'new password of the User',
+          type: 'string',
+          sample: 'password',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('password' in message) {
+          const newpassword = hashSha512(message.password)
+          console.log(message.password)
+          console.log(newpassword)
+          const command = await knex('users')
+            .where('id', tokens[message.token].user)
+            .update('password', newpassword.passwordHash)
+            .catch((error) => {
+              throw error
+            })
+          console.log(command)
+
+          response.statuscode = 0
+          return (response)
+        }
+        return getErrorMessage(15)
       }
       return (data)
     },
@@ -1411,10 +1475,10 @@ async function run() {
           type: 'string',
           sample: 'group',
         },
-        userid: {
+        username: {
           description: 'name of the id that attached to the new Group',
           type: 'string',
-          sample: 4,
+          sample: 'testuser',
         },
         token: {
           description: 'token for the user to authenticate',
