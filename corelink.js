@@ -65,7 +65,7 @@ let logstdout = true
 fs.access('dockerlog', fs.constants.F_OK, (err) => {
   if (!err) {
     logfile = true
-    logstdout = false
+    logstdout = true
   }
 })
 
@@ -318,11 +318,13 @@ async function run() {
       .getMinutes().toString().padStart(2, '0')}_${timestamp
       .getSeconds().toString().padStart(2, '0')}`
     log = await fs.createWriteStream(`data/${timestring}_node.access.log`, { flags: 'a' })
+    logErr = await fs.createWriteStream(`data/${timestring}_node.error.log`, { flags: 'a' })
 
     console.log(`Selecting ${timestring}_node.access.log to log.`)
   }
 
   const stdout = process.stdout.write
+  const stderr = process.stderr.write
 
   function write(...args) {
     if (logstdout) stdout.apply(process.stdout, args)
@@ -345,7 +347,29 @@ async function run() {
     if (logstream) relayData(message)
   }
 
+  function writeErr(...args) {
+    if (logstdout) stderr.apply(process.stderr, args)
+    if (logfile) logErr.write(...args)
+    const data = Buffer.from(args[0])
+    const headerSize = Buffer.alloc(6)
+    let header = {
+      id: 'log',
+      time: Date.now(),
+    }
+    header = JSON.stringify(header)
+    header = Buffer.from(header)
+
+    headerSize.writeUInt16LE(header.length, 0)
+    headerSize.writeUInt32LE(data.length, 2)
+
+    const packet = [headerSize, header, data]
+    const message = Buffer.concat(packet)
+    // eslint-disable-next-line no-use-before-define
+    if (logstream) relayData(message)
+  }
+  
   process.stdout.write = write
+  process.stderr.write = writeErr
 
   // catch exceptions
   process.on('uncaughtException', (e) => {
