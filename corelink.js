@@ -309,6 +309,7 @@ async function run() {
 
   // setup file logging of the dockerlog.js file is available
   let log
+  let logErr
   if (logfile) {
     const timestamp = new Date(Date.now())
     const timestring = `${timestamp.getFullYear()}_${timestamp
