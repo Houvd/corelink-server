@@ -367,7 +367,7 @@ async function run() {
     // eslint-disable-next-line no-use-before-define
     if (logstream) relayData(message)
   }
-  
+
   process.stdout.write = write
   process.stderr.write = writeErr
 
@@ -1303,7 +1303,7 @@ async function run() {
           type: 'string',
           sample: 'password',
         },
-        passwrod: {
+        password: {
           description: 'new password of the User',
           type: 'string',
           sample: 'password',
@@ -1334,12 +1334,12 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('password' in message) {
-          const newpassword = hashSha512(message.password)
+          const newpassword = saltHashPassword(message.password)
           console.log(message.password)
           console.log(newpassword)
           const command = await knex('users')
             .where('id', tokens[message.token].user)
-            .update('password', newpassword.passwordHash)
+            .update({ password: newpassword.password, salt: newpassword.salt })
             .catch((error) => {
               throw error
             })
@@ -1540,7 +1540,7 @@ async function run() {
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: message.userid, groupname: message.group,
+              owner_id: message.username, groupname: message.group,
             })
               .catch((error) => {
                 throw error
