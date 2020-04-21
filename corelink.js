@@ -1,8 +1,5 @@
 /* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 /* eslint-disable no-restricted-syntax */
-//  /* eslint-disable no-new-object */ // this is very difficult @todo abhsihek
-//  /* eslint-disable no-param-reassign */ // not able to rectify
-
 
 /**
  * @file NodeJS Corelink core server
