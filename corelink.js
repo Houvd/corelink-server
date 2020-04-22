@@ -562,6 +562,7 @@ async function run() {
   errorList[13] = 'login user doesnt have right to add user to the group'
   errorList[14] = 'user does not exist in Database'
   errorList[15] = 'password not provided'
+  errorList[16] = 'logined user is not admin'
 
   function getErrorMessage(code) {
     const response = {}
@@ -1497,11 +1498,6 @@ async function run() {
           type: 'string',
           sample: 'group',
         },
-        username: {
-          description: 'name of the id that attached to the new Group',
-          type: 'string',
-          sample: 'testuser',
-        },
         token: {
           description: 'token for the user to authenticate',
           type: 'string',
@@ -1537,7 +1533,7 @@ async function run() {
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: message.username, groupname: message.group,
+              owner_id: tokens[message.token].user, groupname: message.group,
             })
               .catch((error) => {
                 throw error
@@ -1750,6 +1746,89 @@ async function run() {
       return (data)
     },
   }
+
+  functions.changeowner = {
+    info: {
+      name: 'changeowner',
+      description: 'change an existing Group  ownership',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'changeowner',
+        },
+        group: {
+          description: 'name of the Group',
+          type: 'string',
+          sample: 'group',
+        },
+        username: {
+          description: 'name of the new owner',
+          type: 'string',
+          sample: 'newuser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('group' in message) {
+          const admin = await knex('users')
+            .first('admin')
+            .where('id', tokens[message.token].user)
+            .catch((error) => {
+              throw error
+            })
+          console.log(admin)
+          if (admin.admin === 1) {
+            const owner = await knex('users')
+              .first('id')
+              .where('username', message.user)
+              .catch((error) => {
+                throw error
+              })
+            const command = await knex('groups')
+              .where('groupname', message.group)
+              .update('owner_id', owner.id)
+              .catch((error) => {
+                throw error
+              })
+            console.log(command)
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(16)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  }
+
 
   functions.rmgroup = {
     info: {
