@@ -1,8 +1,5 @@
 /* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 /* eslint-disable no-restricted-syntax */
-/* eslint-disable no-new-object */ // this is very difficult
-/* eslint-disable no-param-reassign */ // not able to rectify
-
 
 /**
  * @file NodeJS Corelink core server
@@ -271,13 +268,12 @@ if (typeof config.ca !== 'undefined') {
  * @function
  * @param {number} length - Length of the random string.
  */
-/*
-var genRandomString = function (length) {
+
+function genRandomString(length) {
   return crypto.randomBytes(Math.ceil(length / 2))
     .toString('hex') // convert to hexadecimal format
     .slice(0, length) // return required number of characters
 }
-*/
 
 /*
 * hash password with sha512.
@@ -285,7 +281,7 @@ var genRandomString = function (length) {
 * @param {string} password - List of required fields.
 * @param {string} salt - Data to be validated.
 */
-function hashSha512(password, salt = '53b2843baa4b18f0') {
+function hashSha512(password, salt) {
   const hash = crypto.createHmac('sha512', salt) /** Hashing algorithm sha512 */
   hash.update(password)
   const value = hash.digest('hex')
@@ -295,13 +291,13 @@ function hashSha512(password, salt = '53b2843baa4b18f0') {
   }
 }
 
-/*
+
 function saltHashPassword(userpassword) {
-  var salt = genRandomString(16) // Gives us salt of length 16
-  var passwordData = sha512(userpassword, salt)
-  return { password: passwordData, salt }
+  const salt = genRandomString(16) // Gives us salt of length 16
+  const passwordData = hashSha512(userpassword, salt)
+  return { password: passwordData.passwordHash, salt }
 }
-*/
+
 
 //* **************** Server */
 async function run() {
@@ -368,7 +364,7 @@ async function run() {
     // eslint-disable-next-line no-use-before-define
     if (logstream) relayData(message)
   }
-  
+
   process.stdout.write = write
   process.stderr.write = writeErr
 
@@ -566,6 +562,7 @@ async function run() {
   errorList[13] = 'login user doesnt have right to add user to the group'
   errorList[14] = 'user does not exist in Database'
   errorList[15] = 'password not provided'
+  errorList[16] = 'logined user is not admin'
 
   function getErrorMessage(code) {
     const response = {}
@@ -603,7 +600,7 @@ async function run() {
 
   // var functions = [] holds all objects for functions in use
 
-  functions.auth = new Object({
+  functions.auth = {
     info: {
       name: 'auth',
       description: 'authenticate a user',
@@ -654,7 +651,7 @@ async function run() {
         },
       },
     },
-    process: async function authenticater(message, ip, conn) {
+    process: async (message, ip, conn) => {
       let response = {}
       response.statuscode = 0
       if (('username' in message) && ('password' in message)) {
@@ -672,7 +669,7 @@ async function run() {
 
         if ((typeof user !== 'undefined') && (hashSha512(message.password, user.salt).passwordHash === user.password)) {
           response.token = crypto.createHash('sha256')
-            .update(message.username + message.passwod + (new Date().getTime()))
+            .update(message.username + message.password + (new Date().getTime()))
             .digest('hex')
 
           await knex('tokens')
@@ -732,9 +729,9 @@ async function run() {
       }
       return (response)
     },
-  })
+  }
 
-  functions.listfunctions = new Object({
+  functions.listfunctions = {
     info: {
       name: 'listfunctions',
       description: 'list available functions',
@@ -786,9 +783,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.describefunction = new Object({
+  functions.describefunction = {
     info: {
       name: 'describefunction',
       description: 'retrieve endpoint description',
@@ -848,9 +845,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.listworkspaces = new Object({
+  functions.listworkspaces = {
     info: {
       name: 'listworkspaces',
       description: 'list existing workspaces',
@@ -910,9 +907,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.addworkspace = new Object({
+  functions.addworkspace = {
     info: {
       name: 'addworkspace',
       description: 'add a new workspace',
@@ -985,9 +982,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.setdefaultworkspace = new Object({
+  functions.setdefaultworkspace = {
     info: {
       name: 'setdefaultworkspace',
       description: 'set a default workspace',
@@ -1059,9 +1056,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.getdefaultworkspace = new Object({
+  functions.getdefaultworkspace = {
     info: {
       name: 'getdefaultworkspace',
       description: 'get a default workspace',
@@ -1120,9 +1117,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.rmworkspace = new Object({
+  functions.rmworkspace = {
     info: {
       name: 'rmworkspace',
       description: 'remove an existing workspace',
@@ -1188,9 +1185,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.addUser = new Object({
+  functions.addUser = {
     info: {
       name: 'addUser',
       description: 'add a new User',
@@ -1217,7 +1214,7 @@ async function run() {
         admin: {
           description: 'user is an admin',
           type: 'boolean',
-          sample: false,
+          default: false,
         },
         first: {
           description: 'first name of the user',
@@ -1259,21 +1256,22 @@ async function run() {
         })
       const response = {}
       if (typeof data !== 'object') {
-        console.log('in type')
+        const workmessage = message
         if ('username' in message) {
           // todo psspwrd with salt
-          const password = hashSha512(message.password)
+          const password = saltHashPassword(workmessage.password)
           const olduser = await knex('users')
             .first('id')
-            .where('username', message.username)
+            .where('username', workmessage.username)
             .catch((error) => {
               throw error
             })
           if (typeof olduser === 'undefined') {
             console.log('no old user found')
+            if (typeof message.admin === 'undefined') workmessage.admin = false
             await knex('users').insert({
               // eslint-disable-next-line max-len
-              username: message.username, password: password.passwordHash, salt: password.salt, email: message.email, first: message.first, last: message.last, admin: message.admin,
+              username: workmessage.username, password: password.password, salt: password.salt, email: workmessage.email, first: workmessage.first, last: workmessage.last, admin: workmessage.admin,
             })
               .catch((error) => {
                 throw error
@@ -1287,9 +1285,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.password = new Object({
+  functions.password = {
     info: {
       name: 'password',
       description: 'change password for an existing User',
@@ -1303,7 +1301,7 @@ async function run() {
           type: 'string',
           sample: 'password',
         },
-        passwrod: {
+        password: {
           description: 'new password of the User',
           type: 'string',
           sample: 'password',
@@ -1334,12 +1332,12 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('password' in message) {
-          const newpassword = hashSha512(message.password)
+          const newpassword = saltHashPassword(message.password)
           console.log(message.password)
           console.log(newpassword)
           const command = await knex('users')
             .where('id', tokens[message.token].user)
-            .update('password', newpassword.passwordHash)
+            .update({ password: newpassword.password, salt: newpassword.salt })
             .catch((error) => {
               throw error
             })
@@ -1352,9 +1350,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.rmuser = new Object({
+  functions.rmuser = {
     info: {
       name: 'rmuser',
       description: 'remove an existing User',
@@ -1415,9 +1413,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.listusers = new Object({
+  functions.listusers = {
     info: {
       name: 'listusers',
       description: 'list existing users',
@@ -1477,11 +1475,11 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
   // group functions  :
 
-  functions.addgroup = new Object({
+  functions.addgroup = {
     info: {
       name: 'addgroup ',
       description: 'add a new Group',
@@ -1499,11 +1497,6 @@ async function run() {
           description: 'name of the new Group',
           type: 'string',
           sample: 'group',
-        },
-        username: {
-          description: 'name of the id that attached to the new Group',
-          type: 'string',
-          sample: 'testuser',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1540,7 +1533,7 @@ async function run() {
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: message.userid, groupname: message.group,
+              owner_id: tokens[message.token].user, groupname: message.group,
             })
               .catch((error) => {
                 throw error
@@ -1554,9 +1547,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.addusertogroup = new Object({
+  functions.addusertogroup = {
     info: {
       name: 'addusertogroup ',
       description: 'add a user to a Group',
@@ -1653,9 +1646,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.rmusertogroup = new Object({
+  functions.rmusertogroup = {
     info: {
       name: 'rmusertogroup ',
       description: 'add a user to a Group',
@@ -1752,9 +1745,92 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.rmgroup = new Object({
+  functions.changeowner = {
+    info: {
+      name: 'changeowner',
+      description: 'change an existing Group  ownership',
+      version: '1.0.0.0',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'changeowner',
+        },
+        group: {
+          description: 'name of the Group',
+          type: 'string',
+          sample: 'group',
+        },
+        username: {
+          description: 'name of the new owner',
+          type: 'string',
+          sample: 'newuser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('group' in message) {
+          const admin = await knex('users')
+            .first('admin')
+            .where('id', tokens[message.token].user)
+            .catch((error) => {
+              throw error
+            })
+          console.log(admin)
+          if (admin.admin === 1) {
+            const owner = await knex('users')
+              .first('id')
+              .where('username', message.user)
+              .catch((error) => {
+                throw error
+              })
+            const command = await knex('groups')
+              .where('groupname', message.group)
+              .update('owner_id', owner.id)
+              .catch((error) => {
+                throw error
+              })
+            console.log(command)
+            response.statuscode = 0
+            return (response)
+          }
+          return getErrorMessage(16)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  }
+
+
+  functions.rmgroup = {
     info: {
       name: 'rmgroup',
       description: 'remove an existing Group',
@@ -1814,9 +1890,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.listgroups = new Object({
+  functions.listgroups = {
     info: {
       name: 'listgroups',
       description: 'list existing Group',
@@ -1876,10 +1952,10 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
 
-  functions.sender = new Object({
+  functions.sender = {
     info: {
       name: 'sender',
       description: 'register a new stream as sender',
@@ -2053,9 +2129,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.liststream = new Object({
+  functions.liststream = {
     info: {
       name: 'liststream',
       description: 'list existing stream',
@@ -2114,24 +2190,24 @@ async function run() {
       let key
       let token
       let key1
-
+      const workmessage = message
       // *** ToDo: list only streams that user has access to
       if (typeof data !== 'object') {
-        if (!('workspace' in message)) message.workspace = []
+        if (!('workspace' in workmessage)) workmessage.workspace = []
 
-        if (typeof message.workspace === 'string') message.workspace = [message.workspace]
+        if (typeof workmessage.workspace === 'string') workmessage.workspace = [workmessage.workspace]
 
-        if (!Array.isArray(message.workspace)) message.workspace = []
+        if (!Array.isArray(workmessage.workspace)) workmessage.workspace = []
 
-        if (message.workspace.length === 0) message.workspace = Object.keys(rooms)
+        if (workmessage.workspace.length === 0) workmessage.workspace = Object.keys(rooms)
 
-        if ('workspace' in message) {
+        if ('workspace' in workmessage) {
           response.streamlist = []
-          for (workspace in message.workspace) {
+          for (workspace in workmessage.workspace) {
             if (workspace) {
               for (key in source) {
-                if (source[key].room === message.workspace[workspace]) {
-                  if ((typeof message.type === 'undefined') || (message.type.length === 0) || (message.type.includes(source[key].type))) {
+                if (source[key].room === workmessage.workspace[workspace]) {
+                  if ((typeof workmessage.type === 'undefined') || (workmessage.type.length === 0) || (workmessage.type.includes(source[key].type))) {
                     // add usernames and app names to the specific streams
                     streamlistelement.streamid = key
                     for (token in tokens) {
@@ -2171,10 +2247,10 @@ async function run() {
       }
       return getErrorMessage(3)
     },
-  })
+  }
 
 
-  functions.streaminfo = new Object({
+  functions.streaminfo = {
     info: {
       name: 'streaminfo',
       description: 'get information about a stream',
@@ -2276,7 +2352,7 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
   function findApps(streamid) {
     let user = ''
@@ -2308,7 +2384,7 @@ async function run() {
     return { user, apps }
   }
 
-  functions.receiver = new Object({
+  functions.receiver = {
     info: {
       name: 'receiver',
       description: 'register a new stream as receiver',
@@ -2433,65 +2509,65 @@ async function run() {
       let token
       let i
       let response = {}
-
+      const workmessage = message
 
       if (typeof data !== 'object') {
         console.log('*** receiver ***')
-        if (('workspace' in message)) {
+        if (('workspace' in workmessage)) {
           // if(('receiverid' in message) && (message['receiverid']!='')
           //         && (typeof target[message['receiverid']]!='undefined'))
           // process.exit();
 
           // get appropriate streamids
-          if (!('streamids' in message) || (message.streamids.length === 0)) {
-            message.streamids = []
-            for (sourceid in source) if (!('type' in message) || (message.type.length === 0) || (message.type.includes(source[sourceid].type))) message.streamids.push(sourceid)
+          if (!('streamids' in workmessage) || (workmessage.streamids.length === 0)) {
+            workmessage.streamids = []
+            for (sourceid in source) if (!('type' in workmessage) || (workmessage.type.length === 0) || (workmessage.type.includes(source[sourceid].type))) workmessage.streamids.push(sourceid)
           }
 
           // remove all streamids that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes to
           // query and bring them up...)
-          for (stream in message.streamids) {
-            if (typeof source[message.streamids[stream]] === 'undefined') message.streamids.splice(stream, 1)
+          for (stream in workmessage.streamids) {
+            if (typeof source[workmessage.streamids[stream]] === 'undefined') workmessage.streamids.splice(stream, 1)
           }
           // add usernames to the specific streams
-          message.streamlist = []
+          workmessage.streamlist = []
           for (stream in message.streamids) {
             if (stream) {
               streamlistelement = {}
-              streamlistelement.streamid = message.streamids[stream]
-              streamlistelement.type = source[message.streamids[stream]].type
-              streamlistelement.meta = source[message.streamids[stream]].meta
+              streamlistelement.streamid = workmessage.streamids[stream]
+              streamlistelement.type = source[workmessage.streamids[stream]].type
+              streamlistelement.meta = source[workmessage.streamids[stream]].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(message.streamids[stream])
+              userApps = findApps(workmessage.streamids[stream])
               streamlistelement.user = userApps.user
               streamlistelement.apps = userApps.apps
 
               // receive streams of the same user if echo is enabled
-              if (((typeof tokens[message.token] !== 'undefined')
-                  && (users[tokens[message.token].user].username !== streamlistelement.user)
-                  && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))
-                  || (('echo' in message) && (message.echo === true))
-                  || ((typeof apps[message.token] !== 'undefined')
-                  && ((!('echo' in message)) || (('echo' in message) && (message.echo !== true))))) {
-                message.streamlist.push(streamlistelement)
-              } else console.log(`skipping stream from same user ${message.streamids[stream]}`)
+              if (((typeof tokens[workmessage.token] !== 'undefined')
+                  && (users[tokens[workmessage.token].user].username !== streamlistelement.user)
+                  && ((!('echo' in workmessage)) || (('echo' in workmessage) && (workmessage.echo !== true))))
+                  || (('echo' in workmessage) && (workmessage.echo === true))
+                  || ((typeof apps[workmessage.token] !== 'undefined')
+                  && ((!('echo' in workmessage)) || (('echo' in workmessage) && (workmessage.echo !== true))))) {
+                workmessage.streamlist.push(streamlistelement)
+              } else console.log(`skipping stream from same user ${workmessage.streamids[stream]}`)
             }
           }
 
           // give error message if we dont have a streamid and are also not
           // expecting updates on streams
           // var t =  typeof message['alert'] !== 'undefined';
-          if ((message.streamids.length < 1) && ((typeof message.alert === 'undefined')
-              || !((typeof message.alert !== 'undefined') && (message.alert === true)))) {
+          if ((workmessage.streamids.length < 1) && ((typeof workmessage.alert === 'undefined')
+              || !((typeof workmessage.alert !== 'undefined') && (workmessage.alert === true)))) {
             // console.log(message);
             return getErrorMessage(7)
           }
 
-          if (('receiverid' in message) && (message.receiverid !== '') && (typeof target[message.receiverid] !== 'undefined')) {
-            streamid = message.receiverid
+          if (('receiverid' in workmessage) && (workmessage.receiverid !== '') && (typeof target[workmessage.receiverid] !== 'undefined')) {
+            streamid = workmessage.receiverid
             console.log(`used existing receiver streamid: ${streamid}`)
             // console.log(target[streamid]);
           } else {
@@ -2499,7 +2575,7 @@ async function run() {
             streamid = null
             while ((streamid === null) || (typeof target[streamid] !== 'undefined')) {
               streamid = crypto.createHash('sha256')
-                .update(message.workspace + message.proto + (new Date().getTime()))
+                .update(workmessage.workspace + workmessage.proto + (new Date().getTime()))
                 .digest('hex').substr(0, 7)
             }
             console.log(`created new receiver streamid: ${streamid}`)
@@ -2516,23 +2592,23 @@ async function run() {
                         && (target[streamid].port === 0))) {
             // put data into the target stream array & overwrite if existing
             target[streamid] = []
-            target[streamid].ip = message.ip
-            target[streamid].port = message.port
-            target[streamid].proto = message.proto
-            target[streamid].room = message.workspace
+            target[streamid].ip = workmessage.ip
+            target[streamid].port = workmessage.port
+            target[streamid].proto = workmessage.proto
+            target[streamid].room = workmessage.workspace
             // console.log(target[streamid]);
 
-            if (('alert' in message) && (message.alert === true)) target[streamid].alert = true
+            if (('alert' in workmessage) && (workmessage.alert === true)) target[streamid].alert = true
             else target[streamid].alert = false
 
-            if (('echo' in message) && (message.echo === true)) target[streamid].echo = true
+            if (('echo' in workmessage) && (workmessage.echo === true)) target[streamid].echo = true
             else target[streamid].echo = false
 
-            if ('type' in message) target[streamid].type = message.type
+            if ('type' in workmessage) target[streamid].type = workmessage.type
             else target[streamid].type = []
 
             target[streamid].meta = ''
-            if (typeof message.meta !== 'undefined') target[streamid].meta = message.meta
+            if (typeof workmessage.meta !== 'undefined') target[streamid].meta = workmessage.meta
 
             target[streamid].time = Date.now()
           }
@@ -2556,23 +2632,24 @@ async function run() {
           }
 
           // make sure stream is allowed and not rejected
-          if (typeof tokens[message.token] !== 'undefined') tokens[message.token].streams.push(streamid)
+          if (typeof tokens[workmessage.token] !== 'undefined') tokens[workmessage.token].streams.push(streamid)
 
           // make sure stream is allowed and not rejected in case of an app
-          if (typeof apps[message.token] !== 'undefined') apps[message.token].streams.push(streamid)
+          if (typeof apps[workmessage.token] !== 'undefined') apps[workmessage.token].streams.push(streamid)
 
           // designate streams to be directly relayed ot this target
-          for (stream in message.streamlist) {
+          for (stream in workmessage.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamrelay[message.streamlist[stream].streamid] !== 'undefined') {
+              if (typeof streamrelay[workmessage.streamlist[stream].streamid] !== 'undefined') {
                 console.log('line 2270', stream)
-                console.log('line 2271', message.streamlist[stream])
-                console.log('line 2272', streamrelay[message.streamlist[stream].streamid])
-                if (typeof streamrelay[message.streamlist[stream].streamid][streamid] === 'undefined') {
-                  serverfunctions.subscriber.process(message.streamlist[stream].streamid, streamid)
+                console.log('line 2271', workmessage.streamlist[stream])
+                console.log('line 2272', streamrelay[workmessage.streamlist[stream].streamid])
+                if (typeof streamrelay[workmessage.streamlist[stream].streamid][streamid] === 'undefined') {
+                  // eslint-disable-next-line max-len
+                  serverfunctions.subscriber.process(workmessage.streamlist[stream].streamid, streamid)
                 }
-                streamrelay[message.streamlist[stream].streamid][streamid] = []
+                streamrelay[workmessage.streamlist[stream].streamid][streamid] = []
               }
             }
           }
@@ -2593,9 +2670,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.subscribe = new Object({
+  functions.subscribe = {
     info: {
       name: 'subscribe',
       description: 'subscribe additional streams to an existing receiver',
@@ -2655,17 +2732,18 @@ async function run() {
       let userApps
       // create result for client to connect as a receiver
       let response = {}
+      const workmessage = message
 
       // *** ToDo: Only allow user to get streams with correct access permissions */
 
       if (typeof data !== 'object') {
         console.log('*** subscribe ***')
-        if ((('receiverid' in message) && (message.receiverid !== '') && (typeof target[message.receiverid] !== 'undefined'))) {
+        if ((('receiverid' in workmessage) && (workmessage.receiverid !== '') && (typeof target[workmessage.receiverid] !== 'undefined'))) {
           // get all streamids if no list is given
-          if (!('streamid' in message) || (message.streamid.length === 0)) {
-            message.streamid = []
+          if (!('streamid' in workmessage) || (workmessage.streamid.length === 0)) {
+            workmessage.streamid = []
             for (sourceid in source) {
-              if (!('type' in message) || (message.type.length === 0) || (message.type.includes(source[sourceid].type))) message.streamid.push(sourceid)
+              if (!('type' in workmessage) || (workmessage.type.length === 0) || (workmessage.type.includes(source[sourceid].type))) workmessage.streamid.push(sourceid)
             }
           }
 
@@ -2674,8 +2752,8 @@ async function run() {
           for (s in streamrelay) {
             if (s) {
               for (t in streamrelay[s]) {
-                if ((t === message.receiverid) && (!message.streamid.includes(s))) {
-                  message.streamid.push(s)
+                if ((t === workmessage.receiverid) && (!workmessage.streamid.includes(s))) {
+                  workmessage.streamid.push(s)
                 }
               }
             }
@@ -2684,44 +2762,44 @@ async function run() {
           // remove all streamids that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes
           // to query and bring them up...)
-          for (stream in message.streamid) {
-            if (!(message.streamid[stream] in source)) {
-              message.streamid.splice(stream, 1)
+          for (stream in workmessage.streamid) {
+            if (!(workmessage.streamid[stream] in source)) {
+              workmessage.streamid.splice(stream, 1)
             }
           }
 
           // add usernames to the specific streams
-          message.streamlist = []
-          for (stream in message.streamid) {
+          workmessage.streamlist = []
+          for (stream in workmessage.streamid) {
             if (stream) {
               streamlistelement = {}
-              streamlistelement.streamid = message.streamid[stream]
-              streamlistelement.type = source[message.streamid[stream]].type
-              streamlistelement.meta = source[message.streamid[stream]].meta
+              streamlistelement.streamid = workmessage.streamid[stream]
+              streamlistelement.type = source[workmessage.streamid[stream]].type
+              streamlistelement.meta = source[workmessage.streamid[stream]].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(message.streamid[stream])
+              userApps = findApps(workmessage.streamid[stream])
               streamlistelement.user = userApps.user
               streamlistelement.apps = userApps.apps
 
-              message.streamlist.push(streamlistelement)
+              workmessage.streamlist.push(streamlistelement)
             }
           }
 
           // designate streams to be directly relayed ot this target
-          for (stream in message.streamlist) {
+          for (stream in workmessage.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamrelay[message.streamlist[stream].streamid][message.receiverid] === 'undefined') serverfunctions.subscriber.process(message.streamlist[stream].streamid, message.receiverid)
-              streamrelay[message.streamlist[stream].streamid][message.receiverid] = []
+              if (typeof streamrelay[workmessage.streamlist[stream].streamid][workmessage.receiverid] === 'undefined') serverfunctions.subscriber.process(workmessage.streamlist[stream].streamid, message.receiverid)
+              streamrelay[workmessage.streamlist[stream].streamid][workmessage.receiverid] = []
             }
           }
 
           // create result for client to connect as a receiver
           response = {}
           response.statuscode = 0
-          response.streamlist = message.streamlist
+          response.streamlist = workmessage.streamlist
           if (debug) console.log(response)
           return (response)
         }
@@ -2729,9 +2807,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.unsubscribe = new Object({
+  functions.unsubscribe = {
     info: {
       name: 'unsubscribe',
       description: 'unsubscribe streams from an existing receiver',
@@ -2785,18 +2863,18 @@ async function run() {
       let s
       let t
       let response = {}
-
+      const workmessage = message
       if (typeof data !== 'object') {
         console.log('*** unsubscribe ***')
-        if ((('receiverid' in message) && (message.receiverid !== '') && (typeof target[message.receiverid] !== 'undefined'))
-                  && (('streamid' in message) && (message.streamid.length > 0))) {
+        if ((('receiverid' in workmessage) && (workmessage.receiverid !== '') && (typeof target[workmessage.receiverid] !== 'undefined'))
+                  && (('streamid' in workmessage) && (workmessage.streamid.length > 0))) {
           // unsubscribe streams
-          message.streamlist = []
+          workmessage.streamlist = []
           for (s in streamrelay) {
             if (s) {
               for (t in streamrelay[s]) {
-                if ((t === message.receiverid) && (message.streamid.includes(s))) {
-                  message.streamlist.push(s)
+                if ((t === workmessage.receiverid) && (workmessage.streamid.includes(s))) {
+                  workmessage.streamlist.push(s)
                   delete streamrelay[s][t]
                   // send dropped message to sender streams to inform them
                   // the receiver stopped requesting that stream.
@@ -2810,16 +2888,16 @@ async function run() {
           // create result with the list of all removed streams
           response = {}
           response.statuscode = 0
-          response.streamlist = message.streamlist
+          response.streamlist = workmessage.streamlist
           return (response)
         }
         return getErrorMessage(3)
       }
       return (data)
     },
-  })
+  }
 
-  functions.disconnect = new Object({
+  functions.disconnect = {
     info: {
       name: 'disconnect',
       description: 'disconnect a stream or several streams for the logged in user',
@@ -3004,9 +3082,9 @@ async function run() {
       }
       return (data)
     },
-  })
+  }
 
-  functions.expire = new Object({
+  functions.expire = {
     info: {
       name: 'expire',
       description: 'expire a user session',
@@ -3097,11 +3175,11 @@ async function run() {
       }
       return getErrorMessage(3)
     },
-  })
+  }
 
   // All server initiated functions
   serverfunctions = []
-  serverfunctions.update = new Object({
+  serverfunctions.update = {
     info: {
       name: 'update',
       description: 'update a receiver with a new stream from sender',
@@ -3205,9 +3283,9 @@ async function run() {
         }
       }
     },
-  })
+  }
 
-  serverfunctions.subscriber = new Object({
+  serverfunctions.subscriber = {
     info: {
       name: 'subscriber',
       description: 'update a sender with a new stream that subscribed',
@@ -3313,9 +3391,9 @@ async function run() {
         if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState !== 'undefined') && (apps[apptoken].conn.readyState === 1)) apps[apptoken].conn.send(update)
       }
     },
-  })
+  }
 
-  serverfunctions.stale = new Object({
+  serverfunctions.stale = {
     info: {
       name: 'stale',
       description: 'identify a stream as stale',
@@ -3385,9 +3463,9 @@ async function run() {
         }
       }
     },
-  })
+  }
 
-  serverfunctions.dropped = new Object({
+  serverfunctions.dropped = {
     info: {
       name: 'dropped',
       description: 'identify dropped receivers that were subscribed to a sender',
@@ -3450,7 +3528,7 @@ async function run() {
         if ((typeof apps[apptoken].conn.send === 'function') && (typeof apps[apptoken].conn.readyState !== 'undefined') && (apps[apptoken].conn.readyState === 1)) apps[apptoken].conn.send(update)
       }
     },
-  })
+  }
 
   function handleControlConnection(conn) {
     let message
