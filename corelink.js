@@ -3748,7 +3748,7 @@ async function run() {
         console.log(`Received message not a proper JSON:${data.toString()}`)
         return
       }
-      if ('function' in message) {
+      if (('function' in message) && (message.function in functions)) {
         if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
         else send = JSON.stringify(await functions[message.function].process(message))
         if ('id' in message) {
