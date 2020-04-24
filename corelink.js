@@ -3836,7 +3836,7 @@ async function run() {
         }
         console.log(`sending:${send}`)
         conn.send(send)
-      } else console.log('Key function not given')
+      } else console.log('Key function not given or wrong.')
     })
 
     conn.once('close', () => {
