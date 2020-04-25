@@ -2978,11 +2978,21 @@ async function run() {
               throw error
             })
           if (admin.admin) {
-            switch (message.context) {
+            switch (workmessage.context) {
               case 'global':
                 // Todo: get from database and allow only if exists in database
                 // Todo: ACLs?
-                globalConfig[message.config] = message.value
+                switch (workmessage.type) {
+                  case 'boolean':
+                    // eslint-disable-next-line eqeqeq
+                    if (workmessage.value == 'true') workmessage.value = true; else workmessage.value = false
+                    break
+                  default:
+                    break
+                }
+                console.log(workmessage)
+                console.log(workmessage.value)
+                globalConfig[workmessage.config] = workmessage.value
                 break
               default:
                 break
