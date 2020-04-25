@@ -13,4 +13,9 @@ exports.seed = (knex) => knex('groups')
       owner_id: 1,
       groupname: 'Chalktalk',
     },
+    {
+      id: 3,
+      owner_id: 1,
+      groupname: 'Infinite',
+    },
   ]))

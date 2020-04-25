@@ -98,7 +98,8 @@ const tokens = [] // holds all token related information
 // we can expand other token information with
 // tokens[token]['other'] = [];
 
-let debug
+const globalConfig = {}
+
 const functions = [] // holds all objects for functions in use
 // all receiver connections via TCP or WS
 
@@ -453,7 +454,8 @@ async function run() {
 
 
   // start application
-  debug = false
+  globalConfig.debug = false
+
   const stdin = process.openStdin()
   if (stdin.isTTY) stdin.setRawMode(true)
   stdin.resume()
@@ -535,11 +537,11 @@ async function run() {
     if ((key.charCodeAt(0) === 27) && (key.charCodeAt(1) === 91)) {
       if ((key.charCodeAt(2) === 65)) {
         console.log('Debug on')
-        debug = true
+        globalConfig.debug = true
       }
       if ((key.charCodeAt(2) === 66)) {
         console.log('Debug off')
-        debug = false
+        globalConfig.debug = false
       }
     }
   })
@@ -1597,6 +1599,7 @@ async function run() {
           throw error
         })
       const response = {}
+      // ToDo: what happens when the message is an app?
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
@@ -1618,12 +1621,14 @@ async function run() {
             if (typeof olduser !== 'undefined') {
               const admin = await knex('users')
                 .first('admin')
-                .where('id', tokens[message.token].user)
+                // ToDo: you can just use data instead of tokens[message.token].user, it has the user id in it, also token could be an app token
+                .where('id', tokens[message.token].user) 
                 .catch((error) => {
                   throw error
                 })
               console.log('owner details')
               console.log(admin)
+              // ToDo: you can just use data instead of tokens[message.token].user, it has the user id in it, also token could be an app token
               if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
                 console.log('login user is either the admin or owner')
 
@@ -2360,7 +2365,7 @@ async function run() {
     let apps
     let userApps
     let token
-    if (debug) console.log('findApps', streamid)
+    if (globalConfig.debug) console.log('findApps', streamid)
     user = ''
     apps = []
     if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
@@ -2800,7 +2805,7 @@ async function run() {
           response = {}
           response.statuscode = 0
           response.streamlist = workmessage.streamlist
-          if (debug) console.log(response)
+          if (globalConfig.debug) console.log(response)
           return (response)
         }
         return getErrorMessage(3)
@@ -2892,6 +2897,101 @@ async function run() {
           return (response)
         }
         return getErrorMessage(3)
+      }
+      return (data)
+    },
+  }
+
+  functions.setConfig = {
+    info: {
+      name: 'setParameter',
+      description: 'set a server parameter',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'setConfig',
+        },
+        config: {
+          description: 'the parameter that should be set',
+          type: 'string',
+          sample: 'debug',
+        },
+        context: {
+          description: 'context that this cofiguration applies to global (server global settings), profile (global user specific settings), app (app global settings), or private (app user specific settings), if omitted or empty it is a global configuration parameter',
+          type: 'string',
+          default: 'global',
+        },
+        app: {
+          description: 'an app name that this cofiguration applies to, can be omitted or empty for global or profile configuration parameters',
+          type: 'string',
+          default: '',
+        },
+        user: {
+          description: 'an user name that this cofiguration applies to, can be omitted or empty for global or app configuration parameters, only an admin can set this parameter, otherwise the logged in username will be taken.',
+          type: 'string',
+          default: '',
+        },
+        value: {
+          description: 'value to apply to the parameter, all parameters are stored as strings, but are applied in the defined type',
+          type: 'string',
+          sample: 'true',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      if (typeof data !== 'object') {
+        console.log('*** setGlobalSetting ***')
+        const workmessage = message
+
+        let admin
+        if (typeof data === 'number') {
+          // check if user
+          admin = await knex('users')
+            .first('admin')
+            .where('id', data)
+            .catch((error) => {
+              throw error
+            })
+          if (admin.admin) {
+            switch (message.context) {
+              case 'global':
+                // Todo: get from database and allow only if exists in database
+                // Todo: ACLs?
+                globalConfig[message.config] = message.value
+                break
+              default:
+                break
+            }
+          }
+        }
+        const response = {}
+        response.statuscode = 0
+        return (response)
       }
       return (data)
     },
@@ -3002,7 +3102,7 @@ async function run() {
             allstreams = apps[message.token].streams
             for (streamid in allstreams) {
               if (streamid) {
-                if (debug) console.log('disconnect streamid', allstreams[streamid])
+                if (globalConfig.debug) console.log('disconnect streamid', allstreams[streamid])
                 // check if streamid is in correct room and of correct type
                 if ((typeof source[allstreams[streamid]] !== 'undefined')
                     && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
@@ -3663,7 +3763,7 @@ async function run() {
       console.log(`error during parsing ${e}`)
       return console.error(e)
     }
-    if (debug && header.id !== 'log') {
+    if (globalConfig.debug && header.id !== 'log') {
       dataSize = msg.readUInt32LE(2)
       data = Buffer.allocUnsafe(dataSize)
       msg.copy(data, 0, 6 + headerSize)
@@ -3706,13 +3806,13 @@ async function run() {
         default:
           console.log('wrong stream')
       }
-      if (debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
+      if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
     } else if (header.id in streamrelay) { // console.log(header['id']);
       source[header.id].time = last
       for (targetid in streamrelay[header.id]) {
         if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
           if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].port !== 'undefined') && (target[targetid].port !== 0)) {
-            if (debug && header.id !== 'log') {
+            if (globalConfig.debug && header.id !== 'log') {
               console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
               // console.log(data)
             }
@@ -3738,7 +3838,7 @@ async function run() {
         } else if (header.id !== 'log') console.log(`no ip for stream ${header.id}`)
       }
     } else if (header.id in target) {
-      if (debug && (header.id !== 'log')) console.log(target[header.id].ip)
+      if (globalConfig.debug && (header.id !== 'log')) console.log(target[header.id].ip)
       console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
       if (remoteAddress === target[header.id].ip) {
         // console.log(target[header.id])

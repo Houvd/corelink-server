@@ -12,4 +12,4 @@ exports.up = (knex) => knex.schema.createTable('token_source', (table) => {
   table.timestamp('updated_at').default(knex.fn.now())
 })
 
-exports.down = (knex) => knex.schema.dropTable('token_source')
+exports.down = (knex) => knex.schema.dropTableIfExists('token_source')

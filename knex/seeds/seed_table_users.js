@@ -184,4 +184,14 @@ exports.seed = (knex) => knex('users')
       last: 'Ben',
       admin: false,
     },
+    {
+      id: 19,
+      username: 'Cindy',
+      password: '0022e18f62c02da6a582310058602080ac1081e6d5b49bbbd11c7f3f468e5fd04f36fc9032dcb0ff55da0068a4b6ba6b785503ba4a8841cad6aec8269692c2a7',
+      salt: '53b2843baa4b18f0',
+      email: 'cindy@example.com',
+      first: 'Cindy',
+      last: 'Cindy',
+      admin: true,
+    },
   ]))

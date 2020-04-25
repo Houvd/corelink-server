@@ -23,4 +23,4 @@ exports.up = (knex) => knex.schema.createTable('sources', (table) => {
   table.timestamp('updated_at').notNullable().default(knex.fn.now())
 })
 
-exports.down = (knex) => knex.schema.dropTable('sources')
+exports.down = (knex) => knex.schema.dropTableIfExists('sources')

@@ -18,4 +18,9 @@ exports.seed = (knex) => knex('rooms')
       owner_id: 1,
       roomname: 'Chalktalk',
     },
+    {
+      id: 3,
+      owner_id: 1,
+      roomname: 'Infinite',
+    },
   ]))
