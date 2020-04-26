@@ -546,6 +546,35 @@ async function run() {
     }
   })
 
+  function findApps(streamid) {
+    let user = ''
+    // eslint-disable-next-line no-shadow
+    let apps
+    let userApps
+    let token
+    if (globalConfig.debug) console.log('findApps', streamid)
+    user = ''
+    apps = []
+    if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
+      userApps = findApps(source[streamid].from)
+      if (userApps.user !== '') user = userApps.user
+      if (userApps.apps.length > 0) apps = userApps.apps
+    } else {
+      for (token in tokens) {
+        if (tokens[token].streams.includes(streamid)) {
+          user = users[tokens[token].user].username
+          break
+        }
+      }
+    }
+    for (token in apps) {
+      if (apps[token].streams.includes(streamid)) {
+        apps.push(apps[token].name)
+        break
+      }
+    }
+    return { user, apps }
+  }
 
   // holds all error messages
   const errorList = []
@@ -1755,7 +1784,7 @@ async function run() {
   functions.changeowner = {
     info: {
       name: 'changeowner',
-      description: 'change an existing Group  ownership',
+      description: 'change an existing Group ownership',
       version: '1.0.0.0',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
@@ -2136,9 +2165,9 @@ async function run() {
     },
   }
 
-  functions.liststream = {
+  functions.listStreams = {
     info: {
-      name: 'liststream',
+      name: 'listStreams',
       description: 'list existing stream',
       version: '1.0.0.0',
       author: 'Robert Pahle',
@@ -2148,7 +2177,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'liststream',
+          sample: 'listStreams',
         },
         workspace: {
           description: 'Name of the workspace (or an array thereof) see the streams of. Leave empty or omit to search all workspaces.',
@@ -2168,7 +2197,7 @@ async function run() {
         },
       },
       responses: {
-        streamlist: {
+        senderList: {
           description: 'array of streamid/user/apps/type/meta/workspace of the streams that will be sent',
           type: 'array',
         },
@@ -2189,57 +2218,59 @@ async function run() {
         .catch((error) => {
           throw error
         })
+
+      console.log('*** listStreams ***')
       const response = {}
       let workspace
       const streamlistelement = {}
-      let key
-      let token
-      let key1
+      let userApps
       const workmessage = message
-      // *** ToDo: list only streams that user has access to
       if (typeof data !== 'object') {
         if (!('workspace' in workmessage)) workmessage.workspace = []
 
         if (typeof workmessage.workspace === 'string') workmessage.workspace = [workmessage.workspace]
-
         if (!Array.isArray(workmessage.workspace)) workmessage.workspace = []
 
-        if (workmessage.workspace.length === 0) workmessage.workspace = Object.keys(rooms)
+        // limit to rooms a user has access to
+        let userWorkspace = await knex('group_user')
+          .select('rooms.roomname')
+          .join('group_room', 'group_user.group_id', '=', 'group_room.group_id')
+          .join('rooms', 'group_room.room_id', '=', 'rooms.id')
+          .where('user_id', '=', data)
+          .catch((error) => {
+            throw error
+          })
+        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.roomname })
+
+        if (workmessage.workspace.length === 0) workmessage.workspace = userWorkspace
+        else {
+          for (workspace in userWorkspace) {
+            if (!workmessage.workspace.includes(userWorkspace[workspace])) {
+              delete userWorkspace[workspace]
+            }
+          }
+          userWorkspace = userWorkspace.filter((value) => value)
+        }
+
+        if (typeof workmessage.type === 'string') workmessage.type = [workmessage.type]
+        if (!Array.isArray(workmessage.type)) workmessage.type = []
 
         if ('workspace' in workmessage) {
-          response.streamlist = []
-          for (workspace in workmessage.workspace) {
+          response.senderList = []
+          for (workspace in userWorkspace) {
             if (workspace) {
-              for (key in source) {
-                if (source[key].room === workmessage.workspace[workspace]) {
-                  if ((typeof workmessage.type === 'undefined') || (workmessage.type.length === 0) || (workmessage.type.includes(source[key].type))) {
-                    // add usernames and app names to the specific streams
+              for (const key in source) {
+                if (source[key].room === userWorkspace[workspace]) {
+                  if ((workmessage.type.length === 0) || (workmessage.type.includes(source[key].type))) {
                     streamlistelement.streamid = key
-                    for (token in tokens) {
-                      if (token) {
-                        for (key1 in tokens[token].streams) {
-                          if (tokens[token].streams[key1] === streamlistelement.streamid) {
-                            streamlistelement.user = users[tokens[token].user].username
-                            break
-                          }
-                        }
-                      }
-                    }
-                    for (token in apps) {
-                      if (token) {
-                        for (key1 in apps[token].streams) {
-                          // app is never defined as still checked , I am not sure what to do
-                          if (apps[token].streams[key1] === streamlistelement.streamid) {
-                            streamlistelement.apps = apps[token].name
-                            break
-                          }
-                        }
-                      }
-                    }
+                    // add usernames and app names to the specific streams
+                    userApps = findApps(streamlistelement.streamid)
+                    streamlistelement.user = userApps.user
+                    streamlistelement.apps = userApps.apps
                     streamlistelement.type = source[key].type
                     streamlistelement.meta = source[key].meta
                     streamlistelement.workspace = source[key].room
-                    response.streamlist.push(streamlistelement)
+                    response.senderList.push(streamlistelement)
                   }
                 }
               }
@@ -2248,9 +2279,9 @@ async function run() {
           response.statuscode = 0
           return (response)
         }
-        return (data)
+        return getErrorMessage(3)
       }
-      return getErrorMessage(3)
+      return (data)
     },
   }
 
@@ -2357,36 +2388,6 @@ async function run() {
       }
       return (data)
     },
-  }
-
-  function findApps(streamid) {
-    let user = ''
-    // eslint-disable-next-line no-shadow
-    let apps
-    let userApps
-    let token
-    if (globalConfig.debug) console.log('findApps', streamid)
-    user = ''
-    apps = []
-    if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
-      userApps = findApps(source[streamid].from)
-      if (userApps.user !== '') user = userApps.user
-      if (userApps.apps.length > 0) apps = userApps.apps
-    } else {
-      for (token in tokens) {
-        if (tokens[token].streams.includes(streamid)) {
-          user = users[tokens[token].user].username
-          break
-        }
-      }
-    }
-    for (token in apps) {
-      if (apps[token].streams.includes(streamid)) {
-        apps.push(apps[token].name)
-        break
-      }
-    }
-    return { user, apps }
   }
 
   functions.receiver = {
@@ -3022,12 +3023,12 @@ async function run() {
           sample: 'disconnect',
         },
         workspace: {
-          description: 'name of the workspace to search for source streams (an empty array indicates all workspaces)',
+          description: 'name of the workspace to search for source streams (an empty array indicates all workspaces), it is ignored when specific streamids are given',
           type: 'array',
           default: [],
         },
         type: {
-          description: 'source stream types to search (an empty array indicates all stream types)',
+          description: 'source stream types to search (an empty array indicates all stream types), it is ignored when specific streamids are given',
           type: 'array',
           default: [],
         },
@@ -3046,6 +3047,11 @@ async function run() {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
+        },
+        streamList: {
+          description: 'streams that were disconnected',
+          type: 'array',
+          sample: [],
         },
         message: {
           description: 'optional status message',
@@ -3077,6 +3083,7 @@ async function run() {
         if ((!('streamids' in message)) || (Array.isArray(message.streamids) && (message.streamids.length === 0))) {
           // make sure we can use the types and workspaces
           if (('type' in message) && Array.isArray(message.type) && (message.type.length > 0)) types = types.concat(message.type)
+          if (('type' in message) && (typeof message.type === 'string')) types.push(message.type)
           if (('workspace' in message) && Array.isArray(message.workspace) && (message.workspace.length > 0)) workspaces = workspaces.concat(message.workspace)
 
           if (typeof tokens[message.token] !== 'undefined') {
@@ -3131,6 +3138,7 @@ async function run() {
         }
         response = {}
         response.statuscode = 0
+        response.streamList = streamids
         for (streamkey in streamids) {
           if (streamkey) {
             streamid = streamids[streamkey]
