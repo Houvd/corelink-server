@@ -1651,7 +1651,7 @@ async function run() {
               const admin = await knex('users')
                 .first('admin')
                 // ToDo: you can just use data instead of tokens[message.token].user, it has the user id in it, also token could be an app token
-                .where('id', tokens[message.token].user) 
+                .where('id', tokens[message.token].user)
                 .catch((error) => {
                   throw error
                 })
@@ -2179,13 +2179,13 @@ async function run() {
           type: 'string',
           sample: 'listStreams',
         },
-        workspace: {
+        workspaces: {
           description: 'Name of the workspace (or an array thereof) see the streams of. Leave empty or omit to search all workspaces.',
           type: 'array',
           default: [],
           sample: ['Holodeck'],
         },
-        type: {
+        types: {
           description: 'Restict listing to a particular type of stream (e.g. 3d, audio). If the parameter is omitted all stream types will be listed',
           type: 'array',
           default: [],
@@ -2226,10 +2226,10 @@ async function run() {
       let userApps
       const workmessage = message
       if (typeof data !== 'object') {
-        if (!('workspace' in workmessage)) workmessage.workspace = []
+        if (!('workspaces' in workmessage)) workmessage.workspaces = []
 
-        if (typeof workmessage.workspace === 'string') workmessage.workspace = [workmessage.workspace]
-        if (!Array.isArray(workmessage.workspace)) workmessage.workspace = []
+        if (typeof workmessage.workspaces === 'string') workmessage.workspaces = [workmessage.workspaces]
+        if (!Array.isArray(workmessage.workspaces)) workmessage.workspaces = []
 
         // limit to rooms a user has access to
         let userWorkspace = await knex('group_user')
@@ -2242,26 +2242,25 @@ async function run() {
           })
         userWorkspace.forEach((value, key) => { userWorkspace[key] = value.roomname })
 
-        if (workmessage.workspace.length === 0) workmessage.workspace = userWorkspace
-        else {
+        if (workmessage.workspaces.length > 0) {
           for (workspace in userWorkspace) {
-            if (!workmessage.workspace.includes(userWorkspace[workspace])) {
+            if (!workmessage.workspaces.includes(userWorkspace[workspace])) {
               delete userWorkspace[workspace]
             }
           }
           userWorkspace = userWorkspace.filter((value) => value)
         }
 
-        if (typeof workmessage.type === 'string') workmessage.type = [workmessage.type]
-        if (!Array.isArray(workmessage.type)) workmessage.type = []
+        if (typeof workmessage.types === 'string') workmessage.types = [workmessage.types]
+        if (!Array.isArray(workmessage.types)) workmessage.types = []
 
-        if ('workspace' in workmessage) {
+        if ('workspaces' in workmessage) {
           response.senderList = []
           for (workspace in userWorkspace) {
             if (workspace) {
               for (const key in source) {
                 if (source[key].room === userWorkspace[workspace]) {
-                  if ((workmessage.type.length === 0) || (workmessage.type.includes(source[key].type))) {
+                  if ((workmessage.types.length === 0) || (workmessage.types.includes(source[key].type))) {
                     streamlistelement.streamid = key
                     // add usernames and app names to the specific streams
                     userApps = findApps(streamlistelement.streamid)
@@ -3022,12 +3021,12 @@ async function run() {
           type: 'string',
           sample: 'disconnect',
         },
-        workspace: {
+        workspaces: {
           description: 'name of the workspace to search for source streams (an empty array indicates all workspaces), it is ignored when specific streamids are given',
           type: 'array',
           default: [],
         },
-        type: {
+        types: {
           description: 'source stream types to search (an empty array indicates all stream types), it is ignored when specific streamids are given',
           type: 'array',
           default: [],
@@ -3061,6 +3060,8 @@ async function run() {
       },
     },
     async process(message) {
+      console.log('*** disconnect ***')
+      console.log('message', message)
       const data = await checkAuth(message)
         .catch((error) => {
           throw error
@@ -3078,13 +3079,35 @@ async function run() {
 
 
       if (typeof data !== 'object') {
-        console.log('*** disconnect ***')
         // first find all streamid's that we want to disconnect
         if ((!('streamids' in message)) || (Array.isArray(message.streamids) && (message.streamids.length === 0))) {
           // make sure we can use the types and workspaces
-          if (('type' in message) && Array.isArray(message.type) && (message.type.length > 0)) types = types.concat(message.type)
-          if (('type' in message) && (typeof message.type === 'string')) types.push(message.type)
-          if (('workspace' in message) && Array.isArray(message.workspace) && (message.workspace.length > 0)) workspaces = workspaces.concat(message.workspace)
+          if (('types' in message) && Array.isArray(message.types) && (message.types.length > 0)) types = types.concat(message.types)
+          if (('types' in message) && (typeof message.types === 'string')) types.push(message.types)
+          if (('workspaces' in message) && Array.isArray(message.workspaces) && (message.workspaces.length > 0)) workspaces = workspaces.concat(message.workspaces)
+          if (('workspaces' in message) && (typeof message.workspaces === 'string')) workspaces.push(message.workspaces)
+
+          // limit to rooms a user has access to
+          let userWorkspace = await knex('group_user')
+            .select('rooms.roomname')
+            .join('group_room', 'group_user.group_id', '=', 'group_room.group_id')
+            .join('rooms', 'group_room.room_id', '=', 'rooms.id')
+            .where('user_id', '=', data)
+            .catch((error) => {
+              throw error
+            })
+          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.roomname })
+
+          if (workspaces.length > 0) {
+            for (const workspace in userWorkspace) {
+              if (!workspaces.includes(userWorkspace[workspace])) {
+                delete userWorkspace[workspace]
+              }
+            }
+            userWorkspace = userWorkspace.filter((value) => value)
+          }
+
+          workspaces = userWorkspace
 
           if (typeof tokens[message.token] !== 'undefined') {
             // find user for the submitted token
