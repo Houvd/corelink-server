@@ -2254,31 +2254,28 @@ async function run() {
         if (typeof workmessage.types === 'string') workmessage.types = [workmessage.types]
         if (!Array.isArray(workmessage.types)) workmessage.types = []
 
-        if ('workspaces' in workmessage) {
-          response.senderList = []
-          for (workspace in userWorkspace) {
-            if (workspace) {
-              for (const key in source) {
-                if (source[key].room === userWorkspace[workspace]) {
-                  if ((workmessage.types.length === 0) || (workmessage.types.includes(source[key].type))) {
-                    streamlistelement.streamid = key
-                    // add usernames and app names to the specific streams
-                    userApps = findApps(streamlistelement.streamid)
-                    streamlistelement.user = userApps.user
-                    streamlistelement.apps = userApps.apps
-                    streamlistelement.type = source[key].type
-                    streamlistelement.meta = source[key].meta
-                    streamlistelement.workspace = source[key].room
-                    response.senderList.push(streamlistelement)
-                  }
+        response.senderList = []
+        for (workspace in userWorkspace) {
+          if (workspace) {
+            for (const key in source) {
+              if (source[key].room === userWorkspace[workspace]) {
+                if ((workmessage.types.length === 0) || (workmessage.types.includes(source[key].type))) {
+                  streamlistelement.streamid = key
+                  // add usernames and app names to the specific streams
+                  userApps = findApps(streamlistelement.streamid)
+                  streamlistelement.user = userApps.user
+                  streamlistelement.apps = userApps.apps
+                  streamlistelement.type = source[key].type
+                  streamlistelement.meta = source[key].meta
+                  streamlistelement.workspace = source[key].room
+                  response.senderList.push({ ...streamlistelement })
                 }
               }
             }
           }
-          response.statuscode = 0
-          return (response)
         }
-        return getErrorMessage(3)
+        response.statuscode = 0
+        return (response)
       }
       return (data)
     },
