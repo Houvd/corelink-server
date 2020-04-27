@@ -512,6 +512,7 @@ async function run() {
         for (tsr in streamrelay[sr]) if (tsr) console.log(`Relaying ${sr} -> ${tsr}`)
       }
     }
+    console.log('Streamrelay:', streamrelay)
 
     for (ip in connections) {
       if (ip) {
@@ -2534,7 +2535,7 @@ async function run() {
           }
           // add usernames to the specific streams
           workmessage.streamlist = []
-          for (stream in message.streamids) {
+          for (stream in workmessage.streamids) {
             if (stream) {
               streamlistelement = {}
               streamlistelement.streamid = workmessage.streamids[stream]
@@ -2640,6 +2641,7 @@ async function run() {
           if (typeof apps[workmessage.token] !== 'undefined') apps[workmessage.token].streams.push(streamid)
 
           // designate streams to be directly relayed ot this target
+          console.log('streamrelay', streamrelay)
           for (stream in workmessage.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
@@ -2659,10 +2661,10 @@ async function run() {
           // create result for client to connect as a receiver
           response = {}
           response.statuscode = 0
-          response.port = port[message.proto]
-          response.proto = message.proto
+          response.port = port[workmessage.proto]
+          response.proto = workmessage.proto
           response.streamid = streamid
-          response.streamlist = message.streamlist
+          response.streamlist = workmessage.streamlist
           response.MTU = MTU
           // console.log(message['proto'],port[message['proto']],response);
           // console.log(port);
