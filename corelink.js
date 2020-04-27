@@ -1337,7 +1337,7 @@ async function run() {
         password: {
           description: 'new password of the User',
           type: 'string',
-          sample: 'password',
+          sample: 'Testpassword',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1805,7 +1805,7 @@ async function run() {
         username: {
           description: 'name of the new owner',
           type: 'string',
-          sample: 'newuser',
+          sample: 'admin',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1843,7 +1843,7 @@ async function run() {
           if (admin.admin === 1) {
             const owner = await knex('users')
               .first('id')
-              .where('username', message.user)
+              .where('username', message.username)
               .catch((error) => {
                 throw error
               })
@@ -3155,6 +3155,7 @@ async function run() {
             }
           }
         } else {
+          // ToDo: Make sure that the user owns the streamids 
           if (Array.isArray(message.streamids)) streamids = message.streamids
           if (typeof message.streamids === 'string') streamids = [message.streamids]
         }

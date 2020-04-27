@@ -9,7 +9,7 @@ const IPControl = '127.0.0.1' // the ip of the sync server to connect to
 const TCPControl = 20010 // the control port that is used on the server
 const sendport = 20011 // the sendport should actually be determined by the server,
 // so this has to change
-const username = 'Testuser' // username to connect as
+const username = 'admin' // username to connect as
 const password = 'Testpassword' // password to coinnect with
 // End Setup ---
 
