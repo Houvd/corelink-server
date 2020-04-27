@@ -4105,7 +4105,8 @@ async function run() {
         for (sid in streamrelay) {
           if (sid) {
             for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
-            if (streamrelay[sid].length === 0) delete streamrelay[sid]
+            // dont remove sources that are still available from the relay (let the sources time out separately)
+            // if (streamrelay[sid].length === 0) delete streamrelay[sid]
           }
         }
         delete target[id]
