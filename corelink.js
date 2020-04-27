@@ -48,6 +48,7 @@ const net = require('net')
 const Ws = require('ws').Server
 const fs = require('fs')
 const https = require('https')
+const httpStatic = require('node-static')
 const config = require('./config/configure')
 const knex = require('./knex/knex.js')
 
@@ -3934,10 +3935,18 @@ async function run() {
   // WS control setup
   console.log(`trying to bind WS control port ${WSControl}`)
 
+  const fileServer = new httpStatic.Server('./public', { cache: 3600 })
+
   const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
-    console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
-    res.writeHead(200)
-    res.end(`Corelink Server ${serverVersion}`)
+    if (req.url === '/') {
+      res.writeHead(200)
+      res.end(`Corelink Server ${serverVersion}`)
+    } else {
+      console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
+      req.addListener('end', () => {
+        fileServer.serve(req, res)
+      }).resume()
+    }
   })
   httpsControlServer.listen(WSControl)
 
