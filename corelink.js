@@ -2989,8 +2989,7 @@ async function run() {
                   default:
                     break
                 }
-                console.log(workmessage)
-                console.log(workmessage.value)
+                console.log('Setting variable: ', workmessage.config, ' to value: ', workmessage.value)
                 globalConfig[workmessage.config] = workmessage.value
                 break
               default:
