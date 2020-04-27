@@ -3154,6 +3154,7 @@ async function run() {
             }
           }
         } else {
+          // ToDo: Make sure that the user owns the streamids 
           if (Array.isArray(message.streamids)) streamids = message.streamids
           if (typeof message.streamids === 'string') streamids = [message.streamids]
         }
