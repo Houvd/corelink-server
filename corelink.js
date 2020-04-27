@@ -589,12 +589,12 @@ async function run() {
   errorList[8] = 'Invalid app token, access denied.'
   errorList[9] = 'Database error'
   errorList[10] = 'Cannot update default workspace.'
-  errorList[11] = 'user already found in database'
-  errorList[12] = 'group doesnt exist in the database'
-  errorList[13] = 'login user doesnt have right to add user to the group'
-  errorList[14] = 'user does not exist in Database'
-  errorList[15] = 'password not provided'
-  errorList[16] = 'logined user is not admin'
+  errorList[11] = 'User already found in database'
+  errorList[12] = 'Group doesnt exist in the database'
+  errorList[13] = 'Current user doesnt have right to add user to the group'
+  errorList[14] = 'User does not exist in Database'
+  errorList[15] = 'Password not provided'
+  errorList[16] = 'Current user is not admin'
 
   function getErrorMessage(code) {
     const response = {}
@@ -2995,7 +2995,7 @@ async function run() {
               default:
                 break
             }
-          }
+          } else return getErrorMessage(16)
         }
         const response = {}
         response.statuscode = 0
