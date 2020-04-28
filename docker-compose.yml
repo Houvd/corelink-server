@@ -20,6 +20,7 @@ services:
         ipv4_address: 10.0.1.200
     volumes:
       - ../../../data:/app/data/
+      - ../../../public:/app/public/
 
 networks:
   bridge:
