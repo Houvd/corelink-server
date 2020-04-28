@@ -3542,7 +3542,7 @@ async function run() {
   serverfunctions.subscriber = {
     info: {
       name: 'subscriber',
-      description: 'update a sender with a new stream that subscribed',
+      description: 'Update a sender with a new stream that subscribed.',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
@@ -3650,7 +3650,7 @@ async function run() {
   serverfunctions.stale = {
     info: {
       name: 'stale',
-      description: 'identify a stream as stale',
+      description: 'Update a receiver that stream is stale and not in use anymore. A sender might have dropped or the stream might have timed out.',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
@@ -3722,7 +3722,7 @@ async function run() {
   serverfunctions.dropped = {
     info: {
       name: 'dropped',
-      description: 'identify dropped receivers that were subscribed to a sender',
+      description: 'Update a sender that receivers have dropped or unsibscribed.',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
