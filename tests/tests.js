@@ -108,15 +108,15 @@ tests.auth = {
 
 tests.listfunctions = {
   start() {
-    const request = `{"function":"listfunctions","token":"${token}"}`
+    const request = `{"function":"listFunctions","token":"${token}"}`
     client.write(request)
   },
   process(message) {
-    if ('functionlist' in message) {
+    if ('functionList' in message) {
       let functiontext = 'The following functions are available: '
-      for (const func in message.functionlist) {
-        info[message.functionlist[func]] = []
-        functiontext += `${message.functionlist[func]}, `
+      for (const func in message.functionList) {
+        info[message.functionList[func]] = []
+        functiontext += `${message.functionList[func]}, `
       }
       console.log(`  ${functiontext}`)
     } else { console.log('  Request produced wrong result') }
@@ -124,15 +124,15 @@ tests.listfunctions = {
   },
 }
 
-tests.describefunction = {
+tests.describeFunction = {
   start() {
     if (lastinfo === '') {
-      if (typeof info.describefunction === 'undefined') {
+      if (typeof info.describeFunction === 'undefined') {
         runTests(lastfunction)
         return
       }
       lastinfo = Object.keys(info)[0]
-      const request = `{"function":"describefunction","functionname":"${lastinfo}","token":"${token}"}`
+      const request = `{"function":"describeFunction","functionName":"${lastinfo}","token":"${token}"}`
       client.write(request)
     }
   },
@@ -151,7 +151,7 @@ tests.describefunction = {
       }
       if (key != null) {
         lastinfo = key
-        const request = `{"function":"describefunction","functionname":"${key}","token":"${token}"}`
+        const request = `{"function":"describeFunction","functionName":"${key}","token":"${token}"}`
         client.write(request)
         return null
       }
@@ -222,7 +222,7 @@ function checkResponse(name, message) {
 tests.autotest = {
   start() {
     if (lastinfo === '') {
-      if (typeof info.describefunction === 'undefined') {
+      if (typeof info.describeFunction === 'undefined') {
         runTests(lastfunction)
         return
       }

@@ -156,7 +156,7 @@ const MTU = 20000 // overall size incl. header is not allowed to be larger than 
 //             in the future server could drop packets that are not complying with this
 
 // All server initiated functions
-let serverfunctions = []
+const serverfunctions = []
 
 port.udp = 20011
 port.tcp = 20011
@@ -840,7 +840,7 @@ async function run() {
         functionList: {
           description: 'list of server functions',
           type: 'string',
-          sample: Object.keys(functions),
+          sample: Object.keys(serverfunctions),
         },
         statuscode: {
           description: 'result code of the function',
@@ -887,7 +887,7 @@ async function run() {
         functionName: {
           description: 'function to get info about',
           type: 'string',
-          sample: 'describeFunction',
+          sample: 'listFunctions',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -897,7 +897,7 @@ async function run() {
       responses: {
         description: {
           description: 'information about the function',
-          type: 'string',
+          type: 'object',
           sample: functions.listFunctions.info,
         },
         statuscode: {
@@ -949,7 +949,7 @@ async function run() {
         functionName: {
           description: 'server function to get info about',
           type: 'string',
-          sample: 'describeFunction',
+          sample: 'update',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -959,7 +959,7 @@ async function run() {
       responses: {
         description: {
           description: 'information about the function',
-          type: 'string',
+          type: 'object',
           sample: functions.listFunctions.info,
         },
         statuscode: {
@@ -3433,7 +3433,6 @@ async function run() {
   }
 
   // All server initiated functions
-  serverfunctions = []
   serverfunctions.update = {
     info: {
       name: 'update',
@@ -3837,6 +3836,7 @@ async function run() {
   // fill data list with available objects
   functions.listFunctions.info.responses.functionList.sample = Object.keys(functions)
   functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
+  functions.listServerFunctions.info.responses.functionList.sample = Object.keys(serverfunctions)
 
   const userlist = []
   users.forEach((user) => {
