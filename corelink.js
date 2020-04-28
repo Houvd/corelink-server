@@ -1191,7 +1191,7 @@ async function run() {
     info: {
       name: 'addUser',
       description: 'add a new User',
-      version: '1.0.0.1',
+      version: '1.0.0.2',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1258,15 +1258,14 @@ async function run() {
       if (typeof data !== 'object') {
         const workmessage = message
         if ('username' in message) {
-          // todo psspwrd with salt
           const password = saltHashPassword(workmessage.password)
-          const olduser = await knex('users')
+          const oldUser = await knex('users')
             .first('id')
             .where('username', workmessage.username)
             .catch((error) => {
               throw error
             })
-          if (typeof olduser === 'undefined') {
+          if (typeof oldUser === 'undefined') {
             console.log('no old user found')
             if (typeof message.admin === 'undefined') workmessage.admin = false
             await knex('users').insert({
@@ -1291,7 +1290,7 @@ async function run() {
     info: {
       name: 'password',
       description: 'change password for an existing User',
-      version: '1.0.0.1',
+      version: '1.0.0.2',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1332,12 +1331,10 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('password' in message) {
-          const newpassword = saltHashPassword(message.password)
-          console.log(message.password)
-          console.log(newpassword)
+          const newPassword = saltHashPassword(message.password)
           const command = await knex('users')
             .where('id', tokens[message.token].user)
-            .update({ password: newpassword.password, salt: newpassword.salt })
+            .update({ password: newPassword.password, salt: newPassword.salt })
             .catch((error) => {
               throw error
             })
@@ -1352,11 +1349,11 @@ async function run() {
     },
   }
 
-  functions.rmuser = {
+  functions.rmUser = {
     info: {
-      name: 'rmuser',
+      name: 'rmUser',
       description: 'remove an existing User',
-      version: '1.0.0.1',
+      version: '1.0.0.2',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1364,7 +1361,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'rmuser',
+          sample: 'rmUser',
         },
         username: {
           description: 'name of the User',
@@ -1415,11 +1412,11 @@ async function run() {
     },
   }
 
-  functions.listusers = {
+  functions.listUsers = {
     info: {
-      name: 'listusers',
+      name: 'listUsers',
       description: 'list existing users',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1427,7 +1424,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'listusers',
+          sample: 'listUsers',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1458,7 +1455,6 @@ async function run() {
           throw error
         })
       const response = {}
-      // *** ToDo: list only users in DB.
       if (typeof data !== 'object') {
         const userList = await knex('users')
           .select('username')
@@ -1479,11 +1475,11 @@ async function run() {
 
   // group functions  :
 
-  functions.addgroup = {
+  functions.addGroup = {
     info: {
-      name: 'addgroup ',
+      name: 'addGroup ',
       description: 'add a new Group',
-      version: '1.0.0.1',
+      version: '1.0.0.2',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1491,7 +1487,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'addgroup',
+          sample: 'addGroup',
         },
         group: {
           description: 'name of the new Group',
@@ -1549,11 +1545,11 @@ async function run() {
     },
   }
 
-  functions.addusertogroup = {
+  functions.addUserGroup = {
     info: {
-      name: 'addusertogroup ',
+      name: 'addUserGroup ',
       description: 'add a user to a Group',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1561,7 +1557,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'addusertogroup',
+          sample: 'addUserGroup',
         },
         group: {
           description: 'name of the  Group',
@@ -1608,7 +1604,6 @@ async function run() {
 
           if (typeof oldGroup !== 'undefined') {
             console.log('group found')
-            console.log(oldGroup)
             const olduser = await knex('users')
               .first('id')
               .where('username', message.user)
@@ -1622,8 +1617,6 @@ async function run() {
                 .catch((error) => {
                   throw error
                 })
-              console.log('owner details')
-              console.log(admin)
               if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
                 console.log('login user is either the admin or owner')
 
@@ -1648,11 +1641,11 @@ async function run() {
     },
   }
 
-  functions.rmusertogroup = {
+  functions.rmUserGroup = {
     info: {
-      name: 'rmusertogroup ',
-      description: 'add a user to a Group',
-      version: '1.0.0.0',
+      name: 'rmUserGroup ',
+      description: 'remove a user to a Group',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1660,7 +1653,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'rmusertogroup',
+          sample: 'rmUserGroup',
         },
         group: {
           description: 'name of the Group',
@@ -1707,14 +1700,13 @@ async function run() {
 
           if (typeof oldGroup !== 'undefined') {
             console.log('group found')
-            console.log(oldGroup)
-            const olduser = await knex('users')
+            const oldUser = await knex('users')
               .first('id')
               .where('username', message.user)
               .catch((error) => {
                 throw error
               })
-            if (typeof olduser !== 'undefined') {
+            if (typeof oldUser !== 'undefined') {
               const admin = await knex('users')
                 .first('admin')
                 .where('id', tokens[message.token].user)
@@ -1726,7 +1718,7 @@ async function run() {
               if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
                 console.log('login user is either the admin or owner')
                 const command = await knex('group_user')
-                  .where('user_id', olduser.id).where('group_id', oldGroup.id)
+                  .where('user_id', oldUser.id).where('group_id', oldGroup.id)
                   .del()
                   .catch((error) => {
                     throw error
@@ -1747,11 +1739,11 @@ async function run() {
     },
   }
 
-  functions.changeowner = {
+  functions.changeOwner = {
     info: {
-      name: 'changeowner',
-      description: 'change an existing Group  ownership',
-      version: '1.0.0.0',
+      name: 'changeOwner',
+      description: 'change an existing Group ownership',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1759,7 +1751,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'changeowner',
+          sample: 'changeOwner',
         },
         group: {
           description: 'name of the Group',
@@ -1769,7 +1761,7 @@ async function run() {
         username: {
           description: 'name of the new owner',
           type: 'string',
-          sample: 'newuser',
+          sample: 'Testuser',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1803,11 +1795,10 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          console.log(admin)
           if (admin.admin === 1) {
             const owner = await knex('users')
               .first('id')
-              .where('username', message.user)
+              .where('username', message.username)
               .catch((error) => {
                 throw error
               })
@@ -1830,11 +1821,11 @@ async function run() {
   }
 
 
-  functions.rmgroup = {
+  functions.rmGroup = {
     info: {
-      name: 'rmgroup',
+      name: 'rmGroup',
       description: 'remove an existing Group',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1842,7 +1833,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'rmgroup',
+          sample: 'rmGroup',
         },
         group: {
           description: 'name of the Group',
@@ -1875,7 +1866,6 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('group' in message) {
-          console.log(message.rmGroup)
           const command = await knex('groups')
             .where('groupname', message.group)
             .del()
@@ -1892,11 +1882,11 @@ async function run() {
     },
   }
 
-  functions.listgroups = {
+  functions.listGroups = {
     info: {
-      name: 'listgroups',
+      name: 'listGroups',
       description: 'list existing Group',
-      version: '1.0.0.1',
+      version: '1.0.0.2',
       author: 'Abhishek Khanna',
       email: 'ak7907@nyu.edu',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -1904,7 +1894,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'listgroups',
+          sample: 'listGroups',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1935,18 +1925,17 @@ async function run() {
           throw error
         })
       const response = {}
-      // *** ToDo: list only users in DB.
       if (typeof data !== 'object') {
-        const listGroup = await knex('groups')
+        const groupList = await knex('groups')
           .select('groupname')
           .catch((error) => {
             throw error
           })
         const result = []
-        for (const grp in listGroup) {
-          if (grp) result.push(listGroup[grp].groupname)
+        for (const grp in groupList) {
+          if (grp) result.push(groupList[grp].groupname)
         }
-        response.listGroups = result
+        response.groupList = result
         response.statuscode = 0
         return (response)
       }
@@ -3701,7 +3690,7 @@ async function run() {
           stream.conn.write(message)
           break
         case 'ws':
-          stream.conn.send(message) // was strem instead of stream @abhishek
+          stream.conn.send(message)
           break
         default:
           console.log('wrong stream')
