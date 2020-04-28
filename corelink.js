@@ -48,6 +48,7 @@ const net = require('net')
 const Ws = require('ws').Server
 const fs = require('fs')
 const https = require('https')
+const httpStatic = require('node-static')
 const config = require('./config/configure')
 const knex = require('./knex/knex.js')
 
@@ -98,7 +99,8 @@ const tokens = [] // holds all token related information
 // we can expand other token information with
 // tokens[token]['other'] = [];
 
-let debug
+const globalConfig = {}
+
 const functions = [] // holds all objects for functions in use
 // all receiver connections via TCP or WS
 
@@ -154,7 +156,7 @@ const MTU = 20000 // overall size incl. header is not allowed to be larger than 
 //             in the future server could drop packets that are not complying with this
 
 // All server initiated functions
-let serverfunctions = []
+const serverfunctions = []
 
 port.udp = 20011
 port.tcp = 20011
@@ -453,7 +455,8 @@ async function run() {
 
 
   // start application
-  debug = false
+  globalConfig.debug = false
+
   const stdin = process.openStdin()
   if (stdin.isTTY) stdin.setRawMode(true)
   stdin.resume()
@@ -510,6 +513,7 @@ async function run() {
         for (tsr in streamrelay[sr]) if (tsr) console.log(`Relaying ${sr} -> ${tsr}`)
       }
     }
+    console.log('Streamrelay:', streamrelay)
 
     for (ip in connections) {
       if (ip) {
@@ -535,15 +539,44 @@ async function run() {
     if ((key.charCodeAt(0) === 27) && (key.charCodeAt(1) === 91)) {
       if ((key.charCodeAt(2) === 65)) {
         console.log('Debug on')
-        debug = true
+        globalConfig.debug = true
       }
       if ((key.charCodeAt(2) === 66)) {
         console.log('Debug off')
-        debug = false
+        globalConfig.debug = false
       }
     }
   })
 
+  function findApps(streamid) {
+    let user = ''
+    // eslint-disable-next-line no-shadow
+    let apps
+    let userApps
+    let token
+    if (globalConfig.debug) console.log('findApps', streamid)
+    user = ''
+    apps = []
+    if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
+      userApps = findApps(source[streamid].from)
+      if (userApps.user !== '') user = userApps.user
+      if (userApps.apps.length > 0) apps = userApps.apps
+    } else {
+      for (token in tokens) {
+        if (tokens[token].streams.includes(streamid)) {
+          user = users[tokens[token].user].username
+          break
+        }
+      }
+    }
+    for (token in apps) {
+      if (apps[token].streams.includes(streamid)) {
+        apps.push(apps[token].name)
+        break
+      }
+    }
+    return { user, apps }
+  }
 
   // holds all error messages
   const errorList = []
@@ -557,12 +590,12 @@ async function run() {
   errorList[8] = 'Invalid app token, access denied.'
   errorList[9] = 'Database error'
   errorList[10] = 'Cannot update default workspace.'
-  errorList[11] = 'user already found in database'
-  errorList[12] = 'group doesnt exist in the database'
-  errorList[13] = 'login user doesnt have right to add user to the group'
-  errorList[14] = 'user does not exist in Database'
-  errorList[15] = 'password not provided'
-  errorList[16] = 'logined user is not admin'
+  errorList[11] = 'User already found in database'
+  errorList[12] = 'Group doesnt exist in the database'
+  errorList[13] = 'Current user doesnt have right to add user to the group'
+  errorList[14] = 'User does not exist in Database'
+  errorList[15] = 'Password not provided'
+  errorList[16] = 'Current user is not admin'
 
   function getErrorMessage(code) {
     const response = {}
@@ -731,10 +764,10 @@ async function run() {
     },
   }
 
-  functions.listfunctions = {
+  functions.listFunctions = {
     info: {
-      name: 'listfunctions',
-      description: 'list available functions',
+      name: 'listFunctions',
+      description: 'list available client functions',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
@@ -743,8 +776,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'array',
-          options: ['listfunctions'],
-          sample: 'listfunctions',
+          sample: 'listFunctions',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -752,7 +784,7 @@ async function run() {
         },
       },
       responses: {
-        functionlist: {
+        functionList: {
           description: 'list of functions',
           type: 'string',
           sample: Object.keys(functions),
@@ -777,7 +809,7 @@ async function run() {
         })
       response.statuscode = 0
       if (typeof data !== 'object') {
-        response.functionlist = Object.keys(functions)
+        response.functionList = Object.keys(functions)
         console.log(response)
         return (response)
       }
@@ -785,10 +817,63 @@ async function run() {
     },
   }
 
-  functions.describefunction = {
+  functions.listServerFunctions = {
     info: {
-      name: 'describefunction',
-      description: 'retrieve endpoint description',
+      name: 'listServerFunctions',
+      description: 'list available server functions',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'array',
+          sample: 'listServerFunctions',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        functionList: {
+          description: 'list of server functions',
+          type: 'string',
+          sample: Object.keys(serverfunctions),
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const response = {}
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      response.statuscode = 0
+      if (typeof data !== 'object') {
+        response.functionList = Object.keys(serverfunctions)
+        console.log(response)
+        return (response)
+      }
+      return (data)
+    },
+  }
+
+  functions.describeFunction = {
+    info: {
+      name: 'describeFunction',
+      description: 'retrieve client initiated function description',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
@@ -797,12 +882,12 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'describefunction',
+          sample: 'describeFunction',
         },
-        functionname: {
+        functionName: {
           description: 'function to get info about',
           type: 'string',
-          sample: 'listfunctions',
+          sample: 'listFunctions',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -812,8 +897,8 @@ async function run() {
       responses: {
         description: {
           description: 'information about the function',
-          type: 'string',
-          sample: functions.listfunctions.info,
+          type: 'object',
+          sample: functions.listFunctions.info,
         },
         statuscode: {
           description: 'result code of the function',
@@ -834,10 +919,72 @@ async function run() {
         })
       let response = {}
       if (typeof data !== 'object') {
-        if ('functionname' in message) {
-          if (functions[message.functionname] === undefined) response = getErrorMessage(2)
+        if ('functionName' in message) {
+          if (functions[message.functionName] === undefined) response = getErrorMessage(2)
           else {
-            response.description = functions[message.functionname].info
+            response.description = functions[message.functionName].info
+            response.statuscode = 0
+          }
+        } else response = getErrorMessage(1)
+        return (response)
+      }
+      return (data)
+    },
+  }
+
+  functions.describeServerFunction = {
+    info: {
+      name: 'describeServerFunction',
+      description: 'retrieve description of server initiated function',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'describeServerFunction',
+        },
+        functionName: {
+          description: 'server function to get info about',
+          type: 'string',
+          sample: 'update',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        description: {
+          description: 'information about the function',
+          type: 'object',
+          sample: functions.listFunctions.info,
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      let response = {}
+      if (typeof data !== 'object') {
+        if ('functionName' in message) {
+          if (serverfunctions[message.functionName] === undefined) response = getErrorMessage(2)
+          else {
+            response.description = serverfunctions[message.functionName].info
             response.statuscode = 0
           }
         } else response = getErrorMessage(1)
@@ -1303,7 +1450,7 @@ async function run() {
         password: {
           description: 'new password of the User',
           type: 'string',
-          sample: 'password',
+          sample: 'Testpassword',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -1593,6 +1740,7 @@ async function run() {
           throw error
         })
       const response = {}
+      // ToDo: what happens when the message is an app?
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
@@ -1613,6 +1761,7 @@ async function run() {
             if (typeof olduser !== 'undefined') {
               const admin = await knex('users')
                 .first('admin')
+                // ToDo: you can just use data instead of tokens[message.token].user, it has the user id in it, also token could be an app token
                 .where('id', tokens[message.token].user)
                 .catch((error) => {
                   throw error
@@ -2120,9 +2269,9 @@ async function run() {
     },
   }
 
-  functions.liststream = {
+  functions.listStreams = {
     info: {
-      name: 'liststream',
+      name: 'listStreams',
       description: 'list existing stream',
       version: '1.0.0.0',
       author: 'Robert Pahle',
@@ -2132,15 +2281,15 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'liststream',
+          sample: 'listStreams',
         },
-        workspace: {
+        workspaces: {
           description: 'Name of the workspace (or an array thereof) see the streams of. Leave empty or omit to search all workspaces.',
           type: 'array',
           default: [],
           sample: ['Holodeck'],
         },
-        type: {
+        types: {
           description: 'Restict listing to a particular type of stream (e.g. 3d, audio). If the parameter is omitted all stream types will be listed',
           type: 'array',
           default: [],
@@ -2152,7 +2301,7 @@ async function run() {
         },
       },
       responses: {
-        streamlist: {
+        senderList: {
           description: 'array of streamid/user/apps/type/meta/workspace of the streams that will be sent',
           type: 'array',
         },
@@ -2173,68 +2322,66 @@ async function run() {
         .catch((error) => {
           throw error
         })
+
+      console.log('*** listStreams ***')
       const response = {}
       let workspace
       const streamlistelement = {}
-      let key
-      let token
-      let key1
+      let userApps
       const workmessage = message
-      // *** ToDo: list only streams that user has access to
       if (typeof data !== 'object') {
-        if (!('workspace' in workmessage)) workmessage.workspace = []
+        if (!('workspaces' in workmessage)) workmessage.workspaces = []
 
-        if (typeof workmessage.workspace === 'string') workmessage.workspace = [workmessage.workspace]
+        if (typeof workmessage.workspaces === 'string') workmessage.workspaces = [workmessage.workspaces]
+        if (!Array.isArray(workmessage.workspaces)) workmessage.workspaces = []
 
-        if (!Array.isArray(workmessage.workspace)) workmessage.workspace = []
+        // limit to rooms a user has access to
+        let userWorkspace = await knex('group_user')
+          .select('rooms.roomname')
+          .join('group_room', 'group_user.group_id', '=', 'group_room.group_id')
+          .join('rooms', 'group_room.room_id', '=', 'rooms.id')
+          .where('user_id', '=', data)
+          .catch((error) => {
+            throw error
+          })
+        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.roomname })
 
-        if (workmessage.workspace.length === 0) workmessage.workspace = Object.keys(rooms)
+        if (workmessage.workspaces.length > 0) {
+          for (workspace in userWorkspace) {
+            if (!workmessage.workspaces.includes(userWorkspace[workspace])) {
+              delete userWorkspace[workspace]
+            }
+          }
+          userWorkspace = userWorkspace.filter((value) => value)
+        }
 
-        if ('workspace' in workmessage) {
-          response.streamlist = []
-          for (workspace in workmessage.workspace) {
-            if (workspace) {
-              for (key in source) {
-                if (source[key].room === workmessage.workspace[workspace]) {
-                  if ((typeof workmessage.type === 'undefined') || (workmessage.type.length === 0) || (workmessage.type.includes(source[key].type))) {
-                    // add usernames and app names to the specific streams
-                    streamlistelement.streamid = key
-                    for (token in tokens) {
-                      if (token) {
-                        for (key1 in tokens[token].streams) {
-                          if (tokens[token].streams[key1] === streamlistelement.streamid) {
-                            streamlistelement.user = users[tokens[token].user].username
-                            break
-                          }
-                        }
-                      }
-                    }
-                    for (token in apps) {
-                      if (token) {
-                        for (key1 in apps[token].streams) {
-                          // app is never defined as still checked , I am not sure what to do
-                          if (apps[token].streams[key1] === streamlistelement.streamid) {
-                            streamlistelement.apps = apps[token].name
-                            break
-                          }
-                        }
-                      }
-                    }
-                    streamlistelement.type = source[key].type
-                    streamlistelement.meta = source[key].meta
-                    streamlistelement.workspace = source[key].room
-                    response.streamlist.push(streamlistelement)
-                  }
+        if (typeof workmessage.types === 'string') workmessage.types = [workmessage.types]
+        if (!Array.isArray(workmessage.types)) workmessage.types = []
+
+        response.senderList = []
+        for (workspace in userWorkspace) {
+          if (workspace) {
+            for (const key in source) {
+              if (source[key].room === userWorkspace[workspace]) {
+                if ((workmessage.types.length === 0) || (workmessage.types.includes(source[key].type))) {
+                  streamlistelement.streamid = key
+                  // add usernames and app names to the specific streams
+                  userApps = findApps(streamlistelement.streamid)
+                  streamlistelement.user = userApps.user
+                  streamlistelement.apps = userApps.apps
+                  streamlistelement.type = source[key].type
+                  streamlistelement.meta = source[key].meta
+                  streamlistelement.workspace = source[key].room
+                  response.senderList.push({ ...streamlistelement })
                 }
               }
             }
           }
-          response.statuscode = 0
-          return (response)
         }
-        return (data)
+        response.statuscode = 0
+        return (response)
       }
-      return getErrorMessage(3)
+      return (data)
     },
   }
 
@@ -2341,36 +2488,6 @@ async function run() {
       }
       return (data)
     },
-  }
-
-  function findApps(streamid) {
-    let user = ''
-    // eslint-disable-next-line no-shadow
-    let apps
-    let userApps
-    let token
-    if (debug) console.log('findApps', streamid)
-    user = ''
-    apps = []
-    if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
-      userApps = findApps(source[streamid].from)
-      if (userApps.user !== '') user = userApps.user
-      if (userApps.apps.length > 0) apps = userApps.apps
-    } else {
-      for (token in tokens) {
-        if (tokens[token].streams.includes(streamid)) {
-          user = users[tokens[token].user].username
-          break
-        }
-      }
-    }
-    for (token in apps) {
-      if (apps[token].streams.includes(streamid)) {
-        apps.push(apps[token].name)
-        break
-      }
-    }
-    return { user, apps }
   }
 
   functions.receiver = {
@@ -2521,7 +2638,7 @@ async function run() {
           }
           // add usernames to the specific streams
           workmessage.streamlist = []
-          for (stream in message.streamids) {
+          for (stream in workmessage.streamids) {
             if (stream) {
               streamlistelement = {}
               streamlistelement.streamid = workmessage.streamids[stream]
@@ -2627,6 +2744,7 @@ async function run() {
           if (typeof apps[workmessage.token] !== 'undefined') apps[workmessage.token].streams.push(streamid)
 
           // designate streams to be directly relayed ot this target
+          console.log('streamrelay', streamrelay)
           for (stream in workmessage.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
@@ -2646,10 +2764,10 @@ async function run() {
           // create result for client to connect as a receiver
           response = {}
           response.statuscode = 0
-          response.port = port[message.proto]
-          response.proto = message.proto
+          response.port = port[workmessage.proto]
+          response.proto = workmessage.proto
           response.streamid = streamid
-          response.streamlist = message.streamlist
+          response.streamlist = workmessage.streamlist
           response.MTU = MTU
           // console.log(message['proto'],port[message['proto']],response);
           // console.log(port);
@@ -2789,7 +2907,7 @@ async function run() {
           response = {}
           response.statuscode = 0
           response.streamlist = workmessage.streamlist
-          if (debug) console.log(response)
+          if (globalConfig.debug) console.log(response)
           return (response)
         }
         return getErrorMessage(3)
@@ -2886,11 +3004,11 @@ async function run() {
     },
   }
 
-  functions.disconnect = {
+  functions.setConfig = {
     info: {
-      name: 'disconnect',
-      description: 'disconnect a stream or several streams for the logged in user',
-      version: '1.2.0.0',
+      name: 'setParameter',
+      description: 'set a server parameter',
+      version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -2898,22 +3016,32 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'disconnect',
+          sample: 'setConfig',
         },
-        workspace: {
-          description: 'name of the workspace to search for source streams (an empty array indicates all workspaces)',
-          type: 'array',
-          default: [],
+        config: {
+          description: 'the parameter that should be set',
+          type: 'string',
+          sample: 'debug',
         },
-        type: {
-          description: 'source stream types to search (an empty array indicates all stream types)',
-          type: 'array',
-          default: [],
+        context: {
+          description: 'context that this cofiguration applies to global (server global settings), profile (global user specific settings), app (app global settings), or private (app user specific settings), if omitted or empty it is a global configuration parameter',
+          type: 'string',
+          default: 'global',
         },
-        streamids: {
-          description: 'id\'s of the streams to discard (if an empty array is given all source streams that match workspace and type will be discarded)',
-          type: 'array',
-          default: [],
+        app: {
+          description: 'an app name that this cofiguration applies to, can be omitted or empty for global or profile configuration parameters',
+          type: 'string',
+          default: '',
+        },
+        user: {
+          description: 'an user name that this cofiguration applies to, can be omitted or empty for global or app configuration parameters, only an admin can set this parameter, otherwise the logged in username will be taken.',
+          type: 'string',
+          default: '',
+        },
+        value: {
+          description: 'value to apply to the parameter, all parameters are stored as strings, but are applied in the defined type',
+          type: 'string',
+          sample: 'true',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -2938,6 +3066,107 @@ async function run() {
         .catch((error) => {
           throw error
         })
+      if (typeof data !== 'object') {
+        console.log('*** setGlobalSetting ***')
+        const workmessage = message
+
+        let admin
+        if (typeof data === 'number') {
+          // check if user
+          admin = await knex('users')
+            .first('admin')
+            .where('id', data)
+            .catch((error) => {
+              throw error
+            })
+          if (admin.admin) {
+            switch (workmessage.context) {
+              case 'global':
+                // Todo: get from database and allow only if exists in database
+                // Todo: ACLs?
+                switch (workmessage.type) {
+                  case 'boolean':
+                    // eslint-disable-next-line eqeqeq
+                    if (workmessage.value == 'true') workmessage.value = true; else workmessage.value = false
+                    break
+                  default:
+                    break
+                }
+                console.log('Setting variable: ', workmessage.config, ' to value: ', workmessage.value)
+                globalConfig[workmessage.config] = workmessage.value
+                break
+              default:
+                break
+            }
+          } else return getErrorMessage(16)
+        }
+        const response = {}
+        response.statuscode = 0
+        return (response)
+      }
+      return (data)
+    },
+  }
+
+  functions.disconnect = {
+    info: {
+      name: 'disconnect',
+      description: 'disconnect a stream or several streams for the logged in user',
+      version: '1.2.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'disconnect',
+        },
+        workspaces: {
+          description: 'name of the workspace to search for source streams (an empty array indicates all workspaces), it is ignored when specific streamids are given',
+          type: 'array',
+          default: [],
+        },
+        types: {
+          description: 'source stream types to search (an empty array indicates all stream types), it is ignored when specific streamids are given',
+          type: 'array',
+          default: [],
+        },
+        streamids: {
+          description: 'id\'s of the streams to discard (if an empty array is given all source streams that match workspace and type will be discarded)',
+          type: 'array',
+          default: [],
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        streamList: {
+          description: 'streams that were disconnected',
+          type: 'array',
+          sample: [],
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      console.log('*** disconnect ***')
+      console.log('message', message)
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
       let streamids = []
       let allstreams = []
       let types = []
@@ -2951,12 +3180,35 @@ async function run() {
 
 
       if (typeof data !== 'object') {
-        console.log('*** disconnect ***')
         // first find all streamid's that we want to disconnect
         if ((!('streamids' in message)) || (Array.isArray(message.streamids) && (message.streamids.length === 0))) {
           // make sure we can use the types and workspaces
-          if (('type' in message) && Array.isArray(message.type) && (message.type.length > 0)) types = types.concat(message.type)
-          if (('workspace' in message) && Array.isArray(message.workspace) && (message.workspace.length > 0)) workspaces = workspaces.concat(message.workspace)
+          if (('types' in message) && Array.isArray(message.types) && (message.types.length > 0)) types = types.concat(message.types)
+          if (('types' in message) && (typeof message.types === 'string')) types.push(message.types)
+          if (('workspaces' in message) && Array.isArray(message.workspaces) && (message.workspaces.length > 0)) workspaces = workspaces.concat(message.workspaces)
+          if (('workspaces' in message) && (typeof message.workspaces === 'string')) workspaces.push(message.workspaces)
+
+          // limit to rooms a user has access to
+          let userWorkspace = await knex('group_user')
+            .select('rooms.roomname')
+            .join('group_room', 'group_user.group_id', '=', 'group_room.group_id')
+            .join('rooms', 'group_room.room_id', '=', 'rooms.id')
+            .where('user_id', '=', data)
+            .catch((error) => {
+              throw error
+            })
+          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.roomname })
+
+          if (workspaces.length > 0) {
+            for (const workspace in userWorkspace) {
+              if (!workspaces.includes(userWorkspace[workspace])) {
+                delete userWorkspace[workspace]
+              }
+            }
+            userWorkspace = userWorkspace.filter((value) => value)
+          }
+
+          workspaces = userWorkspace
 
           if (typeof tokens[message.token] !== 'undefined') {
             // find user for the submitted token
@@ -2991,7 +3243,7 @@ async function run() {
             allstreams = apps[message.token].streams
             for (streamid in allstreams) {
               if (streamid) {
-                if (debug) console.log('disconnect streamid', allstreams[streamid])
+                if (globalConfig.debug) console.log('disconnect streamid', allstreams[streamid])
                 // check if streamid is in correct room and of correct type
                 if ((typeof source[allstreams[streamid]] !== 'undefined')
                     && (types.includes(source[allstreams[streamid]].type) || types.length === 0)
@@ -3005,11 +3257,13 @@ async function run() {
             }
           }
         } else {
+          // ToDo: Make sure that the user owns the streamids
           if (Array.isArray(message.streamids)) streamids = message.streamids
           if (typeof message.streamids === 'string') streamids = [message.streamids]
         }
         response = {}
         response.statuscode = 0
+        response.streamList = streamids
         for (streamkey in streamids) {
           if (streamkey) {
             streamid = streamids[streamkey]
@@ -3167,7 +3421,6 @@ async function run() {
   }
 
   // All server initiated functions
-  serverfunctions = []
   serverfunctions.update = {
     info: {
       name: 'update',
@@ -3176,7 +3429,7 @@ async function run() {
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3277,12 +3530,12 @@ async function run() {
   serverfunctions.subscriber = {
     info: {
       name: 'subscriber',
-      description: 'update a sender with a new stream that subscribed',
+      description: 'Update a sender with a new stream that subscribed.',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3385,12 +3638,12 @@ async function run() {
   serverfunctions.stale = {
     info: {
       name: 'stale',
-      description: 'identify a stream as stale',
+      description: 'Update a receiver that stream is stale and not in use anymore. A sender might have dropped or the stream might have timed out.',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3457,12 +3710,12 @@ async function run() {
   serverfunctions.dropped = {
     info: {
       name: 'dropped',
-      description: 'identify dropped receivers that were subscribed to a sender',
+      description: 'Update a sender that receivers have dropped or unsibscribed.',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3569,14 +3822,15 @@ async function run() {
   }
 
   // fill data list with available objects
-  functions.listfunctions.info.responses.functionlist.sample = Object.keys(functions)
+  functions.listFunctions.info.responses.functionList.sample = Object.keys(functions)
   functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
+  functions.listServerFunctions.info.responses.functionList.sample = Object.keys(serverfunctions)
 
   const userlist = []
   users.forEach((user) => {
     userlist.push(user.username)
   })
-  console.log('Functions: ', functions.listfunctions.info.responses.functionlist.sample)
+  console.log('Functions: ', functions.listFunctions.info.responses.functionList.sample)
   console.log('Server functions: ', Object.keys(serverfunctions))
   console.log('Workspaces: ', functions.listworkspaces.info.responses.workspacelist.sample)
   console.log('Users: ', userlist)
@@ -3652,7 +3906,7 @@ async function run() {
       console.log(`error during parsing ${e}`)
       return console.error(e)
     }
-    if (debug && header.id !== 'log') {
+    if (globalConfig.debug && header.id !== 'log') {
       dataSize = msg.readUInt32LE(2)
       data = Buffer.allocUnsafe(dataSize)
       msg.copy(data, 0, 6 + headerSize)
@@ -3695,13 +3949,13 @@ async function run() {
         default:
           console.log('wrong stream')
       }
-      if (debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
+      if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
     } else if (header.id in streamrelay) { // console.log(header['id']);
       source[header.id].time = last
       for (targetid in streamrelay[header.id]) {
         if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
           if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].port !== 'undefined') && (target[targetid].port !== 0)) {
-            if (debug && header.id !== 'log') {
+            if (globalConfig.debug && header.id !== 'log') {
               console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetid].ip}:${target[targetid].port}`)
               // console.log(data)
             }
@@ -3727,7 +3981,7 @@ async function run() {
         } else if (header.id !== 'log') console.log(`no ip for stream ${header.id}`)
       }
     } else if (header.id in target) {
-      if (debug && (header.id !== 'log')) console.log(target[header.id].ip)
+      if (globalConfig.debug && (header.id !== 'log')) console.log(target[header.id].ip)
       console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
       if (remoteAddress === target[header.id].ip) {
         // console.log(target[header.id])
@@ -3784,10 +4038,18 @@ async function run() {
   // WS control setup
   console.log(`trying to bind WS control port ${WSControl}`)
 
+  const fileServer = new httpStatic.Server('./public', { cache: 3600 })
+
   const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
-    console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
-    res.writeHead(200)
-    res.end(`Corelink Server ${serverVersion}`)
+    if (req.url === '/') {
+      res.writeHead(200)
+      res.end(`Corelink Server ${serverVersion}`)
+    } else {
+      console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
+      req.addListener('end', () => {
+        fileServer.serve(req, res)
+      }).resume()
+    }
   })
   httpsControlServer.listen(WSControl)
 
@@ -3815,7 +4077,7 @@ async function run() {
         console.log(`Received message not a proper JSON:${data.toString()}`)
         return
       }
-      if ('function' in message) {
+      if (('function' in message) && (message.function in functions)) {
         if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
         else send = JSON.stringify(await functions[message.function].process(message))
         if ('id' in message) {
@@ -3825,7 +4087,7 @@ async function run() {
         }
         console.log(`sending:${send}`)
         conn.send(send)
-      } else console.log('Key function not given')
+      } else console.log('Key function not given or wrong.')
     })
 
     conn.once('close', () => {
@@ -3954,7 +4216,8 @@ async function run() {
         for (sid in streamrelay) {
           if (sid) {
             for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
-            if (streamrelay[sid].length === 0) delete streamrelay[sid]
+            // dont remove sources that are still available from the relay (let the sources time out separately)
+            // if (streamrelay[sid].length === 0) delete streamrelay[sid]
           }
         }
         delete target[id]

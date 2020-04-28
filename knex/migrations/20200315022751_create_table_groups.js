@@ -9,4 +9,4 @@ exports.up = (knex) => knex.schema.createTable('groups', (table) => {
   table.timestamp('updated_at').default(knex.fn.now())
 })
 
-exports.down = (knex) => knex.schema.dropTable('groups')
+exports.down = (knex) => knex.schema.dropTableIfExists('groups')

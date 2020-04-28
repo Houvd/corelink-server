@@ -112,6 +112,12 @@ exports.seed = (knex) => knex('group_user')
       group_id: 1,
     },
     {
+      id: 38,
+      owner_id: 1,
+      user_id: 19,
+      group_id: 1,
+    },
+    {
       id: 19,
       owner_id: 1,
       user_id: 1,
@@ -219,7 +225,124 @@ exports.seed = (knex) => knex('group_user')
       user_id: 18,
       group_id: 2,
     },
-
-
-
+    {
+      id: 37,
+      owner_id: 1,
+      user_id: 19,
+      group_id: 2,
+    },
+    {
+      id: 39,
+      owner_id: 1,
+      user_id: 1,
+      group_id: 3,
+    },
+    {
+      id: 40,
+      owner_id: 1,
+      user_id: 2,
+      group_id: 3,
+    },
+    {
+      id: 41,
+      owner_id: 1,
+      user_id: 3,
+      group_id: 3,
+    },
+    {
+      id: 42,
+      owner_id: 1,
+      user_id: 4,
+      group_id: 3,
+    },
+    {
+      id: 43,
+      owner_id: 1,
+      user_id: 5,
+      group_id: 3,
+    },
+    {
+      id: 44,
+      owner_id: 1,
+      user_id: 6,
+      group_id: 3,
+    },
+    {
+      id: 45,
+      owner_id: 1,
+      user_id: 7,
+      group_id: 3,
+    },
+    {
+      id: 46,
+      owner_id: 1,
+      user_id: 8,
+      group_id: 3,
+    },
+    {
+      id: 47,
+      owner_id: 1,
+      user_id: 9,
+      group_id: 3,
+    },
+    {
+      id: 48,
+      owner_id: 1,
+      user_id: 10,
+      group_id: 3,
+    },
+    {
+      id: 49,
+      owner_id: 1,
+      user_id: 11,
+      group_id: 3,
+    },
+    {
+      id: 50,
+      owner_id: 1,
+      user_id: 12,
+      group_id: 3,
+    },
+    {
+      id: 51,
+      owner_id: 1,
+      user_id: 13,
+      group_id: 3,
+    },
+    {
+      id: 52,
+      owner_id: 1,
+      user_id: 14,
+      group_id: 3,
+    },
+    {
+      id: 53,
+      owner_id: 1,
+      user_id: 15,
+      group_id: 3,
+    },
+    {
+      id: 54,
+      owner_id: 1,
+      user_id: 16,
+      group_id: 3,
+    },
+    {
+      id: 55,
+      owner_id: 1,
+      user_id: 17,
+      group_id: 3,
+    },
+    {
+      id: 56,
+      owner_id: 1,
+      user_id: 18,
+      group_id: 3,
+    },
+    {
+      id: 57,
+      owner_id: 1,
+      user_id: 19,
+      group_id: 3,
+    },
   ]))
