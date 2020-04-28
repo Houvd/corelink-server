@@ -764,10 +764,10 @@ async function run() {
     },
   }
 
-  functions.listfunctions = {
+  functions.listFunctions = {
     info: {
-      name: 'listfunctions',
-      description: 'list available functions',
+      name: 'listFunctions',
+      description: 'list available client functions',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
@@ -776,8 +776,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'array',
-          options: ['listfunctions'],
-          sample: 'listfunctions',
+          sample: 'listFunctions',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -785,7 +784,7 @@ async function run() {
         },
       },
       responses: {
-        functionlist: {
+        functionList: {
           description: 'list of functions',
           type: 'string',
           sample: Object.keys(functions),
@@ -810,7 +809,7 @@ async function run() {
         })
       response.statuscode = 0
       if (typeof data !== 'object') {
-        response.functionlist = Object.keys(functions)
+        response.functionList = Object.keys(functions)
         console.log(response)
         return (response)
       }
@@ -818,10 +817,63 @@ async function run() {
     },
   }
 
-  functions.describefunction = {
+  functions.listServerFunctions = {
     info: {
-      name: 'describefunction',
-      description: 'retrieve endpoint description',
+      name: 'listServerFunctions',
+      description: 'list available server functions',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'array',
+          sample: 'listServerFunctions',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        functionList: {
+          description: 'list of server functions',
+          type: 'string',
+          sample: Object.keys(functions),
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const response = {}
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      response.statuscode = 0
+      if (typeof data !== 'object') {
+        response.functionList = Object.keys(serverfunctions)
+        console.log(response)
+        return (response)
+      }
+      return (data)
+    },
+  }
+
+  functions.describeFunction = {
+    info: {
+      name: 'describeFunction',
+      description: 'retrieve client initiated function description',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
@@ -830,12 +882,12 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'describefunction',
+          sample: 'describeFunction',
         },
-        functionname: {
+        functionName: {
           description: 'function to get info about',
           type: 'string',
-          sample: 'listfunctions',
+          sample: 'describeFunction',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -846,7 +898,7 @@ async function run() {
         description: {
           description: 'information about the function',
           type: 'string',
-          sample: functions.listfunctions.info,
+          sample: functions.listFunctions.info,
         },
         statuscode: {
           description: 'result code of the function',
@@ -867,10 +919,72 @@ async function run() {
         })
       let response = {}
       if (typeof data !== 'object') {
-        if ('functionname' in message) {
-          if (functions[message.functionname] === undefined) response = getErrorMessage(2)
+        if ('functionName' in message) {
+          if (functions[message.functionName] === undefined) response = getErrorMessage(2)
           else {
-            response.description = functions[message.functionname].info
+            response.description = functions[message.functionName].info
+            response.statuscode = 0
+          }
+        } else response = getErrorMessage(1)
+        return (response)
+      }
+      return (data)
+    },
+  }
+
+  functions.describeServerFunction = {
+    info: {
+      name: 'describeServerFunction',
+      description: 'retrieve description of server initiated function',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'describeServerFunction',
+        },
+        functionName: {
+          description: 'server function to get info about',
+          type: 'string',
+          sample: 'describeFunction',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        description: {
+          description: 'information about the function',
+          type: 'string',
+          sample: functions.listFunctions.info,
+        },
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      let response = {}
+      if (typeof data !== 'object') {
+        if ('functionName' in message) {
+          if (serverfunctions[message.functionName] === undefined) response = getErrorMessage(2)
+          else {
+            response.description = serverfunctions[message.functionName].info
             response.statuscode = 0
           }
         } else response = getErrorMessage(1)
@@ -3328,7 +3442,7 @@ async function run() {
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3434,7 +3548,7 @@ async function run() {
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3542,7 +3656,7 @@ async function run() {
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3614,7 +3728,7 @@ async function run() {
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
-      responses: {
+      arguments: {
         function: {
           description: 'function that was triggered',
           type: 'string',
@@ -3721,14 +3835,14 @@ async function run() {
   }
 
   // fill data list with available objects
-  functions.listfunctions.info.responses.functionlist.sample = Object.keys(functions)
+  functions.listFunctions.info.responses.functionList.sample = Object.keys(functions)
   functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
 
   const userlist = []
   users.forEach((user) => {
     userlist.push(user.username)
   })
-  console.log('Functions: ', functions.listfunctions.info.responses.functionlist.sample)
+  console.log('Functions: ', functions.listFunctions.info.responses.functionList.sample)
   console.log('Server functions: ', Object.keys(serverfunctions))
   console.log('Workspaces: ', functions.listworkspaces.info.responses.workspacelist.sample)
   console.log('Users: ', userlist)
