@@ -3722,7 +3722,7 @@ async function run() {
   serverfunctions.dropped = {
     info: {
       name: 'dropped',
-      description: 'Update a sender that receivers have dropped or unsibscribed.',
+      description: 'Update a sender that receivers have dropped or unsubscribed.',
       version: '1.0.0.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
