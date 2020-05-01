@@ -3,10 +3,13 @@
 
 /**
  * @file NodeJS Corelink core server
- * @author Robert Pahle
- * @version V4.6.0.0
+ * @author Robert Pahle, Abhishek Khanna
+ * @version V4.7.0.0
  */
-const serverVersion = 'v4.6.0.0'
+
+const serverVersion = 'v4.7.0.0'
+// v4.7.0.0
+// - add describeServerFunction and listServerFunctions
 // v4.6.0.0
 // - enable logging to file and to stream
 // v4.5.0.0
@@ -2725,7 +2728,7 @@ async function run() {
             console.log(`used existing receiver streamid: ${streamid}`)
             // console.log(target[streamid]);
           } else {
-            // create a new target streamID
+            // create a new target streamid
             streamid = null
             while ((streamid === null) || (typeof target[streamid] !== 'undefined')) {
               streamid = crypto.createHash('sha256')
