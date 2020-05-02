@@ -767,6 +767,54 @@ async function run() {
     },
   }
 
+  functions.keepAlive = {
+    info: {
+      name: 'keepAlive',
+      description: 'ping the server to keep alive',
+      version: '1.0.0.0',
+      author: 'Robert Pahle',
+      email: 'robert.pahle@gmail.com',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'keepAlive',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+      },
+      responses: {
+        statuscode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      console.log('*** keep alive ***')
+      const response = {}
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      response.statuscode = 0
+      if (typeof data !== 'object') {
+        console.log(response)
+        return (response)
+      }
+      return (data)
+    },
+  }
+
   functions.listFunctions = {
     info: {
       name: 'listFunctions',
@@ -778,7 +826,7 @@ async function run() {
       arguments: {
         function: {
           description: 'function to select and run',
-          type: 'array',
+          type: 'string',
           sample: 'listFunctions',
         },
         token: {
@@ -831,7 +879,7 @@ async function run() {
       arguments: {
         function: {
           description: 'function to select and run',
-          type: 'array',
+          type: 'string',
           sample: 'listServerFunctions',
         },
         token: {
