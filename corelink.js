@@ -779,7 +779,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'keepALive',
+          sample: 'keepAlive',
         },
         token: {
           description: 'token for the user to authenticate',
