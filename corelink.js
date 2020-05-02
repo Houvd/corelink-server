@@ -2183,7 +2183,7 @@ async function run() {
           type: 'string',
         },
         port: {
-          description: 'Port from which the connection will be made, keep the port to 0 when the client is behind a firewall.',
+          description: 'Port from which the connection will be made, keep the port 0 when the client is behind a firewall.',
           type: 'string',
           default: 0,
         },
@@ -2217,8 +2217,13 @@ async function run() {
           description: 'ID of the new stream',
           type: 'string',
         },
+        ip: {
+          description: 'IP address to which the connection shall be made',
+          type: 'string',
+          optional: true,
+        },
         port: {
-          description: 'Port to which the connection will be made',
+          description: 'Port to which the connection shall be made',
           type: 'string',
         },
         MTU: {
@@ -2626,15 +2631,11 @@ async function run() {
           description: 'array of streamid/user/apps [array of app names]/type/meta of the streams that will be sent',
           type: 'array',
         },
-        /* *** ToDo: IP is not returned at the moment, because the detection of
-              the localhost IP is not working perfectly.
-              It will be important for load balanced connections with several masters.
-*/
         ip: {
           description: 'IP to which the connection of the client shall be made',
           type: 'string',
+          optional: true,
         },
-
         port: {
           description: 'Port to which the connection will be made',
           type: 'string',
