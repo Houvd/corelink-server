@@ -458,7 +458,7 @@ async function run() {
 
 
   // start application
-  globalConfig.debug = false
+  globalConfig.debug = true
 
   const stdin = process.openStdin()
   if (stdin.isTTY) stdin.setRawMode(true)
@@ -2131,12 +2131,13 @@ async function run() {
           sample: 'udp',
         },
         ip: {
-          description: 'IP address from which the connection will be made',
+          description: 'IP address from which the connection will be made (this is usually the IP one gets from the auth function)',
           type: 'string',
         },
         port: {
-          description: 'Port from which the connection will be made',
+          description: 'Port from which the connection will be made, keep the port to 0 when the client is behind a firewall.',
           type: 'string',
+          default: 0,
         },
         type: {
           description: 'Set the type of stream (e.g. 3d, audio)',
@@ -2545,12 +2546,13 @@ async function run() {
           type: 'boolen',
         },
         ip: {
-          description: 'IP address from which the connection will be made',
+          description: 'IP address from which the connection will be made (this is usually the IP one gets from the auth function)',
           type: 'string',
         },
         port: {
-          description: 'Port from which the connection will be made',
+          description: 'Port from which the connection will be made. This should be 0 for for cases when the client is behind a firewall.',
           type: 'string',
+          default: 0,
         },
         meta: {
           description: 'custom metadata specific to this stream to send to senders',
@@ -2579,12 +2581,12 @@ async function run() {
         /* *** ToDo: IP is not returned at the moment, because the detection of
               the localhost IP is not working perfectly.
               It will be important for load balanced connections with several masters.
+*/
+        ip: {
+          description: 'IP to which the connection of the client shall be made',
+          type: 'string',
+        },
 
-              'ip': {
-                  'description': 'IP to which the connection will be made',
-                  'type':'string',
-              },
-  */
         port: {
           description: 'Port to which the connection will be made',
           type: 'string',
@@ -2622,10 +2624,10 @@ async function run() {
 
       if (typeof data !== 'object') {
         console.log('*** receiver ***')
-        if (('workspace' in workmessage)) {
-          // if(('receiverid' in message) && (message['receiverid']!='')
-          //         && (typeof target[message['receiverid']]!='undefined'))
-          // process.exit();
+        if ((typeof workmessage === 'object') && ('workspace' in workmessage)) {
+
+          // ToDo: check if IP is given
+          if (!('port' in workmessage)) workmessage.port = 0
 
           // get appropriate streamids
           if (!('streamids' in workmessage) || (workmessage.streamids.length === 0)) {
@@ -3915,7 +3917,14 @@ async function run() {
       msg.copy(data, 0, 6 + headerSize)
       // console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize},
       // header:${JSON.stringify(header)}to${target[targetid]['ip']}:${target[targetid]['port']}`);
-      if (header.id !== 'log') console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to `)
+      if (header.id !== 'log') {
+        if (typeof source[header.id] !== 'undefined') {
+          console.log('source[header.id]', source[header.id])
+          console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from ${source[header.id].ip}:${source[header.id].port}`)
+        } else {
+          console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from unknown source`)
+        }
+      }
       // console.log(data)
     }
     // if we see the 'stamp' variable we will return a ping with the server stamped time
