@@ -4,10 +4,12 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle, Abhishek Khanna
- * @version V4.7.0.0
+ * @version V5.0.0.0
  */
 
-const serverVersion = 'v4.7.0.0'
+const serverVersion = 'v5.0.0.0'
+// v5.0.0.0
+// New naming convention implemented
 // v4.7.0.0
 // - add describeServerFunction and listServerFunctions
 // v4.6.0.0
@@ -58,15 +60,15 @@ const knex = require('./knex/knex.js')
 
 // should the server output be piped into a corelink stream
 // to logging to file copy dockerlog.js.sample to dockerlog.js
-const logstream = true
-let logfile = true
-let logstdout = true
+const logStream = true
+let logFile = true
+let logStdOut = true
 
 // Check if the file exists in the current directory, and if it is writable.
 fs.access('dockerlog', fs.constants.F_OK, (err) => {
   if (!err) {
-    logfile = true
-    logstdout = true
+    logFile = true
+    logStdOut = true
   }
 })
 
@@ -147,11 +149,11 @@ target[id]['conn'] = for tcp/ws connections the connection information
 */
 
 // fast structure to access to future connections
-const streamrelay = [] // holds all information to relay
+const streamRelay = [] // holds all information to relay
 // data from source to targets most effectively
 /*
-streamrelay[ids] = [] // source stream id
-streamrelay[ids][idt] = conn // connection to send data to
+streamRelay[ids] = [] // source stream id
+streamRelay[ids][idt] = conn // connection to send data to
 */
 
 // Allowed packet size
@@ -159,7 +161,7 @@ const MTU = 20000 // overall size incl. header is not allowed to be larger than 
 //             in the future server could drop packets that are not complying with this
 
 // All server initiated functions
-const serverfunctions = []
+const serverFunctions = []
 
 port.udp = 20011
 port.tcp = 20011
@@ -297,9 +299,9 @@ function hashSha512(password, salt) {
 }
 
 
-function saltHashPassword(userpassword) {
+function saltHashPassword(userPassword) {
   const salt = genRandomString(16) // Gives us salt of length 16
-  const passwordData = hashSha512(userpassword, salt)
+  const passwordData = hashSha512(userPassword, salt)
   return { password: passwordData.passwordHash, salt }
 }
 
@@ -311,26 +313,26 @@ async function run() {
   // setup file logging of the dockerlog.js file is available
   let log
   let logErr
-  if (logfile) {
+  if (logFile) {
     const timestamp = new Date(Date.now())
-    const timestring = `${timestamp.getFullYear()}_${timestamp
+    const timeString = `${timestamp.getFullYear()}_${timestamp
       .getMonth().toString().padStart(2, '0')}_${timestamp
       .getDate().toString().padStart(2, '0')}_${timestamp
       .getHours().toString().padStart(2, '0')}_${timestamp
       .getMinutes().toString().padStart(2, '0')}_${timestamp
       .getSeconds().toString().padStart(2, '0')}`
-    log = await fs.createWriteStream(`data/${timestring}_node.access.log`, { flags: 'a' })
-    logErr = await fs.createWriteStream(`data/${timestring}_node.error.log`, { flags: 'a' })
+    log = await fs.createWriteStream(`data/${timeString}_node.access.log`, { flags: 'a' })
+    logErr = await fs.createWriteStream(`data/${timeString}_node.error.log`, { flags: 'a' })
 
-    console.log(`Selecting ${timestring}_node.access.log to log.`)
+    console.log(`Selecting ${timeString}_node.access.log to log.`)
   }
 
-  const stdout = process.stdout.write
-  const stderr = process.stderr.write
+  const stdOut = process.stdout.write
+  const stdErr = process.stderr.write
 
   function write(...args) {
-    if (logstdout) stdout.apply(process.stdout, args)
-    if (logfile) log.write(...args)
+    if (logStdOut) stdOut.apply(process.stdout, args)
+    if (logFile) log.write(...args)
     const data = Buffer.from(args[0])
     const headerSize = Buffer.alloc(6)
     let header = {
@@ -346,12 +348,12 @@ async function run() {
     const packet = [headerSize, header, data]
     const message = Buffer.concat(packet)
     // eslint-disable-next-line no-use-before-define
-    if (logstream) relayData(message)
+    if (logStream) relayData(message)
   }
 
   function writeErr(...args) {
-    if (logstdout) stderr.apply(process.stderr, args)
-    if (logfile) logErr.write(...args)
+    if (logStdOut) stdErr.apply(process.stderr, args)
+    if (logFile) logErr.write(...args)
     const data = Buffer.from(args[0])
     const headerSize = Buffer.alloc(6)
     let header = {
@@ -367,7 +369,7 @@ async function run() {
     const packet = [headerSize, header, data]
     const message = Buffer.concat(packet)
     // eslint-disable-next-line no-use-before-define
-    if (logstream) relayData(message)
+    if (logStream) relayData(message)
   }
 
   process.stdout.write = write
@@ -439,7 +441,7 @@ async function run() {
   }
 
   // making sure that the apps cannot be overwritten
-  if (logstream) {
+  if (logStream) {
     source.log = []
     source.log.ip = ''
     source.log.port = 0
@@ -453,12 +455,12 @@ async function run() {
     apps['!log'].streams.push('log')
     apps['!log'].conn = []
 
-    streamrelay.log = []
+    streamRelay.log = []
   }
 
 
   // start application
-  globalConfig.debug = true
+  globalConfig.debug = false
 
   const stdin = process.openStdin()
   if (stdin.isTTY) stdin.setRawMode(true)
@@ -511,12 +513,12 @@ async function run() {
         console.log(`Target: ${t}, IP: ${target[t].ip}:${target[t].port}, proto: ${target[t].proto}, room: ${target[t].room}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
       }
     }
-    for (sr in streamrelay) {
+    for (sr in streamRelay) {
       if (sr) {
-        for (tsr in streamrelay[sr]) if (tsr) console.log(`Relaying ${sr} -> ${tsr}`)
+        for (tsr in streamRelay[sr]) if (tsr) console.log(`Relaying ${sr} -> ${tsr}`)
       }
     }
-    console.log('Streamrelay:', streamrelay)
+    console.log('Streamrelay:', streamRelay)
 
     for (ip in connections) {
       if (ip) {
@@ -602,7 +604,7 @@ async function run() {
 
   function getErrorMessage(code) {
     const response = {}
-    response.statuscode = code
+    response.statusCode = code
     response.message = errorList[code]
     return (response)
   }
@@ -640,7 +642,7 @@ async function run() {
     info: {
       name: 'auth',
       description: 'authenticate a user',
-      version: '1.0.0.0',
+      version: '1.0.1.0',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -675,7 +677,7 @@ async function run() {
           description: 'source IP of the client',
           type: 'string',
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -689,7 +691,7 @@ async function run() {
     },
     process: async (message, ip, conn) => {
       let response = {}
-      response.statuscode = 0
+      response.statusCode = 0
       if (('username' in message) && ('password' in message)) {
         // check password and username
         // *** ToDo: authenticate via LDAP / oAuth
@@ -779,7 +781,7 @@ async function run() {
         function: {
           description: 'function to select and run',
           type: 'string',
-          sample: 'keepAlive',
+          sample: 'keepALive',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -787,7 +789,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -806,7 +808,7 @@ async function run() {
         .catch((error) => {
           throw error
         })
-      response.statuscode = 0
+      response.statusCode = 0
       if (typeof data !== 'object') {
         console.log(response)
         return (response)
@@ -840,7 +842,7 @@ async function run() {
           type: 'string',
           sample: Object.keys(functions),
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -858,7 +860,7 @@ async function run() {
         .catch((error) => {
           throw error
         })
-      response.statuscode = 0
+      response.statusCode = 0
       if (typeof data !== 'object') {
         response.functionList = Object.keys(functions)
         console.log(response)
@@ -891,9 +893,9 @@ async function run() {
         functionList: {
           description: 'list of server functions',
           type: 'string',
-          sample: Object.keys(serverfunctions),
+          sample: Object.keys(serverFunctions),
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -911,9 +913,9 @@ async function run() {
         .catch((error) => {
           throw error
         })
-      response.statuscode = 0
+      response.statusCode = 0
       if (typeof data !== 'object') {
-        response.functionList = Object.keys(serverfunctions)
+        response.functionList = Object.keys(serverFunctions)
         console.log(response)
         return (response)
       }
@@ -951,7 +953,7 @@ async function run() {
           type: 'object',
           sample: functions.listFunctions.info,
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -974,7 +976,7 @@ async function run() {
           if (functions[message.functionName] === undefined) response = getErrorMessage(2)
           else {
             response.description = functions[message.functionName].info
-            response.statuscode = 0
+            response.statusCode = 0
           }
         } else response = getErrorMessage(1)
         return (response)
@@ -1013,7 +1015,7 @@ async function run() {
           type: 'object',
           sample: functions.listFunctions.info,
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1033,10 +1035,10 @@ async function run() {
       let response = {}
       if (typeof data !== 'object') {
         if ('functionName' in message) {
-          if (serverfunctions[message.functionName] === undefined) response = getErrorMessage(2)
+          if (serverFunctions[message.functionName] === undefined) response = getErrorMessage(2)
           else {
-            response.description = serverfunctions[message.functionName].info
-            response.statuscode = 0
+            response.description = serverFunctions[message.functionName].info
+            response.statusCode = 0
           }
         } else response = getErrorMessage(1)
         return (response)
@@ -1070,7 +1072,7 @@ async function run() {
           type: 'array',
           sample: [],
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1100,7 +1102,7 @@ async function run() {
           if (workspace) result.push(workspaces[workspace].roomname)
         }
         response.workspacelist = result
-        response.statuscode = 0
+        response.statusCode = 0
         return (response)
       }
       return (data)
@@ -1132,7 +1134,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1171,7 +1173,7 @@ async function run() {
               .catch((error) => {
                 throw error
               })
-            response.statuscode = 0
+            response.statusCode = 0
             return (response)
           }
           return getErrorMessage(5)
@@ -1207,7 +1209,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1247,7 +1249,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          response.statuscode = 0
+          response.statusCode = 0
           return (response)
         }
         return getErrorMessage(3)
@@ -1276,7 +1278,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1310,7 +1312,7 @@ async function run() {
           response.workspace = room[0].roomname
         } else response.workspace = ''
 
-        response.statuscode = 0
+        response.statusCode = 0
         return (response)
       }
       return (data)
@@ -1342,7 +1344,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1374,7 +1376,7 @@ async function run() {
             // *** ToDo: remove legacy rooms array
             delete rooms[message.workspace]
 
-            response.statuscode = 0
+            response.statusCode = 0
             return (response)
           }
           return getErrorMessage(6)
@@ -1435,7 +1437,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1473,7 +1475,7 @@ async function run() {
               .catch((error) => {
                 throw error
               })
-            response.statuscode = 0
+            response.statusCode = 0
             return (response)
           }
           return getErrorMessage(11)
@@ -1509,7 +1511,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1538,7 +1540,7 @@ async function run() {
             })
           console.log(command)
 
-          response.statuscode = 0
+          response.statusCode = 0
           return (response)
         }
         return getErrorMessage(15)
@@ -1572,7 +1574,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1601,7 +1603,7 @@ async function run() {
             })
           console.log(command)
 
-          response.statuscode = 0
+          response.statusCode = 0
           return (response)
         }
         return getErrorMessage(3)
@@ -1635,7 +1637,7 @@ async function run() {
           type: 'array',
           sample: [],
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1664,7 +1666,7 @@ async function run() {
           if (usr) result.push(userList[usr].username)
         }
         response.userlist = result
-        response.statuscode = 0
+        response.statusCode = 0
         return (response)
       }
       return (data)
@@ -1698,7 +1700,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1732,7 +1734,7 @@ async function run() {
               .catch((error) => {
                 throw error
               })
-            response.statuscode = 0
+            response.statusCode = 0
             return (response)
           }
           return getErrorMessage(5)
@@ -1773,7 +1775,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1826,7 +1828,7 @@ async function run() {
                   .catch((error) => {
                     throw error
                   })
-                response.statuscode = 0
+                response.statusCode = 0
                 return (response)
               }
               return getErrorMessage(13)
@@ -1871,7 +1873,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -1924,7 +1926,7 @@ async function run() {
                     throw error
                   })
                 console.log(command)
-                response.statuscode = 0
+                response.statusCode = 0
                 return (response)
               }
               return getErrorMessage(13)
@@ -1969,7 +1971,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2009,7 +2011,7 @@ async function run() {
                 throw error
               })
             console.log(command)
-            response.statuscode = 0
+            response.statusCode = 0
             return (response)
           }
           return getErrorMessage(16)
@@ -2046,7 +2048,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2073,7 +2075,7 @@ async function run() {
               throw error
             })
           console.log(command)
-          response.statuscode = 0
+          response.statusCode = 0
           return (response)
         }
         return getErrorMessage(3)
@@ -2107,7 +2109,7 @@ async function run() {
           type: 'array',
           sample: [],
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2136,7 +2138,7 @@ async function run() {
           if (grp) result.push(groupList[grp].groupname)
         }
         response.groupList = result
-        response.statuscode = 0
+        response.statusCode = 0
         return (response)
       }
       return (data)
@@ -2208,7 +2210,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2260,7 +2262,7 @@ async function run() {
                 .digest('hex').substr(0, 7)
             }
             console.log(`created new sender streamid: ${streamid}`)
-            streamrelay[streamid] = []
+            streamRelay[streamid] = []
           }
           if ((typeof source[streamid] === 'undefined')
                       || (typeof source[streamid].conn === 'undefined')
@@ -2311,10 +2313,10 @@ async function run() {
           if (typeof apps[message.token] !== 'undefined') apps[message.token].streams.push(streamid)
 
           if (!(('senderid' in message) && (message.senderid !== '') && (typeof source[message.senderid] !== 'undefined'))) {
-            serverfunctions.update.process(streamid)
+            serverFunctions.update.process(streamid)
           }
 
-          response.statuscode = 0
+          response.statusCode = 0
           response.port = port[message.proto]
           response.streamid = streamid
           response.MTU = MTU
@@ -2362,7 +2364,7 @@ async function run() {
           description: 'array of streamid/user/apps/type/meta/workspace of the streams that will be sent',
           type: 'array',
         },
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2435,7 +2437,7 @@ async function run() {
             }
           }
         }
-        response.statuscode = 0
+        response.statusCode = 0
         return (response)
       }
       return (data)
@@ -2468,7 +2470,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2497,7 +2499,7 @@ async function run() {
         if (('streamid' in message) && ((typeof source[message.streamid] !== 'undefined') || (typeof target[message.streamid] !== 'undefined'))) {
           streamid = message.streamid
           response = {}
-          response.statuscode = 0
+          response.statusCode = 0
           response.info = {}
 
           for (token in tokens) {
@@ -2618,7 +2620,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2798,26 +2800,26 @@ async function run() {
           if (typeof apps[workmessage.token] !== 'undefined') apps[workmessage.token].streams.push(streamid)
 
           // designate streams to be directly relayed ot this target
-          console.log('streamrelay', streamrelay)
+          console.log('streamRelay', streamRelay)
           for (stream in workmessage.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamrelay[workmessage.streamlist[stream].streamid] !== 'undefined') {
+              if (typeof streamRelay[workmessage.streamlist[stream].streamid] !== 'undefined') {
                 console.log('line 2270', stream)
                 console.log('line 2271', workmessage.streamlist[stream])
-                console.log('line 2272', streamrelay[workmessage.streamlist[stream].streamid])
-                if (typeof streamrelay[workmessage.streamlist[stream].streamid][streamid] === 'undefined') {
+                console.log('line 2272', streamRelay[workmessage.streamlist[stream].streamid])
+                if (typeof streamRelay[workmessage.streamlist[stream].streamid][streamid] === 'undefined') {
                   // eslint-disable-next-line max-len
-                  serverfunctions.subscriber.process(workmessage.streamlist[stream].streamid, streamid)
+                  serverFunctions.subscriber.process(workmessage.streamlist[stream].streamid, streamid)
                 }
-                streamrelay[workmessage.streamlist[stream].streamid][streamid] = []
+                streamRelay[workmessage.streamlist[stream].streamid][streamid] = []
               }
             }
           }
 
           // create result for client to connect as a receiver
           response = {}
-          response.statuscode = 0
+          response.statusCode = 0
           response.port = port[workmessage.proto]
           response.proto = workmessage.proto
           response.streamid = streamid
@@ -2864,7 +2866,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -2910,9 +2912,9 @@ async function run() {
 
 
           // add the already subscribed streams
-          for (s in streamrelay) {
+          for (s in streamRelay) {
             if (s) {
-              for (t in streamrelay[s]) {
+              for (t in streamRelay[s]) {
                 if ((t === workmessage.receiverid) && (!workmessage.streamid.includes(s))) {
                   workmessage.streamid.push(s)
                 }
@@ -2952,14 +2954,14 @@ async function run() {
           for (stream in workmessage.streamlist) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamrelay[workmessage.streamlist[stream].streamid][workmessage.receiverid] === 'undefined') serverfunctions.subscriber.process(workmessage.streamlist[stream].streamid, message.receiverid)
-              streamrelay[workmessage.streamlist[stream].streamid][workmessage.receiverid] = []
+              if (typeof streamRelay[workmessage.streamlist[stream].streamid][workmessage.receiverid] === 'undefined') serverFunctions.subscriber.process(workmessage.streamlist[stream].streamid, message.receiverid)
+              streamRelay[workmessage.streamlist[stream].streamid][workmessage.receiverid] = []
             }
           }
 
           // create result for client to connect as a receiver
           response = {}
-          response.statuscode = 0
+          response.statusCode = 0
           response.streamlist = workmessage.streamlist
           if (globalConfig.debug) console.log(response)
           return (response)
@@ -3000,7 +3002,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -3031,16 +3033,16 @@ async function run() {
                   && (('streamid' in workmessage) && (workmessage.streamid.length > 0))) {
           // unsubscribe streams
           workmessage.streamlist = []
-          for (s in streamrelay) {
+          for (s in streamRelay) {
             if (s) {
-              for (t in streamrelay[s]) {
+              for (t in streamRelay[s]) {
                 if ((t === workmessage.receiverid) && (workmessage.streamid.includes(s))) {
                   workmessage.streamlist.push(s)
-                  delete streamrelay[s][t]
+                  delete streamRelay[s][t]
                   // send dropped message to sender streams to inform them
                   // the receiver stopped requesting that stream.
-                  serverfunctions.dropped.process(s, t)
-                  if (Object.keys(streamrelay[s]).length === 0) delete streamrelay[s]
+                  serverFunctions.dropped.process(s, t)
+                  if (Object.keys(streamRelay[s]).length === 0) delete streamRelay[s]
                 }
               }
             }
@@ -3048,7 +3050,7 @@ async function run() {
 
           // create result with the list of all removed streams
           response = {}
-          response.statuscode = 0
+          response.statusCode = 0
           response.streamlist = workmessage.streamlist
           return (response)
         }
@@ -3103,7 +3105,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -3155,7 +3157,7 @@ async function run() {
           } else return getErrorMessage(16)
         }
         const response = {}
-        response.statuscode = 0
+        response.statusCode = 0
         return (response)
       }
       return (data)
@@ -3197,7 +3199,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -3316,7 +3318,7 @@ async function run() {
           if (typeof message.streamids === 'string') streamids = [message.streamids]
         }
         response = {}
-        response.statuscode = 0
+        response.statusCode = 0
         response.streamList = streamids
         for (streamkey in streamids) {
           if (streamkey) {
@@ -3340,9 +3342,9 @@ async function run() {
                 }
                 // *** ToDo: disconnect all receivers as well
                 // announce to receivers that the stream is stale
-                serverfunctions.stale.process(streamid)
+                serverFunctions.stale.process(streamid)
 
-                delete streamrelay[streamid]
+                delete streamRelay[streamid]
                 delete source[streamid]
                 // *** ToDo: also delete all receivers that have only this source?
               }
@@ -3350,11 +3352,11 @@ async function run() {
 
             // remove stream if it is a target for the stream relay
             if (typeof target[streamid] !== 'undefined') {
-              for (stream in streamrelay) {
-                if (streamid in streamrelay[stream]) {
+              for (stream in streamRelay) {
+                if (streamid in streamRelay[stream]) {
                 // send dropped message to senders
-                  serverfunctions.dropped.process(stream, streamid)
-                  delete streamrelay[stream][streamid]
+                  serverFunctions.dropped.process(stream, streamid)
+                  delete streamRelay[stream][streamid]
                 }
               }
               delete target[streamid]
@@ -3402,7 +3404,7 @@ async function run() {
         },
       },
       responses: {
-        statuscode: {
+        statusCode: {
           description: 'result code of the function',
           type: 'string',
           sample: 0,
@@ -3423,14 +3425,14 @@ async function run() {
       if (typeof data !== 'object') {
         console.log('*** expire not implemented ***')
         const response = {}
-        response.statuscode = 0
+        response.statusCode = 0
         return response
         // make sure to remove all usersessions and streams,also notify clients of now stale streams
 
         // plugin/app tokens are not removed but all streams are expired
         /*
           var response = {};
-          response['statuscode'] = 0;
+          response['statusCode'] = 0;
           if(('username' in message) && ('password' in message)) {
               var authenticated = 0;
   // check password and username
@@ -3475,7 +3477,7 @@ async function run() {
   }
 
   // All server initiated functions
-  serverfunctions.update = {
+  serverFunctions.update = {
     info: {
       name: 'update',
       description: 'update a receiver with a new stream from sender',
@@ -3581,7 +3583,7 @@ async function run() {
     },
   }
 
-  serverfunctions.subscriber = {
+  serverFunctions.subscriber = {
     info: {
       name: 'subscriber',
       description: 'Update a sender with a new stream that subscribed.',
@@ -3689,7 +3691,7 @@ async function run() {
     },
   }
 
-  serverfunctions.stale = {
+  serverFunctions.stale = {
     info: {
       name: 'stale',
       description: 'Update a receiver that stream is stale and not in use anymore. A sender might have dropped or the stream might have timed out.',
@@ -3761,7 +3763,7 @@ async function run() {
     },
   }
 
-  serverfunctions.dropped = {
+  serverFunctions.dropped = {
     info: {
       name: 'dropped',
       description: 'Update a sender that receivers have dropped or unsubscribed.',
@@ -3878,14 +3880,14 @@ async function run() {
   // fill data list with available objects
   functions.listFunctions.info.responses.functionList.sample = Object.keys(functions)
   functions.listworkspaces.info.responses.workspacelist.sample = Object.keys(rooms)
-  functions.listServerFunctions.info.responses.functionList.sample = Object.keys(serverfunctions)
+  functions.listServerFunctions.info.responses.functionList.sample = Object.keys(serverFunctions)
 
   const userlist = []
   users.forEach((user) => {
     userlist.push(user.username)
   })
   console.log('Functions: ', functions.listFunctions.info.responses.functionList.sample)
-  console.log('Server functions: ', Object.keys(serverfunctions))
+  console.log('Server functions: ', Object.keys(serverFunctions))
   console.log('Workspaces: ', functions.listworkspaces.info.responses.workspacelist.sample)
   console.log('Users: ', userlist)
   console.log('Apps:', apps)
@@ -4011,9 +4013,9 @@ async function run() {
           console.log('wrong stream')
       }
       if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
-    } else if (header.id in streamrelay) { // console.log(header['id']);
+    } else if (header.id in streamRelay) { // console.log(header['id']);
       source[header.id].time = last
-      for (targetid in streamrelay[header.id]) {
+      for (targetid in streamRelay[header.id]) {
         if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].ip !== 'undefined') && (target[targetid].ip !== '')) {
           if ((typeof target[targetid] !== 'undefined') && (typeof target[targetid].port !== 'undefined') && (target[targetid].port !== 0)) {
             if (globalConfig.debug && header.id !== 'log') {
@@ -4261,10 +4263,10 @@ async function run() {
       if (source[id].time + streamTimeout < currentTime) {
         // notify clients of stale streams
         // streamid not defined  but used
-        serverfunctions.stale.process(id)
+        serverFunctions.stale.process(id)
 
         // remove stream information from the relay
-        delete streamrelay[id]
+        delete streamRelay[id]
         delete source[id]
       }
     }
@@ -4274,11 +4276,11 @@ async function run() {
       // console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']
       //   +streamTimeout - currentTime);
       if (target[id].time + streamTimeout < currentTime) {
-        for (sid in streamrelay) {
+        for (sid in streamRelay) {
           if (sid) {
-            for (tid in streamrelay) if (tid === id) delete streamrelay[sid][tid]
+            for (tid in streamRelay) if (tid === id) delete streamRelay[sid][tid]
             // dont remove sources that are still available from the relay (let the sources time out separately)
-            // if (streamrelay[sid].length === 0) delete streamrelay[sid]
+            // if (streamRelay[sid].length === 0) delete streamRelay[sid]
           }
         }
         delete target[id]
