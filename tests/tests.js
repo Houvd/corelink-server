@@ -269,8 +269,8 @@ client.on('data', (data) => {
     console.log('checking for correct function')
     return
   }
-  if ('statuscode' in message) {
-    if (message.statuscode !== 0) {
+  if ('statusCode' in message) {
+    if (message.statusCode !== 0) {
       console.log('  Function result was an error.')
       if ('message' in message) {
         console.log(`  ${message.message}`)
