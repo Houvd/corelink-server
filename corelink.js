@@ -3859,7 +3859,7 @@ async function run() {
           }
           console.log(`sending:${send}`)
           conn.write(send)
-        } else console.log('Key function not given or wrong.')
+        } else console.log('Function does not exist.')
       })
 
       conn.once('close', () => {
@@ -4147,7 +4147,7 @@ async function run() {
         }
         console.log(`sending:${send}`)
         conn.send(send)
-      } else console.log('Key function not given or wrong.')
+      } else console.log('Function does not exist.')
     })
 
     conn.once('close', () => {
