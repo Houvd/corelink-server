@@ -22,13 +22,13 @@ const ifaces = os.networkInterfaces()
 // pick the first local ip to set as source IP address
 Object.keys(ifaces).forEach((ifname) => {
   ifaces[ifname].forEach((iface) => {
-    if (iface.family !== 'IPv4' || iface.internal !== false || ifname.indexOf('docker') > -1 || IPSource != '') { return }
+    if (iface.family !== 'IPv4' || iface.internal !== false || ifname.indexOf('docker') > -1 || IPSource !== '') { return }
     IPSource = iface.address
   })
 })
 
 // check if we got a source ip
-if (IPSource == '') {
+if (IPSource === '') {
   console.log('Did not find proper IP address.')
   process.exit()
 }
@@ -42,54 +42,13 @@ const client = new net.Socket()
 let token = ''
 
 let lastfunction = ''
-let running = false
 let laststart = 0
 
 const info = []
 let lastinfo = ''
 
-const timeout = 6000
 // Tests
 const tests = []
-
-let streamid = ''
-
-let udpPort = 0
-
-const dgram = require('dgram')
-
-const setup = Buffer.from('{"mode":"sender","type":"3d"}')
-const udpDataServer = dgram.createSocket('udp4')
-
-function pRound(number, precision) {
-  const factor = Math.pow(10, precision)
-  return Math.round(number * factor) / factor
-}
-
-function sendData() {
-  pings[num] = Date.now()
-  if (num == 0) message = setup
-  else message = num.toString()
-  udpDataServer.send(message, PORT, IP, (err) => {
-    if (err) {
-      console.log('socket error', err)
-    }
-  })
-  console.log(`sent: ${message} to ${IP}:${PORT}`)
-  num += 1
-  setTimeout(sendData, 1000)
-}
-
-udpDataServer.on('message', (message, info) => {
-  received += 1
-  if (pings[parseInt(message.toString())] != undefined) {
-    const diff = Date.now() - pings[parseInt(message.toString())]
-    if (diff > max) max = diff
-    if (diff < min) min = diff
-    sum += diff
-    console.log(`reply: ${message} from ${info.address}:${info.port}, sent: ${num}, received: ${received}, latency: ${diff}ms / min ${min} / max - ${max} / average - ${pRound(sum / received, 4)}`)
-  } else { console.log(`got message: ${message} from ${info.address}:${info.port}, sent: ${num}, received: ${received}, this message was not an echo.`) }
-})
 
 tests.auth = {
   start() {
@@ -128,9 +87,11 @@ tests.describeFunction = {
   start() {
     if (lastinfo === '') {
       if (typeof info.describeFunction === 'undefined') {
+        // eslint-disable-next-line no-use-before-define
         runTests(lastfunction)
         return
       }
+      // eslint-disable-next-line prefer-destructuring
       lastinfo = Object.keys(info)[0]
       const request = `{"function":"describeFunction","functionName":"${lastinfo}","token":"${token}"}`
       client.write(request)
@@ -211,6 +172,7 @@ function createRequest(name) {
 function checkResponse(name, message) {
   switch (name) {
     case 'sender':
+      // eslint-disable-next-line no-undef
       streamid = message.streamid
 
 
@@ -223,9 +185,11 @@ tests.autotest = {
   start() {
     if (lastinfo === '') {
       if (typeof info.describeFunction === 'undefined') {
+        // eslint-disable-next-line no-use-before-define
         runTests(lastfunction)
         return
       }
+      // eslint-disable-next-line prefer-destructuring
       lastinfo = Object.keys(info)[1]
 
       const request = JSON.stringify(createRequest(lastinfo))
@@ -283,13 +247,14 @@ client.on('data', (data) => {
         console.log(`  ${message.message}`)
         throw new Error(message.message)
       }
+      // eslint-disable-next-line no-use-before-define
       runTests(lastfunction)
       return
     }
     // processing result of a request from server
     if (tests[lastfunction].process(message) === 'continue') {
       console.log(`  Test ${lastfunction} ran for ${Date.now() - laststart}ms.`)
-      running = false
+      // eslint-disable-next-line no-use-before-define
       runTests(lastfunction)
     }
     return
@@ -305,6 +270,7 @@ client.on('close', () => {
 client.connect(TCPControl, IPControl, () => {
   console.log('Connected')
   console.log('Starting tests')
+  // eslint-disable-next-line no-use-before-define
   runTests()
 })
 
@@ -322,7 +288,6 @@ function runTests(func = null) {
   if (typeof i !== 'undefined') {
     console.log(`testing > ${i}`)
     lastfunction = i
-    running = true
     laststart = Date.now()
     tests[i].start()
   } else {
