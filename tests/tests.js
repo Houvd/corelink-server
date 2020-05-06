@@ -259,11 +259,18 @@ tests.autotest = {
 client.on('data', (data) => {
   let message
   try {
-    message = JSON.parse(data)
+    message = JSON.parse(`[${data.toString().replace(/}{/g, '},{')}]`)
   } catch (e) {
     console.log(`Received message not a proper JSON:${data.toString()}`)
     return
   }
+  let tmessage = message[0]
+  for (let i = 0; i < message.length; i += 1) {
+    if (!('function' in message[i])) {
+      tmessage = message[i]
+    }
+  }
+  message = tmessage
   if ('function' in message) {
     // processing function send by server for instance to change or close the connection
     console.log('checking for correct function')
