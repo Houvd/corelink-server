@@ -3,9 +3,9 @@
 // V3.0.0.0
 
 // Setup ----
-let IPSource = '' // the ip used to run this listener (if there is a nat proxy, the ip of the nat), leave empty for autodetect
-// var IPControl  = '128.122.215.23'; // the ip of the sync server to connect to
-const IPControl = '127.0.0.1' // the ip of the sync server to connect to
+let IPSource = '' // the IP used to run this listener (if there is a nat proxy, the IP of the nat), leave empty for autodetect
+// var IPControl  = '128.122.215.23'; // the IP of the sync server to connect to
+const IPControl = '127.0.0.1' // the IP of the sync server to connect to
 const TCPControl = 20010 // the control port that is used on the server
 const sendport = 20011 // the sendport should actually be determined by the server,
 // so this has to change
@@ -19,7 +19,7 @@ const os = require('os')
 
 const ifaces = os.networkInterfaces()
 
-// pick the first local ip to set as source IP address
+// pick the first local IP to set as source IP address
 Object.keys(ifaces).forEach((ifname) => {
   ifaces[ifname].forEach((iface) => {
     if (iface.family !== 'IPv4' || iface.internal !== false || ifname.indexOf('docker') > -1 || IPSource !== '') { return }
@@ -27,7 +27,7 @@ Object.keys(ifaces).forEach((ifname) => {
   })
 })
 
-// check if we got a source ip
+// check if we got a source IP
 if (IPSource === '') {
   console.log('Did not find proper IP address.')
   process.exit()
@@ -58,8 +58,8 @@ tests.auth = {
   process(message) {
     if ('token' in message) {
       token = message.token
-      const { ip } = message
-      console.log(`  Authentication successful. Token: ${token}, IP: ${ip}`)
+      const { IP } = message
+      console.log(`  Authentication successful. Token: ${token}, IP: ${IP}`)
     } else { console.log('  Request produced wrong result') }
     return ('continue')
   },
@@ -150,7 +150,7 @@ function createRequest(name) {
       case 'token':
         request[i] = token
         break
-      case 'ip':
+      case 'IP':
         request[i] = IPSource
         break
       case 'port':
@@ -173,7 +173,7 @@ function checkResponse(name, message) {
   switch (name) {
     case 'sender':
       // eslint-disable-next-line no-undef
-      streamid = message.streamid
+      streamID = message.streamID
 
 
       break

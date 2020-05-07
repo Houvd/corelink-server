@@ -415,9 +415,9 @@ async function run() {
     .catch((err) => console.log(err))
   for (const key in content) {
     if (key) {
-      const { ID, username } = content[key]
-      users[ID] = []
-      users[ID].username = username
+      const { id, username } = content[key]
+      users[id] = []
+      users[id].username = username
     }
   }
 
@@ -712,7 +712,7 @@ async function run() {
 
           await knex('tokens')
             .insert({
-              user_id: user.ID,
+              user_id: user.id,
               token: response.token,
               time: Date.now(),
               IP,
@@ -727,7 +727,7 @@ async function run() {
           // *** ToDo: remove legacy token array
           tokens[response.token] = []
           tokens[response.token].time = Date.now() // timeout data
-          tokens[response.token].user = user.ID // holds the user id for the token
+          tokens[response.token].user = user.id // holds the user id for the token
           tokens[response.token].streams = [] // provision for streams that get added
           tokens[response.token].conn = conn
           return (response)
