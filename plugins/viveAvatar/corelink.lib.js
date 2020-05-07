@@ -219,9 +219,9 @@ function setupUDP(streamid = null, port = null) {
     });
 }
 
-async function createReceiver(workspace, protocol, streamids=[], type = [], alert = false, echo = false, receiverid = null) {
+async function createReceiver(workspace, protocol, streamIDs=[], type = [], alert = false, echo = false, receiverid = null) {
     return (new Promise(async function(resolve, reject){
-        var request = '{"function":"receiver","workspace":"'+workspace+'","streamid":'+JSON.stringify(streamids)+',"proto":"'+protocol+'","ip":"'+sourceIP+'","port":0,"echo":'+echo+',"alert":'+alert+',"type":'+JSON.stringify(type)+',"token":"'+token+'"}';
+        var request = '{"function":"receiver","workspace":"'+workspace+'","streamid":'+JSON.stringify(streamIDs)+',"proto":"'+protocol+'","ip":"'+sourceIP+'","port":0,"echo":'+echo+',"alert":'+alert+',"type":'+JSON.stringify(type)+',"token":"'+token+'"}';
         if(debug)
             console.log('createReceiver request',request)
         await client.write(request).catch((err) => { console.log(err) })
@@ -281,9 +281,9 @@ async function createReceiver(workspace, protocol, streamids=[], type = [], aler
     }))
 }
 
-async function subscribe(streamids) {
+async function subscribe(streamIDs) {
     return (new Promise(async function(resolve, reject){
-        var request = '{"function":"subscribe","receiverid":"'+receiverStream.streamid+'","streamid":'+JSON.stringify(streamids)+',"token":"'+token+'"}';
+        var request = '{"function":"subscribe","receiverid":"'+receiverStream.streamid+'","streamid":'+JSON.stringify(streamIDs)+',"token":"'+token+'"}';
         if(debug)
             console.log('subsctibe request',request)
         await client.write(request).catch((err) => { console.log(err) })
@@ -361,9 +361,9 @@ function send(streamID,data) {
     }
 }
 
-async function disconnect(workspace = [], type = [], streamids = []) {
+async function disconnect(workspace = [], type = [], streamIDs = []) {
     return (new Promise(async function(resolve, reject){
-        var request = '{"function":"disconnect","workspace":"'+workspace+'","type":"'+type+'","streamid":'+JSON.stringify(streamids)+',"token":"'+token+'"}';
+        var request = '{"function":"disconnect","workspace":"'+workspace+'","type":"'+type+'","streamid":'+JSON.stringify(streamIDs)+',"token":"'+token+'"}';
         if(debug)
             console.log('disconnect request',request)
         await client.write(request).catch((err) => { console.log(err) })
@@ -387,12 +387,12 @@ async function disconnect(workspace = [], type = [], streamids = []) {
 async function exit() {
     return (new Promise(async function(resolve, reject){
         //get all local streamid's
-        streamids = []
+        streamIDs = []
         if(typeof receiverStream.streamid != 'undefined')
-            streamids.push(receiverStream.streamid)
+            streamIDs.push(receiverStream.streamid)
         for(var streamid in senderStreams)
-            streamids.push(streamid)
-        var dis = await disconnect([],[],streamids)
+            streamIDs.push(streamid)
+        var dis = await disconnect([],[],streamIDs)
         if(dis === true)
             resolve(true)
         else
