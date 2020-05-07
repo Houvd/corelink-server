@@ -1,3 +1,4 @@
+/* eslint-disable */
 
 const {PromiseSocket} = require('promise-socket')
 
@@ -83,8 +84,8 @@ async function login(credentials) {
         await client.write(request).catch((err) => { console.log(err) })
         var content = await client.read().catch((err) => { console.log(err) })
         content = await parseJson(content).catch((err) => { console.log(err) })
-        if('statuscode' in content)
-            if(content.statuscode==0) {
+        if('statusCode' in content)
+            if(content.statusCode==0) {
                 if('token' in content)
                     token = content.token
                 else 
@@ -96,7 +97,7 @@ async function login(credentials) {
                 resolve(true)
             } else
                 if('message' in content)
-                    reject(new Error(content.message+' ('+content.statuscode+')'))
+                    reject(new Error(content.message+' ('+content.statusCode+')'))
                 else
                     reject(new Error('Error with out specific message returned.'))
         else
@@ -131,8 +132,8 @@ async function createSender(workspace, protocol, type, metadata = '', from = '')
             if(debug)
                 console.log('createSender content',content)
         
-            if('statuscode' in content)
-                if(content.statuscode==0) {
+            if('statusCode' in content)
+                if(content.statusCode==0) {
                     if('streamid' in content)
                         senderStreams[content.streamid] = []
                     else 
@@ -157,10 +158,10 @@ async function createSender(workspace, protocol, type, metadata = '', from = '')
                     break
                 } else
                     if('message' in content)
-                        reject(new Error(content.message+' ('+content.statuscode+')'))
+                        reject(new Error(content.message+' ('+content.statusCode+')'))
                     else
                         reject(new Error('Error with out specific message returned.'))
-        } while(('statuscode' in content) || ('function' in content))
+        } while(('statusCode' in content) || ('function' in content))
         reject(new Error('Status code not found in answer.'))
     }))
 }
@@ -228,8 +229,8 @@ async function createReceiver(workspace, protocol, streamids=[], type = [], aler
         content = await parseJson(content).catch((err) => { console.log(err) })
         if(debug)
             console.log('create Receiver content',content)
-        if('statuscode' in content)
-            if(content.statuscode==0) {
+        if('statusCode' in content)
+            if(content.statusCode==0) {
                 if('streamid' in content)
                     receiverStream['streamid'] = content.streamid
                 else 
@@ -272,7 +273,7 @@ async function createReceiver(workspace, protocol, streamids=[], type = [], aler
                 resolve(content.streamlist)
             } else
                 if('message' in content)
-                    reject(new Error(content.message+' ('+content.statuscode+')'))
+                    reject(new Error(content.message+' ('+content.statusCode+')'))
                 else
                     reject(new Error('Error with out specific message returned.'))
         else
@@ -292,8 +293,8 @@ async function subscribe(streamids) {
             if(debug)
                 console.log('subscribe json',content)
 
-            if('statuscode' in content)
-                if(content.statuscode==0) {
+            if('statusCode' in content)
+                if(content.statusCode==0) {
                     if('streamlist' in content)
                         receiverStream['streamlist'] = content.streamlist
                     else 
@@ -308,10 +309,10 @@ async function subscribe(streamids) {
                     break
                 } else
                     if('message' in content)
-                        reject(new Error(content.message+' ('+content.statuscode+')'))
+                        reject(new Error(content.message+' ('+content.statusCode+')'))
                     else
                         reject(new Error('Error with out specific message returned.'))
-        } while (('statuscode' in content) || ('function' in content))
+        } while (('statusCode' in content) || ('function' in content))
         reject(new Error('Status code not found in answer.'))
     }))
 }
@@ -370,12 +371,12 @@ async function disconnect(workspace = [], type = [], streamids = []) {
         content = await parseJson(content).catch((err) => { console.log(err) })
         if(debug)
             console.log('disconnect content',content)        
-        if('statuscode' in content)
-            if(content.statuscode==0)
+        if('statusCode' in content)
+            if(content.statusCode==0)
                 resolve(true)
             else
                 if('message' in content)
-                    reject(new Error(content.message+' ('+content.statuscode+')'))
+                    reject(new Error(content.message+' ('+content.statusCode+')'))
                 else
                     reject(new Error('Error with out specific message returned.'))
         else
