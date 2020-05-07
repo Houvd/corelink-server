@@ -744,7 +744,7 @@ async function run() {
         // *** ToDo: App can only be run once, since it has only one token...
         if ((typeof app !== 'undefined')) {
           await knex('apps')
-            .where({ id: app.ID })
+            .where({ id: app.id })
             .update({
               time: Date.now(),
               IP,
