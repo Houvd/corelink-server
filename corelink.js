@@ -15,7 +15,7 @@ const serverVersion = 'v5.0.0.0'
 // v4.6.0.0
 // - enable logging to file and to stream
 // v4.5.0.0
-// - support id to allow ordering of control packets
+// - support ID to allow ordering of control packets
 // v4.4.0.0
 // - ws data streams encryped
 // v4.3.0.0
@@ -37,7 +37,7 @@ const serverVersion = 'v5.0.0.0'
 // v3.4.0.0
 // - added tcp connection option for sender and receiver streams
 // V3.3.0.0
-// - added user announcement for liststream, recevier and update functions
+// - added user announcement for listStream, recevier and update functions
 // V3.2.0.0
 // - added signaling of MTU (clients need to manage splitting of data)
 // V3.1.0.0
@@ -98,8 +98,8 @@ const port = []
 const tokens = [] // holds all token related information
 // tokens[token] = [] // information for specific token
 // tokens[token]['time'] = 342523; // holds the timeout time stamp for the tokens
-// tokens[token]['user'] = 1; // holds the user id for the token
-// tokens[token]['streams'] = []; // stream id of the stream that the token was used for
+// tokens[token]['user'] = 1; // holds the user ID for the token
+// tokens[token]['streams'] = []; // stream ID of the stream that the token was used for
 // tokens[token]['conn'] = %Socket; // control connection for the tcp control channel
 // we can expand other token information with
 // tokens[token]['other'] = [];
@@ -110,50 +110,50 @@ const functions = [] // holds all objects for functions in use
 // all receiver connections via TCP or WS
 
 const connections = []
-// connections[ip][port]['conn'] = handle for the connection
-// connections[ip][port]['time'] = creation time for stream, used for timeout
+// connections[IP][port]['conn'] = handle for the connection
+// connections[IP][port]['time'] = creation time for stream, used for timeout
 
 // all source and target streams information is stored in source and target
 const source = []
 /*
 source = [] // holds all source stream information
-source[id] =  [] // stream ID
-source[id]['ip'] = source ip address
-source[id]['port'] = source port
-source[id]['proto'] = ws or tcp or ws
-source[id]['room'] = workspace name
-source[id]['type'] = type of stream e.g. 3D, Audio, etc...
-source[id]['alert'] = true/false (alert when new receiver subscribes)
-source[id]['time'] = timeout for stream
-source[id]['meta'] = metadata to send to receivers during negotiation
-source[id]['conn'] = for tcp/ws connections the connection information
+source[ID] =  [] // stream ID
+source[ID]['IP'] = source IP address
+source[ID]['port'] = source port
+source[ID]['proto'] = ws or tcp or ws
+source[ID]['room'] = workspace name
+source[ID]['type'] = type of stream e.g. 3D, Audio, etc...
+source[ID]['alert'] = true/false (alert when new receiver subscribes)
+source[ID]['time'] = timeout for stream
+source[ID]['meta'] = metadata to send to receivers during negotiation
+source[ID]['conn'] = for tcp/ws connections the connection information
  if app works as a user, the from tag is given and therefore derived from another stream
  that from stream can be followed back until we find either the originating user or app
-source[id]['from'] = if derived from other stream
+source[ID]['from'] = if derived from other stream
 */
 
 const target = []
 /*
 target = [] // holds all target stream information
-target[id] =  [] // stream ID
-target[id]['ip'] = source ip address
-target[id]['port'] = source port
-target[id]['proto'] = udp or tcp or ws
-target[id]['room'] = workspace name
-target[id]['alert'] = true/false (Alert if stream of specific type becomse available)
-target[id]['echo'] = true/false (send data to receivers with the same username)
-target[id]['type'] = array of type of stream e.g. 3D, Audio, etc...
-target[id]['meta'] = metadata to send to senders during negotiation
-target[id]['time'] = timeout for stream
-target[id]['conn'] = for tcp/ws connections the connection information
+target[ID] =  [] // stream ID
+target[ID]['IP'] = source IP address
+target[ID]['port'] = source port
+target[ID]['proto'] = udp or tcp or ws
+target[ID]['room'] = workspace name
+target[ID]['alert'] = true/false (Alert if stream of specific type becomse available)
+target[ID]['echo'] = true/false (send data to receivers with the same username)
+target[ID]['type'] = array of type of stream e.g. 3D, Audio, etc...
+target[ID]['meta'] = metadata to send to senders during negotiation
+target[ID]['time'] = timeout for stream
+target[ID]['conn'] = for tcp/ws connections the connection information
 */
 
 // fast structure to access to future connections
 const streamRelay = [] // holds all information to relay
 // data from source to targets most effectively
 /*
-streamRelay[ids] = [] // source stream id
-streamRelay[ids][idt] = conn // connection to send data to
+streamRelay[IDs] = [] // source stream ID
+streamRelay[IDs][IDt] = conn // connection to send data to
 */
 
 // Allowed packet size
@@ -245,7 +245,7 @@ const apps = [] // holds all tokens and related information for apps
 // apps[atoken] = [] // information for a specific pre shared app token, always starts with an !
 // apps[atoken]['time'] = 0 // holds timeout time stamp for token, 0 for no timeout
 // apps[atoken]['name'] = '' // holds app name for the app
-// apps[atoken]['streams'] = [] // stream ids of the stream that the app was used for
+// apps[atoken]['streams'] = [] // stream IDs of the stream that the app was used for
 // apps[atoken]['conn'] = %Socket // control connection for the tcp control channel
 // additional information
 // apps[atoken]['other'] = []
@@ -336,7 +336,7 @@ async function run() {
     const data = Buffer.from(args[0])
     const headerSize = Buffer.alloc(6)
     let header = {
-      id: 'log',
+      ID: 'log',
       time: Date.now(),
     }
     header = JSON.stringify(header)
@@ -357,7 +357,7 @@ async function run() {
     const data = Buffer.from(args[0])
     const headerSize = Buffer.alloc(6)
     let header = {
-      id: 'log',
+      ID: 'log',
       time: Date.now(),
     }
     header = JSON.stringify(header)
@@ -415,9 +415,9 @@ async function run() {
     .catch((err) => console.log(err))
   for (const key in content) {
     if (key) {
-      const { id, username } = content[key]
-      users[id] = []
-      users[id].username = username
+      const { ID, username } = content[key]
+      users[ID] = []
+      users[ID].username = username
     }
   }
 
@@ -443,7 +443,7 @@ async function run() {
   // making sure that the apps cannot be overwritten
   if (logStream) {
     source.log = []
-    source.log.ip = ''
+    source.log.IP = ''
     source.log.port = 0
     source.log.proto = 'local'
     source.log.room = 'Log'
@@ -475,7 +475,7 @@ async function run() {
     let sr
     let t
     let tsr
-    let ip
+    let IP
     let connectionPort
 
     console.log('Listing Streams')
@@ -504,13 +504,13 @@ async function run() {
             }
           }
         }
-        console.log(`Source: ${s}, User: ${user}, IP: ${source[s].ip}:${source[s].port}, proto: ${source[s].proto}, room: ${source[s].room}, alert: ${source[s].alert}, type: ${source[s].type}, time: ${source[s].time}, from: ${source[s].from}`)
+        console.log(`Source: ${s}, User: ${user}, IP: ${source[s].IP}:${source[s].port}, proto: ${source[s].proto}, room: ${source[s].room}, alert: ${source[s].alert}, type: ${source[s].type}, time: ${source[s].time}, from: ${source[s].from}`)
       }
     }
 
     for (t in target) {
       if (t) {
-        console.log(`Target: ${t}, IP: ${target[t].ip}:${target[t].port}, proto: ${target[t].proto}, room: ${target[t].room}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
+        console.log(`Target: ${t}, IP: ${target[t].IP}:${target[t].port}, proto: ${target[t].proto}, room: ${target[t].room}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
       }
     }
     for (sr in streamRelay) {
@@ -520,11 +520,11 @@ async function run() {
     }
     console.log('Streamrelay:', streamRelay)
 
-    for (ip in connections) {
-      if (ip) {
-        for (connectionPort in connections[ip]) {
+    for (IP in connections) {
+      if (IP) {
+        for (connectionPort in connections[IP]) {
           if (connectionPort) {
-            console.log(`Connection stored for ${ip}:${connectionPort}`)
+            console.log(`Connection stored for ${IP}:${connectionPort}`)
           }
         }
       }
@@ -553,29 +553,29 @@ async function run() {
     }
   })
 
-  function findApps(streamid) {
+  function findApps(streamID) {
     let user = ''
     // eslint-disable-next-line no-shadow
     let apps
     let userApps
     let token
-    if (globalConfig.debug) console.log('findApps', streamid)
+    if (globalConfig.debug) console.log('findApps', streamID)
     user = ''
     apps = []
-    if ((typeof source[streamid] !== 'undefined') && (source[streamid].from !== '')) {
-      userApps = findApps(source[streamid].from)
+    if ((typeof source[streamID] !== 'undefined') && (source[streamID].from !== '')) {
+      userApps = findApps(source[streamID].from)
       if (userApps.user !== '') user = userApps.user
       if (userApps.apps.length > 0) apps = userApps.apps
     } else {
       for (token in tokens) {
-        if (tokens[token].streams.includes(streamid)) {
+        if (tokens[token].streams.includes(streamID)) {
           user = users[tokens[token].user].username
           break
         }
       }
     }
     for (token in apps) {
-      if (apps[token].streams.includes(streamid)) {
+      if (apps[token].streams.includes(streamID)) {
         apps.push(apps[token].name)
         break
       }
@@ -673,7 +673,7 @@ async function run() {
           description: 'token for the user to authenticate',
           type: 'string',
         },
-        ip: {
+        IP: {
           description: 'source IP of the client',
           type: 'string',
         },
@@ -689,7 +689,7 @@ async function run() {
         },
       },
     },
-    process: async (message, ip, conn) => {
+    process: async (message, IP, conn) => {
       let response = {}
       response.statusCode = 0
       if (('username' in message) && ('password' in message)) {
@@ -712,22 +712,22 @@ async function run() {
 
           await knex('tokens')
             .insert({
-              user_id: user.id,
+              user_id: user.ID,
               token: response.token,
               time: Date.now(),
-              ip,
+              IP,
               //              port: conn._socket._peername.port,
             })
             .catch((error) => {
               throw error
             })
 
-          response.ip = ip
+          response.IP = IP
 
           // *** ToDo: remove legacy token array
           tokens[response.token] = []
           tokens[response.token].time = Date.now() // timeout data
-          tokens[response.token].user = user.id // holds the user id for the token
+          tokens[response.token].user = user.ID // holds the user id for the token
           tokens[response.token].streams = [] // provision for streams that get added
           tokens[response.token].conn = conn
           return (response)
@@ -744,17 +744,17 @@ async function run() {
         // *** ToDo: App can only be run once, since it has only one token...
         if ((typeof app !== 'undefined')) {
           await knex('apps')
-            .where({ id: app.id })
+            .where({ id: app.ID })
             .update({
               time: Date.now(),
-              ip,
+              IP,
               updated_at: knex.fn.now(),
             })
             .catch((error) => {
               throw error
             })
           response.token = message.token
-          response.ip = ip
+          response.IP = IP
 
           // *** ToDo: remove legacy apps array
           apps[message.token].time = Date.now() // timeout data
@@ -1632,7 +1632,7 @@ async function run() {
         },
       },
       responses: {
-        userlist: {
+        userList: {
           description: 'array of available users',
           type: 'array',
           sample: [],
@@ -1665,7 +1665,7 @@ async function run() {
         for (const usr in userList) {
           if (usr) result.push(userList[usr].username)
         }
-        response.userlist = result
+        response.userList = result
         response.statusCode = 0
         return (response)
       }
@@ -2165,8 +2165,8 @@ async function run() {
           type: 'string',
           sample: 'Holodeck',
         },
-        senderId: {
-          description: 'if one wishes to update a stream, set the existing streamid',
+        senderID: {
+          description: 'if one wishes to update a stream, set the existing streamID',
           type: 'string',
           default: '',
         },
@@ -2180,7 +2180,7 @@ async function run() {
           type: 'string',
           sample: 'udp',
         },
-        ip: {
+        IP: {
           description: 'IP address from which the connection will be made (this is usually the IP one gets from the auth function)',
           type: 'string',
         },
@@ -2215,11 +2215,11 @@ async function run() {
           type: 'string',
           sample: 0,
         },
-        streamid: {
+        streamID: {
           description: 'ID of the new stream',
           type: 'string',
         },
-        ip: {
+        IP: {
           description: 'IP address to which the connection shall be made',
           type: 'string',
           optional: true,
@@ -2245,80 +2245,80 @@ async function run() {
           throw error
         })
       let i
-      let streamid
+      let streamID
       let token
       const response = {}
       if (typeof data !== 'object') {
         console.log('*** sender ***')
         if (('workspace' in message) && ('proto' in message) && ('type' in message) && ((message.proto === 'udp') || (message.proto === 'tcp') || (message.proto === 'ws'))) {
-          if (('senderId' in message) && (message.senderId !== '') && (typeof source[message.senderId] !== 'undefined')) {
-            streamid = message.senderId
-            console.log(`used existing sender streamid: ${streamid}`)
+          if (('senderID' in message) && (message.senderID !== '') && (typeof source[message.senderID] !== 'undefined')) {
+            streamID = message.senderID
+            console.log(`used existing sender streamID: ${streamID}`)
           } else {
-            streamid = null
-            while ((streamid === null) || (typeof source[streamid] !== 'undefined')) {
-              streamid = crypto.createHash('sha256')
+            streamID = null
+            while ((streamID === null) || (typeof source[streamID] !== 'undefined')) {
+              streamID = crypto.createHash('sha256')
                 .update(message.workspace + message.proto + (new Date().getTime()))
                 .digest('hex').substr(0, 7)
             }
-            console.log(`created new sender streamid: ${streamid}`)
-            streamRelay[streamid] = []
+            console.log(`created new sender streamID: ${streamID}`)
+            streamRelay[streamID] = []
           }
-          if ((typeof source[streamid] === 'undefined')
-                      || (typeof source[streamid].conn === 'undefined')
-                      || (typeof source[streamid].conn.readyState === 'undefined')
-                      || (source[streamid].conn.readyState !== 1)) {
-            source[streamid] = []
-            source[streamid].ip = message.ip
-            source[streamid].port = message.port
-            source[streamid].proto = message.proto
-            source[streamid].room = message.workspace
-            source[streamid].type = message.type
-            source[streamid].time = Date.now()
-            source[streamid].from = ''
+          if ((typeof source[streamID] === 'undefined')
+                      || (typeof source[streamID].conn === 'undefined')
+                      || (typeof source[streamID].conn.readyState === 'undefined')
+                      || (source[streamID].conn.readyState !== 1)) {
+            source[streamID] = []
+            source[streamID].IP = message.IP
+            source[streamID].port = message.port
+            source[streamID].proto = message.proto
+            source[streamID].room = message.workspace
+            source[streamID].type = message.type
+            source[streamID].time = Date.now()
+            source[streamID].from = ''
 
             // allow from only if app token, otherwise users could post as another user
             if ((typeof message.from !== 'undefined')
-                      && (typeof apps[message.token] !== 'undefined')) source[streamid].from = message.from
+                      && (typeof apps[message.token] !== 'undefined')) source[streamID].from = message.from
 
-            if (('alert' in message) && (message.alert === true)) source[streamid].alert = true
-            else source[streamid].alert = false
+            if (('alert' in message) && (message.alert === true)) source[streamID].alert = true
+            else source[streamID].alert = false
 
-            source[streamid].meta = ''
-            if (typeof message.meta !== 'undefined') source[streamid].meta = message.meta
+            source[streamID].meta = ''
+            if (typeof message.meta !== 'undefined') source[streamID].meta = message.meta
           }
 
-          // if exists, remove streamid from streams in this tokens streamList
+          // if exists, remove streamID from streams in this tokens streamList
           for (token in tokens) {
             if (token) {
               for (i in tokens[token].streams) {
-                if (tokens[token].streams[i] === streamid) tokens[token].streams.splice(i, 1)
+                if (tokens[token].streams[i] === streamID) tokens[token].streams.splice(i, 1)
               }
             }
           }
 
-          // if exists, remove streamid from streams in this apps streamList
+          // if exists, remove streamID from streams in this apps streamList
           for (token in apps) {
             if (token) {
               for (i in apps[token].streams) {
-                if (apps[token].streams[i] === streamid) apps[token].streams.splice(i, 1)
+                if (apps[token].streams[i] === streamID) apps[token].streams.splice(i, 1)
               }
             }
           }
 
           // make sure stream is allowed and not rejected
-          if (typeof tokens[message.token] !== 'undefined') tokens[message.token].streams.push(streamid)
+          if (typeof tokens[message.token] !== 'undefined') tokens[message.token].streams.push(streamID)
 
           // make sure stream is allowed and not rejected in case of an app
-          if (typeof apps[message.token] !== 'undefined') apps[message.token].streams.push(streamid)
+          if (typeof apps[message.token] !== 'undefined') apps[message.token].streams.push(streamID)
 
-          if (!(('senderId' in message) && (message.senderId !== '') && (typeof source[message.senderId] !== 'undefined'))) {
-            serverFunctions.update.process(streamid)
+          if (!(('senderID' in message) && (message.senderID !== '') && (typeof source[message.senderID] !== 'undefined'))) {
+            serverFunctions.update.process(streamID)
           }
 
           response.statusCode = 0
           response.port = port[message.proto]
-          response.streamid = streamid
+          response.streamID = streamID
           response.MTU = MTU
           return (response)
         }
@@ -2361,7 +2361,7 @@ async function run() {
       },
       responses: {
         senderList: {
-          description: 'array of streamid/user/apps/type/meta/workspace of the streams that will be sent',
+          description: 'array of streamID/user/apps/type/meta/workspace of the streams that will be sent',
           type: 'array',
         },
         statusCode: {
@@ -2423,9 +2423,9 @@ async function run() {
             for (const key in source) {
               if (source[key].room === userWorkspace[workspace]) {
                 if ((workMessage.types.length === 0) || (workMessage.types.includes(source[key].type))) {
-                  streamListElement.streamid = key
+                  streamListElement.streamID = key
                   // add usernames and app names to the specific streams
-                  userApps = findApps(streamListElement.streamid)
+                  userApps = findApps(streamListElement.streamID)
                   streamListElement.user = userApps.user
                   streamListElement.apps = userApps.apps
                   streamListElement.type = source[key].type
@@ -2459,10 +2459,10 @@ async function run() {
           type: 'string',
           sample: 'streamInfo',
         },
-        streamid: {
+        streamID: {
           description: 'ID of the stream to get information about',
           type: 'string',
-          sample: '$$sender.streamid',
+          sample: '$$sender.streamID',
         },
         token: {
           description: 'token for the user to authenticate',
@@ -2476,7 +2476,7 @@ async function run() {
           sample: 0,
         },
         info: {
-          description: 'information about the stream(streamid/user/apps/type/meta/workspace)',
+          description: 'information about the stream(streamID/user/apps/type/meta/workspace)',
           type: 'object',
         },
         message: {
@@ -2491,13 +2491,13 @@ async function run() {
         .catch((error) => {
           throw error
         })
-      let streamid
+      let streamID
       let response
       let token
       let key
       if (typeof data !== 'object') {
-        if (('streamid' in message) && ((typeof source[message.streamid] !== 'undefined') || (typeof target[message.streamid] !== 'undefined'))) {
-          streamid = message.streamid
+        if (('streamID' in message) && ((typeof source[message.streamID] !== 'undefined') || (typeof target[message.streamID] !== 'undefined'))) {
+          streamID = message.streamID
           response = {}
           response.statusCode = 0
           response.info = {}
@@ -2505,7 +2505,7 @@ async function run() {
           for (token in tokens) {
             if (token) {
               for (key in tokens[token].streams) {
-                if (tokens[token].streams[key] === streamid) {
+                if (tokens[token].streams[key] === streamID) {
                   response.info.user = users[tokens[token].user].username
                   break
                 }
@@ -2515,30 +2515,30 @@ async function run() {
           for (token in apps) {
             if (token) {
               for (key in apps[token].streams) {
-                if (apps[token].streams[key] === streamid) {
+                if (apps[token].streams[key] === streamID) {
                   response.info.apps = apps[token].name
                   break
                 }
               }
             }
           }
-          if (typeof source[streamid] !== 'undefined') {
-            response.info.proto = source[streamid].proto
-            response.info.workspace = source[streamid].room
-            response.info.type = source[streamid].type
+          if (typeof source[streamID] !== 'undefined') {
+            response.info.proto = source[streamID].proto
+            response.info.workspace = source[streamID].room
+            response.info.type = source[streamID].type
             response.info.MTU = MTU
-            if (typeof response.info.port !== 'undefined') response.info.port = source[streamid].port
-            if (typeof response.info.ip !== 'undefined') response.info.ip = source[streamid].ip
-            response.info.meta = source[streamid].meta
+            if (typeof response.info.port !== 'undefined') response.info.port = source[streamID].port
+            if (typeof response.info.IP !== 'undefined') response.info.IP = source[streamID].IP
+            response.info.meta = source[streamID].meta
             response.info.direction = 'source'
           }
-          if (typeof target[streamid] !== 'undefined') {
-            response.info.proto = target[streamid].proto
-            response.info.workspace = target[streamid].room
-            response.info.type = target[streamid].type
+          if (typeof target[streamID] !== 'undefined') {
+            response.info.proto = target[streamID].proto
+            response.info.workspace = target[streamID].room
+            response.info.type = target[streamID].type
             response.info.MTU = MTU
-            if (typeof response.info.port !== 'undefined') response.info.port = target[streamid].port
-            if (typeof response.info.ip !== 'undefined') response.info.ip = target[streamid].ip
+            if (typeof response.info.port !== 'undefined') response.info.port = target[streamID].port
+            if (typeof response.info.IP !== 'undefined') response.info.IP = target[streamID].IP
             response.info.direction = 'target'
           }
           return (response)
@@ -2568,12 +2568,12 @@ async function run() {
           type: 'string',
           sample: 'Holodeck',
         },
-        receiverId: {
-          description: 'if one wishes to update a stream, set the existing streamid',
+        receiverID: {
+          description: 'if one wishes to update a stream, set the existing streamID',
           type: 'string',
           default: '',
         },
-        streamids: {
+        streamIDs: {
           description: 'array of stream IDs to receive. if the argument is omitted all streams of a type will be sent.',
           type: 'array',
           default: [],
@@ -2600,7 +2600,7 @@ async function run() {
           default: false,
           type: 'boolen',
         },
-        ip: {
+        IP: {
           description: 'IP address from which the connection will be made (this is usually the IP one gets from the auth function)',
           type: 'string',
         },
@@ -2625,15 +2625,15 @@ async function run() {
           type: 'string',
           sample: 0,
         },
-        streamid: {
-          description: 'new streamid that designates the receiver',
+        streamID: {
+          description: 'new streamID that designates the receiver',
           type: 'string',
         },
         streamList: {
-          description: 'array of streamid/user/apps [array of app names]/type/meta of the streams that will be sent',
+          description: 'array of streamID/user/apps [array of app names]/type/meta of the streams that will be sent',
           type: 'array',
         },
-        ip: {
+        IP: {
           description: 'IP to which the connection of the client shall be made',
           type: 'string',
           optional: true,
@@ -2663,11 +2663,11 @@ async function run() {
         .catch((error) => {
           throw error
         })
-      let sourceId
+      let sourceID
       let stream
       let streamListElement = {}
       let userApps
-      let streamid
+      let streamID
       let token
       let i
       let response = {}
@@ -2679,30 +2679,30 @@ async function run() {
           // ToDo: check if IP is given
           if (!('port' in workMessage)) workMessage.port = 0
 
-          // get appropriate streamids
-          if (!('streamids' in workMessage) || (workMessage.streamids.length === 0)) {
-            workMessage.streamids = []
-            for (sourceId in source) if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceId].type))) workMessage.streamids.push(sourceId)
+          // get appropriate streamIDs
+          if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
+            workMessage.streamIDs = []
+            for (sourceID in source) if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamIDs.push(sourceID)
           }
 
-          // remove all streamids that are not in source (we silently drop
+          // remove all streamIDs that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes to
           // query and bring them up...)
-          for (stream in workMessage.streamids) {
-            if (typeof source[workMessage.streamids[stream]] === 'undefined') workMessage.streamids.splice(stream, 1)
+          for (stream in workMessage.streamIDs) {
+            if (typeof source[workMessage.streamIDs[stream]] === 'undefined') workMessage.streamIDs.splice(stream, 1)
           }
           // add usernames to the specific streams
           workMessage.streamList = []
-          for (stream in workMessage.streamids) {
+          for (stream in workMessage.streamIDs) {
             if (stream) {
               streamListElement = {}
-              streamListElement.streamid = workMessage.streamids[stream]
-              streamListElement.type = source[workMessage.streamids[stream]].type
-              streamListElement.meta = source[workMessage.streamids[stream]].meta
+              streamListElement.streamID = workMessage.streamIDs[stream]
+              streamListElement.type = source[workMessage.streamIDs[stream]].type
+              streamListElement.meta = source[workMessage.streamIDs[stream]].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(workMessage.streamids[stream])
+              userApps = findApps(workMessage.streamIDs[stream])
               streamListElement.user = userApps.user
               streamListElement.apps = userApps.apps
 
@@ -2714,104 +2714,104 @@ async function run() {
                   || ((typeof apps[workMessage.token] !== 'undefined')
                   && ((!('echo' in workMessage)) || (('echo' in workMessage) && (workMessage.echo !== true))))) {
                 workMessage.streamList.push(streamListElement)
-              } else console.log(`skipping stream from same user ${workMessage.streamids[stream]}`)
+              } else console.log(`skipping stream from same user ${workMessage.streamIDs[stream]}`)
             }
           }
 
-          // give error message if we dont have a streamid and are also not
+          // give error message if we dont have a streamID and are also not
           // expecting updates on streams
           // var t =  typeof message['alert'] !== 'undefined';
-          if ((workMessage.streamids.length < 1) && ((typeof workMessage.alert === 'undefined')
+          if ((workMessage.streamIDs.length < 1) && ((typeof workMessage.alert === 'undefined')
               || !((typeof workMessage.alert !== 'undefined') && (workMessage.alert === true)))) {
             // console.log(message);
             return getErrorMessage(7)
           }
 
-          if (('receiverId' in workMessage) && (workMessage.receiverId !== '') && (typeof target[workMessage.receiverId] !== 'undefined')) {
-            streamid = workMessage.receiverId
-            console.log(`used existing receiver streamid: ${streamid}`)
-            // console.log(target[streamid]);
+          if (('receiverID' in workMessage) && (workMessage.receiverID !== '') && (typeof target[workMessage.receiverID] !== 'undefined')) {
+            streamID = workMessage.receiverID
+            console.log(`used existing receiver streamID: ${streamID}`)
+            // console.log(target[streamID]);
           } else {
-            // create a new target streamid
-            streamid = null
-            while ((streamid === null) || (typeof target[streamid] !== 'undefined')) {
-              streamid = crypto.createHash('sha256')
+            // create a new target streamID
+            streamID = null
+            while ((streamID === null) || (typeof target[streamID] !== 'undefined')) {
+              streamID = crypto.createHash('sha256')
                 .update(workMessage.workspace + workMessage.proto + (new Date().getTime()))
                 .digest('hex').substr(0, 7)
             }
-            console.log(`created new receiver streamid: ${streamid}`)
+            console.log(`created new receiver streamID: ${streamID}`)
           }
 
-          if ((typeof target[streamid] === 'undefined')
-                        || ((target[streamid].proto === 'ws')
-                      && ((typeof target[streamid].conn === 'undefined')
-                        || (typeof target[streamid].conn.readyState === 'undefined')
-                        || (target[streamid].conn.readyState !== 1)))
-                      || ((target[streamid].proto === 'udp')
-                        && (target[streamid].port === 0))
-                      || ((target[streamid].proto === 'tcp')
-                        && (target[streamid].port === 0))) {
+          if ((typeof target[streamID] === 'undefined')
+                        || ((target[streamID].proto === 'ws')
+                      && ((typeof target[streamID].conn === 'undefined')
+                        || (typeof target[streamID].conn.readyState === 'undefined')
+                        || (target[streamID].conn.readyState !== 1)))
+                      || ((target[streamID].proto === 'udp')
+                        && (target[streamID].port === 0))
+                      || ((target[streamID].proto === 'tcp')
+                        && (target[streamID].port === 0))) {
             // put data into the target stream array & overwrite if existing
-            target[streamid] = []
-            target[streamid].ip = workMessage.ip
-            target[streamid].port = workMessage.port
-            target[streamid].proto = workMessage.proto
-            target[streamid].room = workMessage.workspace
-            // console.log(target[streamid]);
+            target[streamID] = []
+            target[streamID].IP = workMessage.IP
+            target[streamID].port = workMessage.port
+            target[streamID].proto = workMessage.proto
+            target[streamID].room = workMessage.workspace
+            // console.log(target[streamID]);
 
-            if (('alert' in workMessage) && (workMessage.alert === true)) target[streamid].alert = true
-            else target[streamid].alert = false
+            if (('alert' in workMessage) && (workMessage.alert === true)) target[streamID].alert = true
+            else target[streamID].alert = false
 
-            if (('echo' in workMessage) && (workMessage.echo === true)) target[streamid].echo = true
-            else target[streamid].echo = false
+            if (('echo' in workMessage) && (workMessage.echo === true)) target[streamID].echo = true
+            else target[streamID].echo = false
 
-            if ('type' in workMessage) target[streamid].type = workMessage.type
-            else target[streamid].type = []
+            if ('type' in workMessage) target[streamID].type = workMessage.type
+            else target[streamID].type = []
 
-            target[streamid].meta = ''
-            if (typeof workMessage.meta !== 'undefined') target[streamid].meta = workMessage.meta
+            target[streamID].meta = ''
+            if (typeof workMessage.meta !== 'undefined') target[streamID].meta = workMessage.meta
 
-            target[streamid].time = Date.now()
+            target[streamID].time = Date.now()
           }
 
-          // if exists, remove streamid from streams in this tokens streamList
+          // if exists, remove streamID from streams in this tokens streamList
           for (token in tokens) {
             if (token) {
               for (i in tokens[token].streams) {
-                if (tokens[token].streams[i] === streamid) tokens[token].streams.splice(i, 1)
+                if (tokens[token].streams[i] === streamID) tokens[token].streams.splice(i, 1)
               }
             }
           }
 
-          // if exists, remove streamid from streams in this apps streamList
+          // if exists, remove streamID from streams in this apps streamList
           for (token in apps) {
             if (token) {
               for (i in apps[token].streams) {
-                if (apps[token].streams[i] === streamid) apps[token].streams.splice(i, 1)
+                if (apps[token].streams[i] === streamID) apps[token].streams.splice(i, 1)
               }
             }
           }
 
           // make sure stream is allowed and not rejected
-          if (typeof tokens[workMessage.token] !== 'undefined') tokens[workMessage.token].streams.push(streamid)
+          if (typeof tokens[workMessage.token] !== 'undefined') tokens[workMessage.token].streams.push(streamID)
 
           // make sure stream is allowed and not rejected in case of an app
-          if (typeof apps[workMessage.token] !== 'undefined') apps[workMessage.token].streams.push(streamid)
+          if (typeof apps[workMessage.token] !== 'undefined') apps[workMessage.token].streams.push(streamID)
 
           // designate streams to be directly relayed ot this target
           console.log('streamRelay', streamRelay)
           for (stream in workMessage.streamList) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamRelay[workMessage.streamList[stream].streamid] !== 'undefined') {
+              if (typeof streamRelay[workMessage.streamList[stream].streamID] !== 'undefined') {
                 console.log('line 2270', stream)
                 console.log('line 2271', workMessage.streamList[stream])
-                console.log('line 2272', streamRelay[workMessage.streamList[stream].streamid])
-                if (typeof streamRelay[workMessage.streamList[stream].streamid][streamid] === 'undefined') {
+                console.log('line 2272', streamRelay[workMessage.streamList[stream].streamID])
+                if (typeof streamRelay[workMessage.streamList[stream].streamID][streamID] === 'undefined') {
                   // eslint-disable-next-line max-len
-                  serverFunctions.subscriber.process(workMessage.streamList[stream].streamid, streamid)
+                  serverFunctions.subscriber.process(workMessage.streamList[stream].streamID, streamID)
                 }
-                streamRelay[workMessage.streamList[stream].streamid][streamid] = []
+                streamRelay[workMessage.streamList[stream].streamID][streamID] = []
               }
             }
           }
@@ -2821,7 +2821,7 @@ async function run() {
           response.statusCode = 0
           response.port = port[workMessage.proto]
           response.proto = workMessage.proto
-          response.streamid = streamid
+          response.streamID = streamID
           response.streamList = workMessage.streamList
           response.MTU = MTU
           // console.log(message['proto'],port[message['proto']],response);
@@ -2848,16 +2848,16 @@ async function run() {
           type: 'string',
           sample: 'subscribe',
         },
-        receiverId: {
-          description: 'set the existing receiver streamid',
+        receiverID: {
+          description: 'set the existing receiver streamID',
           type: 'string',
-          sample: '$$receiver.streamid',
+          sample: '$$receiver.streamID',
         },
-        streamid: {
+        streamID: {
           description: 'array of stream IDs to receive. new streams will be added to existing already subscribed streams.',
           type: 'array',
           default: [],
-          sample: ['$$sender.streamid'],
+          sample: ['$$sender.streamID'],
         },
         token: {
           description: 'token for the user to authenticate',
@@ -2871,7 +2871,7 @@ async function run() {
           sample: 0,
         },
         streamList: {
-          description: 'array of streamid/user/apps/type/meta of the streams that will be sent',
+          description: 'array of streamID/user/apps/type/meta of the streams that will be sent',
           type: 'array',
         },
         message: {
@@ -2886,7 +2886,7 @@ async function run() {
         .catch((error) => {
           throw error
         })
-      let sourceId
+      let sourceID
       let s
       let t
       let stream
@@ -2900,12 +2900,12 @@ async function run() {
 
       if (typeof data !== 'object') {
         console.log('*** subscribe ***')
-        if ((('receiverId' in workMessage) && (workMessage.receiverId !== '') && (typeof target[workMessage.receiverId] !== 'undefined'))) {
-          // get all streamids if no list is given
-          if (!('streamid' in workMessage) || (workMessage.streamid.length === 0)) {
-            workMessage.streamid = []
-            for (sourceId in source) {
-              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceId].type))) workMessage.streamid.push(sourceId)
+        if ((('receiverID' in workMessage) && (workMessage.receiverID !== '') && (typeof target[workMessage.receiverID] !== 'undefined'))) {
+          // get all streamIDs if no list is given
+          if (!('streamID' in workMessage) || (workMessage.streamID.length === 0)) {
+            workMessage.streamID = []
+            for (sourceID in source) {
+              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamID.push(sourceID)
             }
           }
 
@@ -2914,34 +2914,34 @@ async function run() {
           for (s in streamRelay) {
             if (s) {
               for (t in streamRelay[s]) {
-                if ((t === workMessage.receiverId) && (!workMessage.streamid.includes(s))) {
-                  workMessage.streamid.push(s)
+                if ((t === workMessage.receiverID) && (!workMessage.streamID.includes(s))) {
+                  workMessage.streamID.push(s)
                 }
               }
             }
           }
 
-          // remove all streamids that are not in source (we silently drop
+          // remove all streamIDs that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes
           // to query and bring them up...)
-          for (stream in workMessage.streamid) {
-            if (!(workMessage.streamid[stream] in source)) {
-              workMessage.streamid.splice(stream, 1)
+          for (stream in workMessage.streamID) {
+            if (!(workMessage.streamID[stream] in source)) {
+              workMessage.streamID.splice(stream, 1)
             }
           }
 
           // add usernames to the specific streams
           workMessage.streamList = []
-          for (stream in workMessage.streamid) {
+          for (stream in workMessage.streamID) {
             if (stream) {
               streamListElement = {}
-              streamListElement.streamid = workMessage.streamid[stream]
-              streamListElement.type = source[workMessage.streamid[stream]].type
-              streamListElement.meta = source[workMessage.streamid[stream]].meta
+              streamListElement.streamID = workMessage.streamID[stream]
+              streamListElement.type = source[workMessage.streamID[stream]].type
+              streamListElement.meta = source[workMessage.streamID[stream]].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(workMessage.streamid[stream])
+              userApps = findApps(workMessage.streamID[stream])
               streamListElement.user = userApps.user
               streamListElement.apps = userApps.apps
 
@@ -2953,8 +2953,8 @@ async function run() {
           for (stream in workMessage.streamList) {
             if (stream) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamRelay[workMessage.streamList[stream].streamid][workMessage.receiverId] === 'undefined') serverFunctions.subscriber.process(workMessage.streamList[stream].streamid, message.receiverId)
-              streamRelay[workMessage.streamList[stream].streamid][workMessage.receiverId] = []
+              if (typeof streamRelay[workMessage.streamList[stream].streamID][workMessage.receiverID] === 'undefined') serverFunctions.subscriber.process(workMessage.streamList[stream].streamID, message.receiverID)
+              streamRelay[workMessage.streamList[stream].streamID][workMessage.receiverID] = []
             }
           }
 
@@ -2985,15 +2985,15 @@ async function run() {
           type: 'string',
           sample: 'unsubscribe',
         },
-        receiverId: {
-          description: 'set the existing receiver streamid',
+        receiverID: {
+          description: 'set the existing receiver streamID',
           type: 'string',
-          sample: '$$receiver.streamid',
+          sample: '$$receiver.streamID',
         },
-        streamid: {
+        streamID: {
           description: 'array of stream IDs to unsubscribe.',
           type: 'array',
-          sample: ['$$sender.streamid'],
+          sample: ['$$sender.streamID'],
         },
         token: {
           description: 'token for the user to authenticate',
@@ -3007,7 +3007,7 @@ async function run() {
           sample: 0,
         },
         streamList: {
-          description: 'array of streamid of the streams that were deleted',
+          description: 'array of streamID of the streams that were deleted',
           type: 'array',
         },
         message: {
@@ -3028,14 +3028,14 @@ async function run() {
       const workMessage = message
       if (typeof data !== 'object') {
         console.log('*** unsubscribe ***')
-        if ((('receiverId' in workMessage) && (workMessage.receiverId !== '') && (typeof target[workMessage.receiverId] !== 'undefined'))
-                  && (('streamid' in workMessage) && (workMessage.streamid.length > 0))) {
+        if ((('receiverID' in workMessage) && (workMessage.receiverID !== '') && (typeof target[workMessage.receiverID] !== 'undefined'))
+                  && (('streamID' in workMessage) && (workMessage.streamID.length > 0))) {
           // unsubscribe streams
           workMessage.streamList = []
           for (s in streamRelay) {
             if (s) {
               for (t in streamRelay[s]) {
-                if ((t === workMessage.receiverId) && (workMessage.streamid.includes(s))) {
+                if ((t === workMessage.receiverID) && (workMessage.streamID.includes(s))) {
                   workMessage.streamList.push(s)
                   delete streamRelay[s][t]
                   // send dropped message to sender streams to inform them
@@ -3176,17 +3176,17 @@ async function run() {
           sample: 'disconnect',
         },
         workspaces: {
-          description: 'name of the workspace to search for source streams (an empty array indicates all workspaces), it is ignored when specific streamids are given',
+          description: 'name of the workspace to search for source streams (an empty array indicates all workspaces), it is ignored when specific streamIDs are given',
           type: 'array',
           default: [],
         },
         types: {
-          description: 'source stream types to search (an empty array indicates all stream types), it is ignored when specific streamids are given',
+          description: 'source stream types to search (an empty array indicates all stream types), it is ignored when specific streamIDs are given',
           type: 'array',
           default: [],
         },
-        streamids: {
-          description: 'id\'s of the streams to discard (if an empty array is given all source streams that match workspace and type will be discarded)',
+        streamIDs: {
+          description: 'ID\'s of the streams to discard (if an empty array is given all source streams that match workspace and type will be discarded)',
           type: 'array',
           default: [],
         },
@@ -3220,21 +3220,21 @@ async function run() {
         .catch((error) => {
           throw error
         })
-      let streamids = []
+      let streamIDs = []
       let allStreams = []
       let types = []
       let workspaces = []
       let user
       let token
-      let streamid
+      let streamID
       let stream
       let streamKey
       let response
 
 
       if (typeof data !== 'object') {
-        // first find all streamid's that we want to disconnect
-        if ((!('streamids' in message)) || (Array.isArray(message.streamids) && (message.streamids.length === 0))) {
+        // first find all streamID's that we want to disconnect
+        if ((!('streamIDs' in message)) || (Array.isArray(message.streamIDs) && (message.streamIDs.length === 0))) {
           // make sure we can use the types and workspaces
           if (('types' in message) && Array.isArray(message.types) && (message.types.length > 0)) types = types.concat(message.types)
           if (('types' in message) && (typeof message.types === 'string')) types.push(message.types)
@@ -3267,108 +3267,108 @@ async function run() {
             // find user for the submitted token
             user = tokens[message.token].user
 
-            // find all streamid's for that user
+            // find all streamID's for that user
             for (token in tokens) {
               if (user === tokens[token].user) {
                 console.log('streams in token', tokens[token].streams)
                 allStreams = allStreams.concat(tokens[token].streams)
               }
             }
-            // check if streamid is in correct room and of correct type
-            for (streamid in allStreams) {
-              if (streamid) {
-                if ((typeof source[allStreams[streamid]] !== 'undefined')
-                    && (types.includes(source[allStreams[streamid]].type) || types.length === 0)
-                    && (workspaces.includes(source[allStreams[streamid]].room)
+            // check if streamID is in correct room and of correct type
+            for (streamID in allStreams) {
+              if (streamID) {
+                if ((typeof source[allStreams[streamID]] !== 'undefined')
+                    && (types.includes(source[allStreams[streamID]].type) || types.length === 0)
+                    && (workspaces.includes(source[allStreams[streamID]].room)
                     || workspaces.length === 0)) {
-                  streamids = streamids.concat([allStreams[streamid]])
+                  streamIDs = streamIDs.concat([allStreams[streamID]])
                 }
-                if ((typeof target[allStreams[streamid]] !== 'undefined')
-                    && (types.includes(target[allStreams[streamid]].type) || types.length === 0)
-                    && (workspaces.includes(target[allStreams[streamid]].room)
-                  || workspaces.length === 0)) streamids = streamids.concat([allStreams[streamid]])
+                if ((typeof target[allStreams[streamID]] !== 'undefined')
+                    && (types.includes(target[allStreams[streamID]].type) || types.length === 0)
+                    && (workspaces.includes(target[allStreams[streamID]].room)
+                  || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
               }
             }
           }
 
-          // find all streamid's for that app
+          // find all streamID's for that app
           if (typeof apps[message.token] !== 'undefined') {
             allStreams = apps[message.token].streams
-            for (streamid in allStreams) {
-              if (streamid) {
-                if (globalConfig.debug) console.log('disconnect streamid', allStreams[streamid])
-                // check if streamid is in correct room and of correct type
-                if ((typeof source[allStreams[streamid]] !== 'undefined')
-                    && (types.includes(source[allStreams[streamid]].type) || types.length === 0)
-                    && (workspaces.includes(source[allStreams[streamid]].room)
-                  || workspaces.length === 0)) streamids = streamids.concat([allStreams[streamid]])
-                if ((typeof target[allStreams[streamid]] !== 'undefined')
-                    && (types.includes(target[allStreams[streamid]].type) || types.length === 0)
-                    && (workspaces.includes(target[allStreams[streamid]].room)
-                  || workspaces.length === 0)) streamids = streamids.concat([allStreams[streamid]])
+            for (streamID in allStreams) {
+              if (streamID) {
+                if (globalConfig.debug) console.log('disconnect streamID', allStreams[streamID])
+                // check if streamID is in correct room and of correct type
+                if ((typeof source[allStreams[streamID]] !== 'undefined')
+                    && (types.includes(source[allStreams[streamID]].type) || types.length === 0)
+                    && (workspaces.includes(source[allStreams[streamID]].room)
+                  || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
+                if ((typeof target[allStreams[streamID]] !== 'undefined')
+                    && (types.includes(target[allStreams[streamID]].type) || types.length === 0)
+                    && (workspaces.includes(target[allStreams[streamID]].room)
+                  || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
               }
             }
           }
         } else {
-          // ToDo: Make sure that the user owns the streamids
-          if (Array.isArray(message.streamids)) streamids = message.streamids
-          if (typeof message.streamids === 'string') streamids = [message.streamids]
+          // ToDo: Make sure that the user owns the streamIDs
+          if (Array.isArray(message.streamIDs)) streamIDs = message.streamIDs
+          if (typeof message.streamIDs === 'string') streamIDs = [message.streamIDs]
         }
         response = {}
         response.statusCode = 0
-        response.streamList = streamids
-        for (streamKey in streamids) {
+        response.streamList = streamIDs
+        for (streamKey in streamIDs) {
           if (streamKey) {
-            streamid = streamids[streamKey]
-            console.log('deleting', streamid)
-            if ((typeof source[streamid] !== 'undefined') || (typeof target[streamid] !== 'undefined')) {
-              console.log(`Cleaning up stream ${streamid}`)
+            streamID = streamIDs[streamKey]
+            console.log('deleting', streamID)
+            if ((typeof source[streamID] !== 'undefined') || (typeof target[streamID] !== 'undefined')) {
+              console.log(`Cleaning up stream ${streamID}`)
               // *** ToDo: in addition,need to make sure that the actual connection is disconnected
-              if ((typeof source[streamid] !== 'undefined')
-                                && (typeof source[streamid].ip !== 'undefined')
-                                && (typeof source[streamid].port !== 'undefined')) {
-                if ((typeof connections[source[streamid].ip] !== 'undefined')
-                                && (typeof connections[source[streamid].ip][source[streamid].port] !== 'undefined')
-                                && (typeof connections[source[streamid].ip][source[streamid].port].conn !== 'undefined')) {
-                  delete connections[source[streamid].ip][source[streamid].port].conn
-                  delete connections[source[streamid].ip][source[streamid].port].time
-                  delete connections[source[streamid].ip][source[streamid].port]
-                  if (connections[source[streamid].ip].length === 0) {
-                    delete connections[source[streamid].ip]
+              if ((typeof source[streamID] !== 'undefined')
+                                && (typeof source[streamID].IP !== 'undefined')
+                                && (typeof source[streamID].port !== 'undefined')) {
+                if ((typeof connections[source[streamID].IP] !== 'undefined')
+                                && (typeof connections[source[streamID].IP][source[streamID].port] !== 'undefined')
+                                && (typeof connections[source[streamID].IP][source[streamID].port].conn !== 'undefined')) {
+                  delete connections[source[streamID].IP][source[streamID].port].conn
+                  delete connections[source[streamID].IP][source[streamID].port].time
+                  delete connections[source[streamID].IP][source[streamID].port]
+                  if (connections[source[streamID].IP].length === 0) {
+                    delete connections[source[streamID].IP]
                   }
                 }
                 // *** ToDo: disconnect all receivers as well
                 // announce to receivers that the stream is stale
-                serverFunctions.stale.process(streamid)
+                serverFunctions.stale.process(streamID)
 
-                delete streamRelay[streamid]
-                delete source[streamid]
+                delete streamRelay[streamID]
+                delete source[streamID]
                 // *** ToDo: also delete all receivers that have only this source?
               }
             }
 
             // remove stream if it is a target for the stream relay
-            if (typeof target[streamid] !== 'undefined') {
+            if (typeof target[streamID] !== 'undefined') {
               for (stream in streamRelay) {
-                if (streamid in streamRelay[stream]) {
+                if (streamID in streamRelay[stream]) {
                 // send dropped message to senders
-                  serverFunctions.dropped.process(stream, streamid)
-                  delete streamRelay[stream][streamid]
+                  serverFunctions.dropped.process(stream, streamID)
+                  delete streamRelay[stream][streamID]
                 }
               }
-              delete target[streamid]
+              delete target[streamID]
             }
 
             // remove streams from user session list
             for (token in tokens) {
-              if (tokens[token].streams.indexOf(streamid) !== -1) {
-                tokens[token].streams.splice(tokens[token].streams.indexOf(streamid), 1)
+              if (tokens[token].streams.indexOf(streamID) !== -1) {
+                tokens[token].streams.splice(tokens[token].streams.indexOf(streamID), 1)
               }
             }
             // remove streams from apps session list
             for (token in apps) {
-              if (apps[token].streams.indexOf(streamid) !== -1) {
-                apps[token].streams.splice(apps[token].streams.indexOf(streamid), 1)
+              if (apps[token].streams.indexOf(streamID) !== -1) {
+                apps[token].streams.splice(apps[token].streams.indexOf(streamID), 1)
               }
             }
             listStreams()
@@ -3442,11 +3442,11 @@ async function run() {
                   response['token'] = crypto.createHash('sha256')
                       .update(message['username']+message['passwod']+(new Date().getTime()))
                       .digest('hex');
-                  response['ip'] = ip;
+                  response['IP'] = IP;
                   tokens[response['token']] = [];
                   tokens[response['token']]['time'] = Date.now(); // timeout data
 
-                  // holds the user id for the token
+                  // holds the user ID for the token
                   tokens[response['token']]['user'] = authenticated;
 
                   tokens[response['token']]['streams'] = [] // provision for streams that get added
@@ -3457,7 +3457,7 @@ async function run() {
               if('token' in message)
                   if(typeof apps[message['token']] !== 'undefined') {
                       response['token'] = message['token']
-                      response['ip'] = ip;
+                      response['IP'] = IP;
                       apps[response['token']]['time'] = Date.now(); // timeout data
                       apps[response['token']]['conn'] = conn;
                   } else
@@ -3488,13 +3488,13 @@ async function run() {
           type: 'string',
           sample: 'update',
         },
-        receiverId: {
-          description: 'receiverId that matched the new sender',
+        receiverID: {
+          description: 'receiverID that matched the new sender',
           type: 'string',
           sample: 0,
         },
-        streamid: {
-          description: 'streamid that was updated',
+        streamID: {
+          description: 'streamID that was updated',
           type: 'string',
           sample: 0,
         },
@@ -3523,7 +3523,7 @@ async function run() {
         },
       },
     },
-    async process(streamid) {
+    async process(streamID) {
       // prep response
       const response = {}
       let update = ''
@@ -3532,17 +3532,17 @@ async function run() {
 
       // add apps processing list for streams that are processed, otherwise leave empty
       // walk through source from tags until we find user, add apps and user
-      const userApps = findApps(streamid)
+      const userApps = findApps(streamID)
       response.function = 'update'
-      response.streamid = streamid
+      response.streamID = streamID
       response.user = userApps.user
       response.apps = userApps.apps
 
-      response.type = source[streamid].type
-      response.meta = source[streamid].meta
+      response.type = source[streamID].type
+      response.meta = source[streamID].meta
       console.log('trying to send update ', response)
       // get correct room information
-      const { room } = source[streamid]
+      const { room } = source[streamID]
 
       // get targets that requested an alert and send update
       // var t = [];
@@ -3550,8 +3550,8 @@ async function run() {
         if (target[u].alert
             && (target[u].room === room)
             && ((target[u].type.length === 0)
-            || (target[u].type.includes(source[streamid].type)))) {
-          response.receiverId = u
+            || (target[u].type.includes(source[streamID].type)))) {
+          response.receiverID = u
           update = JSON.stringify(response)
           for (token in tokens) {
             if (tokens[token].streams.includes(u)) {
@@ -3594,13 +3594,13 @@ async function run() {
           type: 'string',
           sample: 'subscriber',
         },
-        senderId: {
-          description: 'senderId that the receiver subscribed to',
+        senderID: {
+          description: 'senderID that the receiver subscribed to',
           type: 'string',
           sample: 0,
         },
-        receiverId: {
-          description: 'receiverId that subscribed',
+        receiverID: {
+          description: 'receiverID that subscribed',
           type: 'string',
           sample: 0,
         },
@@ -3625,24 +3625,24 @@ async function run() {
         },
       },
     },
-    async process(senderId, receiverId) {
+    async process(senderID, receiverID) {
       let token
       let userToken
       let appToken
       // prep response
       const response = {}
       response.function = 'subscriber'
-      response.receiverId = receiverId
-      response.senderId = senderId
+      response.receiverID = receiverID
+      response.senderID = senderID
 
       // get user or app name
       for (token in tokens) {
         if (token) {
-          if (tokens[token].streams.includes(senderId)) {
+          if (tokens[token].streams.includes(senderID)) {
             userToken = token
             if (typeof response.user !== 'undefined') break
           }
-          if (tokens[token].streams.includes(receiverId)) {
+          if (tokens[token].streams.includes(receiverID)) {
             response.user = users[tokens[token].user].username
             if (typeof userToken !== 'undefined') break
           }
@@ -3652,25 +3652,25 @@ async function run() {
 
       for (token in apps) {
         if (token) {
-          if (apps[token].streams.includes(senderId)) {
+          if (apps[token].streams.includes(senderID)) {
             appToken = token
             if (typeof response.app !== 'undefined') break
           }
-          if (apps[token].streams.includes(receiverId)) {
+          if (apps[token].streams.includes(receiverID)) {
             response.app = apps[token].name
             if (typeof appToken !== 'undefined') break
           }
         }
       }
 
-      response.type = target[receiverId].type
-      response.meta = target[receiverId].meta
+      response.type = target[receiverID].type
+      response.meta = target[receiverID].meta
       const update = JSON.stringify(response)
       console.log('trying to send subscriber update ', update)
 
       // send update to sender
       if (typeof userToken !== 'undefined') {
-        console.log(`updating sender: ${userToken} : ${senderId}`)
+        console.log(`updating sender: ${userToken} : ${senderID}`)
         if (typeof tokens[userToken].conn.write === 'function') {
           tokens[userToken].conn.write(update)
           console.log('Finished subscriber update (1).')
@@ -3681,7 +3681,7 @@ async function run() {
         }
       }
       if (typeof appToken !== 'undefined') {
-        console.log(`updating app client: ${appToken} : ${senderId}`)
+        console.log(`updating app client: ${appToken} : ${senderID}`)
         if (typeof apps[appToken].conn.write === 'function') apps[appToken].conn.write(update)
         if ((typeof apps[appToken].conn.send === 'function') && (typeof apps[appToken].conn.readyState !== 'undefined') && (apps[appToken].conn.readyState === 1)) apps[appToken].conn.send(update)
       }
@@ -3702,8 +3702,8 @@ async function run() {
           type: 'string',
           sample: 'stale',
         },
-        streamid: {
-          description: 'streamid that is stale',
+        streamID: {
+          description: 'streamID that is stale',
           type: 'string',
           sample: 0,
         },
@@ -3714,25 +3714,25 @@ async function run() {
         },
       },
     },
-    async process(streamid) {
+    async process(streamID) {
       let u
       let token
       const response = {}
       response.function = 'stale'
-      response.streamid = streamid
+      response.streamID = streamID
 
       const update = JSON.stringify(response)
       console.log('trying to send stale ', update)
 
       // get correct room information
-      const { room } = source[streamid]
+      const { room } = source[streamID]
 
       // get subscribed targets and send update (only if receiver wants updates)
       // var t = [];
       for (u in target) {
         if (target[u].alert && (target[u].room === room)
             && ((target[u].type.length === 0)
-            || (target[u].type.includes(source[streamid].type)))) {
+            || (target[u].type.includes(source[streamID].type)))) {
           for (token in tokens) {
             if (tokens[token].streams.includes(u)) {
               if (((users[tokens[token].user].username !== response.user)
@@ -3774,8 +3774,8 @@ async function run() {
           type: 'string',
           sample: 'dropped',
         },
-        streamid: {
-          description: 'receiverId that was dropped',
+        streamID: {
+          description: 'receiverID that was dropped',
           type: 'string',
           sample: 0,
         },
@@ -3786,26 +3786,26 @@ async function run() {
         },
       },
     },
-    async process(sourceId, receiverId) {
+    async process(sourceID, receiverID) {
       let token
       const response = {}
       let userToken
       let appToken
       response.function = 'dropped'
-      response.streamid = receiverId
+      response.streamID = receiverID
 
       const update = JSON.stringify(response)
       console.log('trying to send dropped update ', update)
 
       // get tokens for this stream
       for (token in tokens) {
-        if (tokens[token].streams.includes(sourceId)) {
+        if (tokens[token].streams.includes(sourceID)) {
           userToken = token
           break
         }
       }
       for (token in apps) {
-        if (apps[token].streams.includes(sourceId)) {
+        if (apps[token].streams.includes(sourceID)) {
           appToken = token
           break
         }
@@ -3813,12 +3813,12 @@ async function run() {
 
       // send update to sender
       if (typeof userToken !== 'undefined') {
-        console.log(`updating sender: ${userToken} : ${sourceId}`)
+        console.log(`updating sender: ${userToken} : ${sourceID}`)
         if (typeof tokens[userToken].conn.write === 'function') tokens[userToken].conn.write(update)
         if ((typeof tokens[userToken].conn.send === 'function') && (typeof tokens[userToken].conn.readyState !== 'undefined') && (tokens[userToken].conn.readyState === 1)) tokens[userToken].conn.send(update)
       }
       if (typeof appToken !== 'undefined') {
-        console.log(`updating app client: ${appToken} : ${sourceId}`)
+        console.log(`updating app client: ${appToken} : ${sourceID}`)
         if (typeof apps[appToken].conn.write === 'function') apps[appToken].conn.write(update)
         if ((typeof apps[appToken].conn.send === 'function') && (typeof apps[appToken].conn.readyState !== 'undefined') && (apps[appToken].conn.readyState === 1)) apps[appToken].conn.send(update)
       }
@@ -3852,9 +3852,9 @@ async function run() {
         if (('function' in message) && (message.function in functions)) {
           if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
           else send = JSON.stringify(await functions[message.function].process(message))
-          if ('id' in message) {
+          if ('ID' in message) {
             send = JSON.parse(send)
-            send.id = message.id
+            send.ID = message.ID
             send = JSON.stringify(send)
           }
           console.log(`sending:${send}`)
@@ -3879,14 +3879,14 @@ async function run() {
   functions.listWorkspaces.info.responses.workspaceList.sample = Object.keys(rooms)
   functions.listServerFunctions.info.responses.functionList.sample = Object.keys(serverFunctions)
 
-  const userlist = []
+  const userList = []
   users.forEach((user) => {
-    userlist.push(user.username)
+    userList.push(user.username)
   })
   console.log('Functions: ', functions.listFunctions.info.responses.functionList.sample)
   console.log('Server functions: ', Object.keys(serverFunctions))
   console.log('Workspaces: ', functions.listWorkspaces.info.responses.workspaceList.sample)
-  console.log('Users: ', userlist)
+  console.log('Users: ', userList)
   console.log('Apps:', apps)
 
 
@@ -3931,7 +3931,7 @@ async function run() {
     let message
     const last = Date.now()
     let type
-    let targetId
+    let targetID
     // *** ToDo: validate that this message is ttruely a sender message that is authenticated
     // console.log(`server got from ${rinfo.address}:${rinfo.port}`);
     // decoding header
@@ -3959,26 +3959,26 @@ async function run() {
       console.log(`error during parsing ${e}`)
       return console.error(e)
     }
-    if (globalConfig.debug && header.id !== 'log') {
+    if (globalConfig.debug && header.ID !== 'log') {
       dataSize = msg.readUInt32LE(2)
       data = Buffer.allocUnsafe(dataSize)
       msg.copy(data, 0, 6 + headerSize)
-      // console.log('Receiving '+header['id']+` b${msg.length} h${headerSize} d${dataSize},
-      // header:${JSON.stringify(header)}to${target[targetId]['ip']}:${target[targetId]['port']}`);
-      if (header.id !== 'log') {
-        if (typeof source[header.id] !== 'undefined') {
-          console.log('source[header.id]', source[header.id])
-          console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from ${source[header.id].ip}:${source[header.id].port}`)
+      // console.log('Receiving '+header['ID']+` b${msg.length} h${headerSize} d${dataSize},
+      // header:${JSON.stringify(header)}to${target[targetID]['IP']}:${target[targetID]['port']}`);
+      if (header.ID !== 'log') {
+        if (typeof source[header.ID] !== 'undefined') {
+          console.log('source[header.ID]', source[header.ID])
+          console.log(`Receiving ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from ${source[header.ID].IP}:${source[header.ID].port}`)
         } else {
-          console.log(`Receiving ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from unknown source`)
+          console.log(`Receiving ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from unknown source`)
         }
       }
       // console.log(data)
     }
     // if we see the 'stamp' variable we will return a ping with the server stamped time
-    if (('stamp' in header) && ((header.id in source) || (header.id in target))) {
-      if (header.id in source) stream = source[header.id]
-      else stream = target[header.id]
+    if (('stamp' in header) && ((header.ID in source) || (header.ID in target))) {
+      if (header.ID in source) stream = source[header.ID]
+      else stream = target[header.ID]
       dataSize = msg.readUInt32LE(2)
       data = Buffer.allocUnsafe(dataSize)
       msg.copy(data, 0, 6 + headerSize)
@@ -4009,55 +4009,55 @@ async function run() {
         default:
           console.log('wrong stream')
       }
-      if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, ip:${remoteAddress}, port${remotePort}`)
-    } else if (header.id in streamRelay) { // console.log(header['id']);
-      source[header.id].time = last
-      for (targetId in streamRelay[header.id]) {
-        if ((typeof target[targetId] !== 'undefined') && (typeof target[targetId].ip !== 'undefined') && (target[targetId].ip !== '')) {
-          if ((typeof target[targetId] !== 'undefined') && (typeof target[targetId].port !== 'undefined') && (target[targetId].port !== 0)) {
-            if (globalConfig.debug && header.id !== 'log') {
-              console.log(`Sending ${header.id} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetId].ip}:${target[targetId].port}`)
+      if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, IP:${remoteAddress}, port${remotePort}`)
+    } else if (header.ID in streamRelay) { // console.log(header['ID']);
+      source[header.ID].time = last
+      for (targetID in streamRelay[header.ID]) {
+        if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].IP !== 'undefined') && (target[targetID].IP !== '')) {
+          if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].port !== 'undefined') && (target[targetID].port !== 0)) {
+            if (globalConfig.debug && header.ID !== 'log') {
+              console.log(`Sending ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetID].IP}:${target[targetID].port}`)
               // console.log(data)
             }
-            target[targetId].time = last
-            if (target[targetId].proto === 'udp') {
-              UDPDataServer.send(msg, target[targetId].port, target[targetId].ip, (err) => {
-                if (err && (header.id !== 'log')) console.log('socket error', err)
+            target[targetID].time = last
+            if (target[targetID].proto === 'udp') {
+              UDPDataServer.send(msg, target[targetID].port, target[targetID].IP, (err) => {
+                if (err && (header.ID !== 'log')) console.log('socket error', err)
               })
-            } else if (target[targetId].proto === 'tcp') {
-              if (typeof target[targetId].conn === 'undefined' && (header.id !== 'log')) console.log('!!!! tcp connection not defined, dropping packet')
-              else target[targetId].conn.write(msg)
-            } else if (((typeof target[targetId].conn === 'undefined') || (target[targetId].conn.readyState !== 1)) && (header.id !== 'log')) console.log('!!!! websocket connection not defined or closed, dropping packet')
-            else target[targetId].conn.send(msg)
-          } else if (typeof target[targetId] === 'undefined' && (header.id !== 'log')) console.log(`${targetId} is not registered at all`)
+            } else if (target[targetID].proto === 'tcp') {
+              if (typeof target[targetID].conn === 'undefined' && (header.ID !== 'log')) console.log('!!!! tcp connection not defined, dropping packet')
+              else target[targetID].conn.write(msg)
+            } else if (((typeof target[targetID].conn === 'undefined') || (target[targetID].conn.readyState !== 1)) && (header.ID !== 'log')) console.log('!!!! websocket connection not defined or closed, dropping packet')
+            else target[targetID].conn.send(msg)
+          } else if (typeof target[targetID] === 'undefined' && (header.ID !== 'log')) console.log(`${targetID} is not registered at all`)
           else {
             types = ''
-            for (type in target.targetId) {
+            for (type in target.targetID) {
               if (types === '') types = type
               else types = `${types}, ${type}`
             }
-            if (header.id !== 'log') console.log(`no port for stream ${targetId} [${types}], IP:${target[targetId].ip}, Timeout:${target[targetId].time}`)
+            if (header.ID !== 'log') console.log(`no port for stream ${targetID} [${types}], IP:${target[targetID].IP}, Timeout:${target[targetID].time}`)
           }
-        } else if (header.id !== 'log') console.log(`no ip for stream ${header.id}`)
+        } else if (header.ID !== 'log') console.log(`no IP for stream ${header.ID}`)
       }
-    } else if (header.id in target) {
-      if (globalConfig.debug && (header.id !== 'log')) console.log(target[header.id].ip)
-      console.log(`Trying to assign port and connections for ${header.id}, ${remoteAddress}:${remotePort}`)
-      if (remoteAddress === target[header.id].ip) {
-        // console.log(target[header.id])
-        if (target[header.id].port === 0) {
-          if (header.id !== 'log') console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.id].proto}`)
-          target[header.id].port = remotePort
-          if ((target[header.id].proto === 'tcp') || (target[header.id].proto === 'ws')) {
-            if (header.id !== 'log') console.log(header.id, 'adding the connection')
-            target[header.id].conn = connections[remoteAddress][remotePort].conn
+    } else if (header.ID in target) {
+      if (globalConfig.debug && (header.ID !== 'log')) console.log(target[header.ID].IP)
+      console.log(`Trying to assign port and connections for ${header.ID}, ${remoteAddress}:${remotePort}`)
+      if (remoteAddress === target[header.ID].IP) {
+        // console.log(target[header.ID])
+        if (target[header.ID].port === 0) {
+          if (header.ID !== 'log') console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.ID].proto}`)
+          target[header.ID].port = remotePort
+          if ((target[header.ID].proto === 'tcp') || (target[header.ID].proto === 'ws')) {
+            if (header.ID !== 'log') console.log(header.ID, 'adding the connection')
+            target[header.ID].conn = connections[remoteAddress][remotePort].conn
             delete connections[remoteAddress][remotePort]
             if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
           }
         }
-        if (header.id !== 'log') console.log(`no port for stream ${header.id} [${types}], IP:${target[header.id].ip}, Timeout:${target[header.id].time}`)
+        if (header.ID !== 'log') console.log(`no port for stream ${header.ID} [${types}], IP:${target[header.ID].IP}, Timeout:${target[header.ID].time}`)
       }
-    } else if (header.id !== 'log') console.log(`StreamID (${header.id}) not authorized to send`)
+    } else if (header.ID !== 'log') console.log(`StreamID (${header.ID}) not authorized to send`)
 
     return 'relaydata end'
   }
@@ -4116,7 +4116,7 @@ async function run() {
   const wsControlServer = new Ws({ server: httpsControlServer })
 
   wsControlServer.on('connection', (conn, req) => {
-  // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+  // const IP = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
     const { remoteAddress } = req.connection
     const { remotePort } = req.connection
     let send = ''
@@ -4140,9 +4140,9 @@ async function run() {
       if (('function' in message) && (message.function in functions)) {
         if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
         else send = JSON.stringify(await functions[message.function].process(message))
-        if ('id' in message) {
+        if ('ID' in message) {
           send = JSON.parse(send)
-          send.id = message.id
+          send.ID = message.ID
           send = JSON.stringify(send)
         }
         console.log(`sending:${send}`)
@@ -4191,7 +4191,7 @@ async function run() {
   const WSDataServer = new Ws({ server: httpsDataServer })
 
   WSDataServer.on('connection', (conn, req) => {
-  // const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+  // const IP = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
     const { remoteAddress } = req.connection
     const { remotePort } = req.connection
@@ -4229,22 +4229,22 @@ async function run() {
   function timeoutConnections() {
     if (typeof log !== 'undefined') source.log.time = Date.now()
 
-    let ip
+    let IP
     // eslint-disable-next-line no-shadow
     let port
     let token
-    let id
-    let sid
-    let tid
+    let ID
+    let sID
+    let tID
     const currentTime = Date.now()
-    for (ip in connections) {
-      if (ip) {
-        for (port in connections[ip]) {
-        // console.log('connections',connections[ip][port]['time'],connectTimeout,currentTime
-        //    ,connections[ip][port]['time'] + connectTimeout - currentTime);
-          if (connections[ip][port].time + connectTimeout < currentTime) {
-            delete connections[ip][port]
-            if (connections[ip].length === 0) delete connections[ip]
+    for (IP in connections) {
+      if (IP) {
+        for (port in connections[IP]) {
+        // console.log('connections',connections[IP][port]['time'],connectTimeout,currentTime
+        //    ,connections[IP][port]['time'] + connectTimeout - currentTime);
+          if (connections[IP][port].time + connectTimeout < currentTime) {
+            delete connections[IP][port]
+            if (connections[IP].length === 0) delete connections[IP]
           }
         }
       }
@@ -4254,33 +4254,33 @@ async function run() {
     }
 
     // Test if sources have timed out
-    for (id in source) {
-      // console.log('source',id,source[id]['time'],streamTimeout,currentTime,source[id]['time']
+    for (ID in source) {
+      // console.log('source',ID,source[ID]['time'],streamTimeout,currentTime,source[ID]['time']
       //    + streamTimeout - currentTime);
-      if (source[id].time + streamTimeout < currentTime) {
+      if (source[ID].time + streamTimeout < currentTime) {
         // notify clients of stale streams
-        // streamid not defined  but used
-        serverFunctions.stale.process(id)
+        // streamID not defined  but used
+        serverFunctions.stale.process(ID)
 
         // remove stream information from the relay
-        delete streamRelay[id]
-        delete source[id]
+        delete streamRelay[ID]
+        delete source[ID]
       }
     }
 
     // Test if targets have timed out
-    for (id in target) {
-      // console.log('target',id,target[id]['time'],streamTimeout,currentTime,target[id]['time']
+    for (ID in target) {
+      // console.log('target',ID,target[ID]['time'],streamTimeout,currentTime,target[ID]['time']
       //   +streamTimeout - currentTime);
-      if (target[id].time + streamTimeout < currentTime) {
-        for (sid in streamRelay) {
-          if (sid) {
-            for (tid in streamRelay) if (tid === id) delete streamRelay[sid][tid]
+      if (target[ID].time + streamTimeout < currentTime) {
+        for (sID in streamRelay) {
+          if (sID) {
+            for (tID in streamRelay) if (tID === ID) delete streamRelay[sID][tID]
             // dont remove sources that are still available from the relay (let the sources time out separately)
-            // if (streamRelay[sid].length === 0) delete streamRelay[sid]
+            // if (streamRelay[sID].length === 0) delete streamRelay[sID]
           }
         }
-        delete target[id]
+        delete target[ID]
       }
     }
     setTimeout(timeoutConnections, testTimeout)

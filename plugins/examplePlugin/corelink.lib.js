@@ -91,7 +91,7 @@ async function login(credentials) {
                 else 
                     reject(new Error('Token not found.'))
                 if('ip' in content)
-                    sourceIP = content.ip
+                    sourceIP = content.IP
                 else 
                     reject(new Error('SourceIP not found.'))
                 resolve(true)
