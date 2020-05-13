@@ -3967,7 +3967,7 @@ async function run() {
       // header:${JSON.stringify(header)}to${target[targetID]['IP']}:${target[targetID]['port']}`);
       if (header.ID !== 'log') {
         if (typeof source[header.ID] !== 'undefined') {
-          console.log('source[header.ID]', source[header.ID])
+          // console.log('source[header.ID]', source[header.ID])
           console.log(`Receiving ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from ${source[header.ID].IP}:${source[header.ID].port}`)
         } else {
           console.log(`Receiving ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from unknown source`)
