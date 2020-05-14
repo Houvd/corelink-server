@@ -3041,7 +3041,7 @@ async function run() {
                   // send dropped message to sender streams to inform them
                   // the receiver stopped requesting that stream.
                   serverFunctions.dropped.process(s, t)
-                  if (Object.keys(streamRelay[s]).length === 0) delete streamRelay[s]
+                  // if (Object.keys(streamRelay[s]).length === 0) delete streamRelay[s]
                 }
               }
             }
