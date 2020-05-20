@@ -333,19 +333,14 @@ async function run() {
   function write(...args) {
     if (logStdOut) stdOut.apply(process.stdout, args)
     if (logFile) log.write(...args)
-    const data = Buffer.from(args[0])
-    const headerSize = Buffer.alloc(6)
-    let header = {
-      ID: 'log',
-      time: Date.now(),
-    }
-    header = JSON.stringify(header)
-    header = Buffer.from(header)
+    const data = Buffer.from(`${Date.now()} ${args[0]}`)
+    const header = Buffer.alloc(8)
 
-    headerSize.writeUInt16LE(header.length, 0)
-    headerSize.writeUInt32LE(data.length, 2)
+    header.writeUInt16LE(0, 0)
+    header.writeUInt16LE(data.length, 2)
+    header.writeUInt32LE(0, 4)
 
-    const packet = [headerSize, header, data]
+    const packet = [header, data]
     const message = Buffer.concat(packet)
     // eslint-disable-next-line no-use-before-define
     if (logStream) relayData(message)
@@ -354,19 +349,12 @@ async function run() {
   function writeErr(...args) {
     if (logStdOut) stdErr.apply(process.stderr, args)
     if (logFile) logErr.write(...args)
-    const data = Buffer.from(args[0])
-    const headerSize = Buffer.alloc(6)
-    let header = {
-      ID: 'log',
-      time: Date.now(),
-    }
-    header = JSON.stringify(header)
-    header = Buffer.from(header)
+    const data = Buffer.from(`${Date.now()} ${args[0]}`)
+    const header = Buffer.alloc(8)
+    header.writeUInt16LE(header.length, 0)
+    header.writeUInt32LE(data.length, 2)
 
-    headerSize.writeUInt16LE(header.length, 0)
-    headerSize.writeUInt32LE(data.length, 2)
-
-    const packet = [headerSize, header, data]
+    const packet = [header, data]
     const message = Buffer.concat(packet)
     // eslint-disable-next-line no-use-before-define
     if (logStream) relayData(message)
@@ -452,7 +440,7 @@ async function run() {
     source.log.time = Date.now()
     source.log.from = 'LogStream'
 
-    apps['!log'].streams.push('log')
+    apps['!log'].streams.push(0)
     apps['!log'].conn = []
 
     streamRelay.log = []
@@ -2256,10 +2244,11 @@ async function run() {
             console.log(`used existing sender streamID: ${streamID}`)
           } else {
             streamID = null
-            while ((streamID === null) || (typeof source[streamID] !== 'undefined')) {
-              streamID = crypto.createHash('sha256')
-                .update(message.workspace + message.proto + (new Date().getTime()))
-                .digest('hex').substr(0, 7)
+            while ((streamID === null) || (typeof source[streamID] !== 'undefined') || (typeof target[streamID] !== 'undefined')) {
+              streamID = Math.floor(Math.random() * 6 + 1)
+              // crypto.createHash('sha256')
+              // .update(message.workspace + message.proto + (new Date().getTime()))
+              // .digest('hex').substr(0, 7)
             }
             console.log(`created new sender streamID: ${streamID}`)
             streamRelay[streamID] = []
@@ -2734,10 +2723,11 @@ async function run() {
           } else {
             // create a new target streamID
             streamID = null
-            while ((streamID === null) || (typeof target[streamID] !== 'undefined')) {
-              streamID = crypto.createHash('sha256')
-                .update(workMessage.workspace + workMessage.proto + (new Date().getTime()))
-                .digest('hex').substr(0, 7)
+            while ((streamID === null) || (typeof source[streamID] !== 'undefined') || (typeof target[streamID] !== 'undefined')) {
+              streamID = Math.floor(Math.random() * 6 + 1)
+              // streamID = crypto.createHash('sha256')
+              // .update(workMessage.workspace + workMessage.proto + (new Date().getTime()))
+              // .digest('hex').substr(0, 7)
             }
             console.log(`created new receiver streamID: ${streamID}`)
           }
@@ -3919,8 +3909,14 @@ async function run() {
   UDPDataServer.bind(port.udp)
 
   function relayData(msg, remoteAddress, remotePort) {
-    let headerSize
-    let dataSize
+
+    // decode header
+    const headerSize = msg.readUInt16LE(0)
+    const dataSize = msg.readUInt16LE(2)
+    const sourceID = msg.readUInt32LE(4)
+    const decodeHeader = !!(headerSize && 32768)
+    const last = Date.now()
+
     let header
     let data
     let stream
@@ -3929,135 +3925,142 @@ async function run() {
     let types
     let packet
     let message
-    const last = Date.now()
     let type
     let targetID
     // *** ToDo: validate that this message is ttruely a sender message that is authenticated
     // console.log(`server got from ${rinfo.address}:${rinfo.port}`);
     // decoding header
     // console.log('message: ',msg);
-    if (msg.length > 6) {
-      headerSize = msg.readUInt16LE(0)
-      dataSize = msg.readUInt32LE(2)
-      if (msg.length !== 6 + headerSize + dataSize) {
-        console.log(`Packet has the wrong size (${msg.length} vs. ${6 + headerSize + dataSize}).`)
-        return console.error(`Packet has the wrong size (${msg.length} vs. ${6 + headerSize + dataSize}).`)
-      }
-      header = msg.toString('ascii', 6, headerSize + 6)
-      // var data = Buffer.allocUnsafe(dataSize);
-      // msg.copy(data,0,6+headerSize);
-      // console.log('header:', headerSize, '>'+header+'<');
-      // console.log('data:', dataSize, data);
-    } else {
+
+    // check for packet too small
+    if (msg.length < 8) {
       console.log('Packet is too small')
       return console.error('Packet is too small')
     }
 
-    try {
-      header = JSON.parse(header)
-    } catch (e) {
-      console.log(`error during parsing ${e}`)
-      return console.error(e)
+    // check for packet inconsistent size
+    if (msg.length !== 8 + headerSize + dataSize) {
+      console.log(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
+      return console.error(`Packet has the wrong size (${msg.length} vs. ${0 + headerSize + dataSize}).`)
     }
-    if (globalConfig.debug && header.ID !== 'log') {
-      dataSize = msg.readUInt32LE(2)
-      data = Buffer.allocUnsafe(dataSize)
-      msg.copy(data, 0, 6 + headerSize)
+
+    // log out debug information
+    if (globalConfig.debug && (sourceID !== 0)) {
+      // data = Buffer.allocUnsafe(dataSize)
+      // msg.copy(data, 0, 8 + headerSize)
       // console.log('Receiving '+header['ID']+` b${msg.length} h${headerSize} d${dataSize},
       // header:${JSON.stringify(header)}to${target[targetID]['IP']}:${target[targetID]['port']}`);
-      if (header.ID !== 'log') {
-        if (typeof source[header.ID] !== 'undefined') {
-          // console.log('source[header.ID]', source[header.ID])
-          console.log(`Receiving ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from ${source[header.ID].IP}:${source[header.ID].port}`)
+      if (sourceID !== 0) {
+        if (typeof source[sourceID] !== 'undefined') {
+          // console.log('source[sourceID]', source[sourceID])
+          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from ${source[sourceID].IP}:${source[sourceID].port}`)
         } else {
-          console.log(`Receiving ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from unknown source`)
+          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from unknown source`)
         }
       }
       // console.log(data)
     }
-    // if we see the 'stamp' variable we will return a ping with the server stamped time
-    if (('stamp' in header) && ((header.ID in source) || (header.ID in target))) {
-      if (header.ID in source) stream = source[header.ID]
-      else stream = target[header.ID]
-      dataSize = msg.readUInt32LE(2)
-      data = Buffer.allocUnsafe(dataSize)
-      msg.copy(data, 0, 6 + headerSize)
 
-      header.stamp = Date.now()
-      headerr = JSON.stringify(header)
-      headerr = Buffer.from(headerr)
-
-      headerBuffer = Buffer.alloc(6)
-      headerBuffer.writeUInt16LE(headerr.length, 0)
-      headerBuffer.writeUInt32LE(data.length, 2)
-
-      packet = [headerBuffer, headerr, data]
-      message = Buffer.concat(packet)
-
-      switch (stream.proto) {
-        case 'udp':
-          UDPDataServer.send(message, remotePort, remoteAddress, (err) => {
-            if (err) console.log('socket error during ping', err)
-          })
-          break
-        case 'tcp':
-          stream.conn.write(message)
-          break
-        case 'ws':
-          stream.conn.send(message)
-          break
-        default:
-          console.log('wrong stream')
+    // decode json header if needed
+    if (decodeHeader) {
+      header = msg.toString('ascii', 8, headerSize + 8)
+      try {
+        header = JSON.parse(header)
+      } catch (e) {
+        console.log(`error during parsing ${e}`)
+        return console.error(e)
       }
-      if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, IP:${remoteAddress}, port${remotePort}`)
-    } else if (header.ID in streamRelay) { // console.log(header['ID']);
-      source[header.ID].time = last
-      for (targetID in streamRelay[header.ID]) {
+
+      // if we see the 'stamp' variable we will return a ping with the server stamped time
+      if (('stamp' in header) && ((sourceID in source) || (sourceID in target))) {
+        if (sourceID in source) stream = source[sourceID]
+        else stream = target[sourceID]
+        data = Buffer.allocUnsafe(dataSize)
+        msg.copy(data, 0, 6 + headerSize)
+
+        header.stamp = Date.now()
+        headerr = JSON.stringify(header)
+        headerr = Buffer.from(headerr)
+
+        headerBuffer = Buffer.alloc(6)
+        headerBuffer.writeUInt16LE(headerr.length, 0)
+        headerBuffer.writeUInt32LE(data.length, 2)
+
+        packet = [headerBuffer, headerr, data]
+        message = Buffer.concat(packet)
+
+        switch (stream.proto) {
+          case 'udp':
+            UDPDataServer.send(message, remotePort, remoteAddress, (err) => {
+              if (err) console.log('socket error during ping', err)
+            })
+            break
+          case 'tcp':
+            stream.conn.write(message)
+            break
+          case 'ws':
+            stream.conn.send(message)
+            break
+          default:
+            console.log('wrong stream')
+        }
+        if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, IP:${remoteAddress}, port${remotePort}`)
+        return 'done with echo'
+      }
+    }
+
+
+
+
+
+    if (sourceID in streamRelay) { // console.log(header['ID']);
+      source[sourceID].time = last
+      for (targetID in streamRelay[sourceID]) {
         if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].IP !== 'undefined') && (target[targetID].IP !== '')) {
           if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].port !== 'undefined') && (target[targetID].port !== 0)) {
-            if (globalConfig.debug && header.ID !== 'log') {
-              console.log(`Sending ${header.ID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetID].IP}:${target[targetID].port}`)
+            if (globalConfig.debug && sourceID !== 0) {
+              console.log(`Sending ${sourceID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetID].IP}:${target[targetID].port}`)
               // console.log(data)
             }
             target[targetID].time = last
             if (target[targetID].proto === 'udp') {
               UDPDataServer.send(msg, target[targetID].port, target[targetID].IP, (err) => {
-                if (err && (header.ID !== 'log')) console.log('socket error', err)
+                if (err && (sourceID !== 0)) console.log('socket error', err)
               })
             } else if (target[targetID].proto === 'tcp') {
-              if (typeof target[targetID].conn === 'undefined' && (header.ID !== 'log')) console.log('!!!! tcp connection not defined, dropping packet')
+              if (typeof target[targetID].conn === 'undefined' && (sourceID !== 0)) console.log('!!!! tcp connection not defined, dropping packet')
               else target[targetID].conn.write(msg)
-            } else if (((typeof target[targetID].conn === 'undefined') || (target[targetID].conn.readyState !== 1)) && (header.ID !== 'log')) console.log('!!!! websocket connection not defined or closed, dropping packet')
+            } else if (((typeof target[targetID].conn === 'undefined') || (target[targetID].conn.readyState !== 1)) && (sourceID !== 0)) console.log('!!!! websocket connection not defined or closed, dropping packet')
             else target[targetID].conn.send(msg)
-          } else if (typeof target[targetID] === 'undefined' && (header.ID !== 'log')) console.log(`${targetID} is not registered at all`)
+          } else if (typeof target[targetID] === 'undefined' && (sourceID !== 0)) console.log(`${targetID} is not registered at all`)
           else {
             types = ''
             for (type in target.targetID) {
               if (types === '') types = type
               else types = `${types}, ${type}`
             }
-            if (header.ID !== 'log') console.log(`no port for stream ${targetID} [${types}], IP:${target[targetID].IP}, Timeout:${target[targetID].time}`)
+            if (sourceID !== 0) console.log(`no port for stream ${targetID} [${types}], IP:${target[targetID].IP}, Timeout:${target[targetID].time}`)
           }
-        } else if (header.ID !== 'log') console.log(`no IP for stream ${header.ID}`)
+        } else if (sourceID !== 0) console.log(`no IP for stream ${sourceID}`)
       }
-    } else if (header.ID in target) {
-      if (globalConfig.debug && (header.ID !== 'log')) console.log(target[header.ID].IP)
-      console.log(`Trying to assign port and connections for ${header.ID}, ${remoteAddress}:${remotePort}`)
-      if (remoteAddress === target[header.ID].IP) {
-        // console.log(target[header.ID])
-        if (target[header.ID].port === 0) {
-          if (header.ID !== 'log') console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[header.ID].proto}`)
-          target[header.ID].port = remotePort
-          if ((target[header.ID].proto === 'tcp') || (target[header.ID].proto === 'ws')) {
-            if (header.ID !== 'log') console.log(header.ID, 'adding the connection')
-            target[header.ID].conn = connections[remoteAddress][remotePort].conn
+    } else if (sourceID in target) {
+      if (globalConfig.debug && (sourceID !== 0)) console.log(target[sourceID].IP)
+      console.log(`Trying to assign port and connections for ${sourceID}, ${remoteAddress}:${remotePort}`)
+      if (remoteAddress === target[sourceID].IP) {
+        // console.log(target[sourceID])
+        if (target[sourceID].port === 0) {
+          if (sourceID !== 0) console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[sourceID].proto}`)
+          target[sourceID].port = remotePort
+          if ((target[sourceID].proto === 'tcp') || (target[sourceID].proto === 'ws')) {
+            if (sourceID !== 0) console.log(sourceID, 'adding the connection')
+            target[sourceID].conn = connections[remoteAddress][remotePort].conn
             delete connections[remoteAddress][remotePort]
             if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
           }
         }
-        if (header.ID !== 'log') console.log(`no port for stream ${header.ID} [${types}], IP:${target[header.ID].IP}, Timeout:${target[header.ID].time}`)
+        if (sourceID !== 0) console.log(`no port for stream ${sourceID} [${types}], IP:${target[sourceID].IP}, Timeout:${target[sourceID].time}`)
       }
-    } else if (header.ID !== 'log') console.log(`StreamID (${header.ID}) not authorized to send`)
+    } else if (sourceID !== 0) console.log(`StreamID (${sourceID}) not authorized to send`)
 
     return 'relaydata end'
   }
