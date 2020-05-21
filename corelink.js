@@ -2412,7 +2412,7 @@ async function run() {
             for (const key in source) {
               if (source[key].room === userWorkspace[workspace]) {
                 if ((workMessage.types.length === 0) || (workMessage.types.includes(source[key].type))) {
-                  streamListElement.streamID = key
+                  streamListElement.streamID = parseInt(key, 10)
                   // add usernames and app names to the specific streams
                   userApps = findApps(streamListElement.streamID)
                   streamListElement.user = userApps.user
@@ -2671,7 +2671,7 @@ async function run() {
           // get appropriate streamIDs
           if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
             workMessage.streamIDs = []
-            for (sourceID in source) if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamIDs.push(sourceID)
+            for (sourceID in source) if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamIDs.push(parseInt(sourceID, 10))
           }
 
           // remove all streamIDs that are not in source (we silently drop
@@ -2685,7 +2685,7 @@ async function run() {
           for (stream in workMessage.streamIDs) {
             if (stream) {
               streamListElement = {}
-              streamListElement.streamID = workMessage.streamIDs[stream]
+              streamListElement.streamID = parseInt(workMessage.streamIDs[stream], 10)
               streamListElement.type = source[workMessage.streamIDs[stream]].type
               streamListElement.meta = source[workMessage.streamIDs[stream]].meta
 
@@ -2895,7 +2895,7 @@ async function run() {
           if (!('streamID' in workMessage) || (workMessage.streamID.length === 0)) {
             workMessage.streamID = []
             for (sourceID in source) {
-              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamID.push(sourceID)
+              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamID.push(parseInt(sourceID,10))
             }
           }
 
@@ -2925,7 +2925,7 @@ async function run() {
           for (stream in workMessage.streamID) {
             if (stream) {
               streamListElement = {}
-              streamListElement.streamID = workMessage.streamID[stream]
+              streamListElement.streamID = parseInt(workMessage.streamID[stream], 10)
               streamListElement.type = source[workMessage.streamID[stream]].type
               streamListElement.meta = source[workMessage.streamID[stream]].meta
 
@@ -3541,6 +3541,7 @@ async function run() {
             && (target[u].room === room)
             && ((target[u].type.length === 0)
             || (target[u].type.includes(source[streamID].type)))) {
+          u = parseInt(u, 10)
           response.receiverID = u
           update = JSON.stringify(response)
           for (token in tokens) {
@@ -3723,6 +3724,7 @@ async function run() {
         if (target[u].alert && (target[u].room === room)
             && ((target[u].type.length === 0)
             || (target[u].type.includes(source[streamID].type)))) {
+          u = parseInt(u, 10)
           for (token in tokens) {
             if (tokens[token].streams.includes(u)) {
               if (((users[tokens[token].user].username !== response.user)
@@ -3948,14 +3950,14 @@ async function run() {
     if (globalConfig.debug && (sourceID !== 0)) {
       // data = Buffer.allocUnsafe(dataSize)
       // msg.copy(data, 0, 8 + headerSize)
-      // console.log('Receiving '+header['ID']+` b${msg.length} h${headerSize} d${dataSize},
-      // header:${JSON.stringify(header)}to${target[targetID]['IP']}:${target[targetID]['port']}`);
+      // console.log('Receiving '+header['ID']+` b${msg.length} h${headerSize} d${dataSize}
+      // to ${target[targetID]['IP']}:${target[targetID]['port']}`);
       if (sourceID !== 0) {
         if (typeof source[sourceID] !== 'undefined') {
           // console.log('source[sourceID]', source[sourceID])
-          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from ${source[sourceID].IP}:${source[sourceID].port}`)
+          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from ${source[sourceID].IP}:${source[sourceID].port}`)
         } else {
-          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} from unknown source`)
+          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from unknown source`)
         }
       }
       // console.log(data)
@@ -3976,15 +3978,16 @@ async function run() {
         if (sourceID in source) stream = source[sourceID]
         else stream = target[sourceID]
         data = Buffer.allocUnsafe(dataSize)
-        msg.copy(data, 0, 6 + headerSize)
+        msg.copy(data, 0, 8 + headerSize)
 
         header.stamp = Date.now()
         headerr = JSON.stringify(header)
         headerr = Buffer.from(headerr)
 
-        headerBuffer = Buffer.alloc(6)
+        headerBuffer = Buffer.alloc(8)
         headerBuffer.writeUInt16LE(headerr.length, 0)
-        headerBuffer.writeUInt32LE(data.length, 2)
+        headerBuffer.writeUInt16LE(data.length, 2)
+        headerBuffer.writeUInt32LE(sourceID, 4)
 
         packet = [headerBuffer, headerr, data]
         message = Buffer.concat(packet)
@@ -4019,7 +4022,7 @@ async function run() {
         if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].IP !== 'undefined') && (target[targetID].IP !== '')) {
           if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].port !== 'undefined') && (target[targetID].port !== 0)) {
             if (globalConfig.debug && sourceID !== 0) {
-              console.log(`Sending ${sourceID} b${msg.length} h${headerSize} d${dataSize}, header: ${JSON.stringify(header)} to ${target[targetID].IP}:${target[targetID].port}`)
+              console.log(`Sending ${sourceID} b${msg.length} h${headerSize} d${dataSize} to ${target[targetID].IP}:${target[targetID].port}`)
               // console.log(data)
             }
             target[targetID].time = last
