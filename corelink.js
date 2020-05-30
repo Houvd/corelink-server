@@ -4,12 +4,14 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle, Abhishek Khanna
- * @version V5.0.0.0
+ * @version V6.0.0.0
  */
 
-const serverVersion = 'v5.0.0.0'
+const serverVersion = 'v6.0.0.0'
+// v6.0.0.0
+// - data protocol changes
 // v5.0.0.0
-// New naming convention implemented
+// - new naming convention implemented
 // v4.7.0.0
 // - add describeServerFunction and listServerFunctions
 // v4.6.0.0
@@ -351,8 +353,10 @@ async function run() {
     if (logFile) logErr.write(...args)
     const data = Buffer.from(`${Date.now()} ${args[0]}`)
     const header = Buffer.alloc(8)
-    header.writeUInt16LE(header.length, 0)
-    header.writeUInt32LE(data.length, 2)
+    header.writeUInt16LE(0, 0)
+    header.writeUInt16LE(data.length, 2)
+    header.writeUInt32LE(0, 4)
+
 
     const packet = [header, data]
     const message = Buffer.concat(packet)
@@ -430,20 +434,20 @@ async function run() {
 
   // making sure that the apps cannot be overwritten
   if (logStream) {
-    source.log = []
-    source.log.IP = ''
-    source.log.port = 0
-    source.log.proto = 'local'
-    source.log.room = 'Log'
-    source.log.type = 'LogStream'
-    source.log.alert = false
-    source.log.time = Date.now()
-    source.log.from = 'LogStream'
+    source[0] = []
+    source[0].IP = ''
+    source[0].port = 0
+    source[0].proto = 'local'
+    source[0].room = 'Log'
+    source[0].type = 'LogStream'
+    source[0].alert = false
+    source[0].time = Date.now()
+    source[0].from = 'LogStream'
 
     apps['!log'].streams.push(0)
     apps['!log'].conn = []
 
-    streamRelay.log = []
+    streamRelay[0] = []
   }
 
 
@@ -1802,7 +1806,8 @@ async function run() {
             if (typeof oldUser !== 'undefined') {
               const admin = await knex('users')
                 .first('admin')
-                // ToDo: you can just use data instead of tokens[message.token].user, it has the user id in it, also token could be an app token
+                // ToDo: you can just use data instead of tokens[message.token].user,
+                // it has the user id in it, also token could be an app token
                 .where('id', tokens[message.token].user)
                 .catch((error) => {
                   throw error
@@ -2411,6 +2416,7 @@ async function run() {
           if (workspace) {
             for (const key in source) {
               if (source[key].room === userWorkspace[workspace]) {
+                // eslint-disable-next-line max-len
                 if ((workMessage.types.length === 0) || (workMessage.types.includes(source[key].type))) {
                   streamListElement.streamID = parseInt(key, 10)
                   // add usernames and app names to the specific streams
@@ -2895,7 +2901,7 @@ async function run() {
           if (!('streamID' in workMessage) || (workMessage.streamID.length === 0)) {
             workMessage.streamID = []
             for (sourceID in source) {
-              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamID.push(parseInt(sourceID,10))
+              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamID.push(parseInt(sourceID, 10))
             }
           }
 
@@ -3911,14 +3917,20 @@ async function run() {
   UDPDataServer.bind(port.udp)
 
   function relayData(msg, remoteAddress, remotePort) {
-
     // decode header
     let headerSize = msg.readUInt16LE(0)
     const dataSize = msg.readUInt16LE(2)
     const sourceID = msg.readUInt32LE(4)
+    // eslint-disable-next-line no-bitwise
     const decodeHeader = !!(headerSize & 32768)
+    headerSize = headerSize && 32767
+
+
+    // console.log('sourceID', sourceID, typeof sourceID)
+
     const last = Date.now()
-    headerSize = headerSize & 32767
+    // eslint-disable-next-line no-bitwise
+    headerSize &= 32767
 
     let header
     let data
@@ -3943,8 +3955,9 @@ async function run() {
 
     // check for packet inconsistent size
     if (msg.length !== 8 + headerSize + dataSize) {
+      // console.log('message:', remoteAddress, remotePort, msg.toString())
       console.log(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
-      return console.error(`Packet has the wrong size (${msg.length} vs. ${0 + headerSize + dataSize}).`)
+      return console.error(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
     }
 
     // log out debug information
@@ -3956,6 +3969,7 @@ async function run() {
       if (sourceID !== 0) {
         if (typeof source[sourceID] !== 'undefined') {
           // console.log('source[sourceID]', source[sourceID])
+          // console.log('message', msg.toString())
           console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from ${source[sourceID].IP}:${source[sourceID].port}`)
         } else {
           console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from unknown source`)
@@ -4012,9 +4026,6 @@ async function run() {
         return 'done with echo'
       }
     }
-
-
-
 
 
     if (sourceID in streamRelay) { // console.log(header['ID']);
@@ -4234,7 +4245,7 @@ async function run() {
   })
 
   function timeoutConnections() {
-    if (typeof log !== 'undefined') source.log.time = Date.now()
+    if (typeof log !== 'undefined') source[0].time = Date.now()
 
     let IP
     // eslint-disable-next-line no-shadow
@@ -4283,7 +4294,8 @@ async function run() {
         for (sID in streamRelay) {
           if (sID) {
             for (tID in streamRelay) if (tID === ID) delete streamRelay[sID][tID]
-            // dont remove sources that are still available from the relay (let the sources time out separately)
+            // dont remove sources that are still available from the relay
+            // (let the sources time out separately)
             // if (streamRelay[sID].length === 0) delete streamRelay[sID]
           }
         }
