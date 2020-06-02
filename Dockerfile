@@ -5,7 +5,7 @@ ADD config/ /app/config/
 ADD knex/ /app/knex/
 RUN touch /app/dockerlog
 WORKDIR /app/
-RUN cd /app && npm install ws config https knex sqlite3
+RUN cd /app && npm install ws config https knex sqlite3 node-static
 
 
 #ADD shell.sh /shell.sh
