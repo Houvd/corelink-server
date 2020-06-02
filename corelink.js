@@ -2250,7 +2250,7 @@ async function run() {
           } else {
             streamID = null
             while ((streamID === null) || (typeof source[streamID] !== 'undefined') || (typeof target[streamID] !== 'undefined')) {
-              streamID = Math.floor(Math.random() * 6 + 1)
+              streamID = Math.floor(Math.random() * 65535 + 1)
               // crypto.createHash('sha256')
               // .update(message.workspace + message.proto + (new Date().getTime()))
               // .digest('hex').substr(0, 7)
@@ -2730,7 +2730,7 @@ async function run() {
             // create a new target streamID
             streamID = null
             while ((streamID === null) || (typeof source[streamID] !== 'undefined') || (typeof target[streamID] !== 'undefined')) {
-              streamID = Math.floor(Math.random() * 6 + 1)
+              streamID = Math.floor(Math.random() * 65535 + 1)
               // streamID = crypto.createHash('sha256')
               // .update(workMessage.workspace + workMessage.proto + (new Date().getTime()))
               // .digest('hex').substr(0, 7)
