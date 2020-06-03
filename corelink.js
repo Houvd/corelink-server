@@ -2909,8 +2909,10 @@ async function run() {
           // add the already subscribed streams
           for (s in streamRelay) {
             if (s) {
+              s = parseInt(s, 10)
               for (t in streamRelay[s]) {
-                if ((t === workMessage.receiverID) && (!workMessage.streamID.includes(s))) {
+                if ((parseInt(t, 10) === workMessage.receiverID)
+                    && (!workMessage.streamID.includes(s))) {
                   workMessage.streamID.push(s)
                 }
               }
@@ -3024,20 +3026,24 @@ async function run() {
       const workMessage = message
       if (typeof data !== 'object') {
         console.log('*** unsubscribe ***')
-        if ((('receiverID' in workMessage) && (workMessage.receiverID !== '') && (typeof target[workMessage.receiverID] !== 'undefined'))
-                  && (('streamID' in workMessage) && (workMessage.streamID.length > 0))) {
+        if ((('receiverID' in workMessage) && (typeof workMessage.receiverID === 'number') && (typeof target[workMessage.receiverID] !== 'undefined'))
+                  && (('streamID' in workMessage) && (typeof workMessage.streamID === 'number'))) {
           // unsubscribe streams
           workMessage.streamList = []
           for (s in streamRelay) {
             if (s) {
+              s = parseInt(s, 10)
               for (t in streamRelay[s]) {
-                if ((t === workMessage.receiverID) && (workMessage.streamID.includes(s))) {
-                  workMessage.streamList.push(s)
-                  delete streamRelay[s][t]
-                  // send dropped message to sender streams to inform them
-                  // the receiver stopped requesting that stream.
-                  serverFunctions.dropped.process(s, t)
-                  // if (Object.keys(streamRelay[s]).length === 0) delete streamRelay[s]
+                if (t) {
+                  t = parseInt(t, 10)
+                  if ((t === workMessage.receiverID) && (workMessage.streamID.includes(s))) {
+                    workMessage.streamList.push(s)
+                    delete streamRelay[s][t]
+                    // send dropped message to sender streams to inform them
+                    // the receiver stopped requesting that stream.
+                    serverFunctions.dropped.process(s, t)
+                    // if (Object.keys(streamRelay[s]).length === 0) delete streamRelay[s]
+                  }
                 }
               }
             }
