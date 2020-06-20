@@ -3913,11 +3913,12 @@ async function run() {
   function relayData(msg, remoteAddress, remotePort) {
 
     // decode header
-    const headerSize = msg.readUInt16LE(0)
+    let headerSize = msg.readUInt16LE(0)
     const dataSize = msg.readUInt16LE(2)
     const sourceID = msg.readUInt32LE(4)
-    const decodeHeader = !!(headerSize && 32768)
+    const decodeHeader = !!(headerSize & 32768)
     const last = Date.now()
+    headerSize = headerSize & 32767
 
     let header
     let data
