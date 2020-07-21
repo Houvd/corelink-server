@@ -3958,12 +3958,26 @@ async function run() {
       console.log('Packet is too small')
       return console.error('Packet is too small')
     }
-
     // check for packet inconsistent size
     if (msg.length !== 8 + headerSize + dataSize) {
       // console.log('message:', remoteAddress, remotePort, msg.toString())
-      console.log(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
-      return console.error(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
+      let calculatedSize = 0
+      let pointer = 0
+      // for combined packets we need to match the source/federation id and the overall size
+      while (msg.length > calculatedSize) {
+        pointer = calculatedSize
+        calculatedSize += 8
+        calculatedSize += msg.readUInt16LE(pointer)
+        calculatedSize += msg.readUInt16LE(pointer + 2)
+        if (msg.readUInt32LE(pointer + 4) !== sourceID) {
+          console.log('Wrong source ID\'s in combined packet')
+          return console.error('Wrong source ID\'s in combined packet')
+        }
+      }
+      if (msg.length !== calculatedSize) {
+        console.log(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
+        return console.error(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
+      }
     }
 
     // log out debug information
