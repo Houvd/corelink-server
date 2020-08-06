@@ -3923,7 +3923,6 @@ async function run() {
   UDPDataServer.bind(port.udp)
 
   function relayData(msg, remoteAddress, remotePort) {
-
     // decode header
     let headerSize = msg.readUInt16LE(0)
     const dataSize = msg.readUInt16LE(2)
