@@ -3900,7 +3900,7 @@ async function run() {
   const TCPControlServer = net.createServer()
   TCPControlServer.on('connection', handleControlConnection)
 
-  TCPControlServer.listen(TCPControl, () => {
+  TCPControlServer.listen(TCPControl, '0.0.0.0', () => {
     console.log('TCP control server listening to %j:%j', TCPControlServer.address().address, TCPControlServer.address().port)
   })
 
@@ -4149,7 +4149,7 @@ async function run() {
       }).resume()
     }
   })
-  httpsControlServer.listen(WSControl)
+  httpsControlServer.listen(WSControl, '0.0.0.0')
 
   const wsControlServer = new Ws({ server: httpsControlServer })
 
@@ -4212,7 +4212,7 @@ async function run() {
   const TCPDataServer = net.createServer()
   TCPDataServer.on('connection', handleDataConnection)
 
-  TCPDataServer.listen(port.tcp, () => {
+  TCPDataServer.listen(port.tcp, '0.0.0.0', () => {
     console.log('TCP data server listening to %j:%j', TCPDataServer.address().address, TCPDataServer.address().port)
   })
 
@@ -4224,7 +4224,7 @@ async function run() {
     res.writeHead(200)
     res.end('Corelink Data Port')
   })
-  httpsDataServer.listen(port.ws)
+  httpsDataServer.listen(port.ws, '0.0.0.0')
 
   const WSDataServer = new Ws({ server: httpsDataServer })
 
