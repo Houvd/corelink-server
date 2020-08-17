@@ -17,6 +17,8 @@ distinguished_name     = req_distinguished_name
 attributes             = req_attributes
 prompt                 = no
 output_password        = password
+x509_extensions        = usr_cert
+
 
 [ req_distinguished_name ]
 C                      = US
@@ -24,8 +26,13 @@ ST                     = NY
 L                      = NYC
 O                      = NYU
 OU                     = RT
-CN                     = 127.0.0.1
+CN                     = example.com
 emailAddress           = certs@example.com
 
 [ req_attributes ]
 challengePassword      = test
+
+[ usr_cert ]
+basicConstraints=CA:TRUE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer 

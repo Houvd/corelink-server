@@ -4082,7 +4082,7 @@ async function run() {
       if (globalConfig.debug && (sourceID !== 0)) console.log(target[sourceID].IP)
       console.log(`Trying to assign port and connections for ${sourceID}, ${remoteAddress}:${remotePort}`)
       if (remoteAddress === target[sourceID].IP) {
-        // console.log(target[sourceID])
+        if (globalConfig.debug) console.log('Target info ', target[sourceID])
         if (target[sourceID].port === 0) {
           if (sourceID !== 0) console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[sourceID].proto}`)
           target[sourceID].port = remotePort

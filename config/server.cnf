@@ -4,7 +4,8 @@ days                   = 9999
 distinguished_name     = req_distinguished_name
 attributes             = req_attributes
 prompt                 = no
-x509_extensions        = v3_ca
+basicConstraints       = CA:FALSE
+req_extensions         = req_ext
 
 [ req_distinguished_name ]
 C                      = US
@@ -18,9 +19,14 @@ emailAddress           = certs@example.com
 [ req_attributes ]
 challengePassword      = password
 
-[ v3_ca ]
-authorityInfoAccess = @issuer_info
-
 [ issuer_info ]
 OCSP;URI.0 = http://ocsp.example.com/
 caIssuers;URI.0 = http://example.com/ca.cert
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[alt_names]
+IP.1   = 127.0.0.1
+DNS.2   = localhost
+IP.3   = ::1
