@@ -3863,7 +3863,7 @@ async function run() {
           }
           console.log(`sending:${send}`)
           conn.write(send)
-        } else console.log('Function does not exist.')
+        } else console.log(getErrorMessage(2))
       })
 
       conn.once('close', () => {
@@ -4185,7 +4185,10 @@ async function run() {
         }
         console.log(`sending:${send}`)
         conn.send(send)
-      } else console.log('Function does not exist.')
+      } else {
+        // send =JSON.parse(getErrorMessage(2))
+        conn.send(JSON.parse(getErrorMessage(2)))
+      }
     })
 
     conn.once('close', () => {
