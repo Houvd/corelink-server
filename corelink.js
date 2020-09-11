@@ -1,4 +1,5 @@
 /* eslint-disable no-restricted-syntax */
+/* eslint-disable max-len */
 /* eslint-disable no-bitwise */
 /* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 
@@ -1086,14 +1087,14 @@ async function run() {
       const response = {}
       // *** ToDo: list only workspaces that user has access to.
       if (typeof data !== 'object') {
-        const workspaces = await knex('workspaces')
+        const workspacesName = await knex('workspaces')
           .select('workspaceName')
           .catch((error) => {
             throw error
           })
         const result = []
-        for (const workspace in workspaces) {
-          if (workspace) result.push(workspaces[workspace].workspaceName)
+        for (const workspace in workspacesName) {
+          if (workspace) result.push(workspacesName[workspace].workspaceName)
         }
         response.workspaceList = result
         response.statusCode = 0
@@ -3177,7 +3178,7 @@ async function run() {
           type: 'string',
           sample: 'disconnect',
         },
-        workspaces: {
+        workWorkspaces: {
           description: 'name of the workspace to search for source streams (an empty array indicates all workspaces), it is ignored when specific streamIDs are given',
           type: 'array',
           default: [],
@@ -3225,7 +3226,7 @@ async function run() {
       let streamIDs = []
       let allStreams = []
       let types = []
-      let workspaces = []
+      let workWorkspaces = []
       let user
       let token
       let streamID
@@ -3240,7 +3241,7 @@ async function run() {
           // make sure we can use the types and workspaces
           if (('types' in message) && Array.isArray(message.types) && (message.types.length > 0)) types = types.concat(message.types)
           if (('types' in message) && (typeof message.types === 'string')) types.push(message.types)
-          if (('workspaces' in message) && Array.isArray(message.workspaces) && (message.workspaces.length > 0)) workspaces = workspaces.concat(message.workspaces)
+          if (('workspaces' in message) && Array.isArray(message.workspaces) && (message.workspaces.length > 0)) workWorkspaces = workWorkspaces.concat(message.workspaces)
           if (('workspaces' in message) && (typeof message.workspaces === 'string')) workspaces.push(message.workspaces)
 
           // limit to workspaces a user has access to
@@ -3254,16 +3255,16 @@ async function run() {
             })
           userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
 
-          if (workspaces.length > 0) {
+          if (workWorkspaces.length > 0) {
             for (const workspace in userWorkspace) {
-              if (!workspaces.includes(userWorkspace[workspace])) {
+              if (!workWorkspaces.includes(userWorkspace[workspace])) {
                 delete userWorkspace[workspace]
               }
             }
             userWorkspace = userWorkspace.filter((value) => value)
           }
 
-          workspaces = userWorkspace
+          workWorkspaces = userWorkspace
 
           if (typeof tokens[message.token] !== 'undefined') {
             // find user for the submitted token
@@ -3281,14 +3282,14 @@ async function run() {
               if (streamID) {
                 if ((typeof source[allStreams[streamID]] !== 'undefined')
                     && (types.includes(source[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(source[allStreams[streamID]].workspace)
-                    || workspaces.length === 0)) {
+                    && (workWorkspaces.includes(source[allStreams[streamID]].workspace)
+                    || workWorkspaces.length === 0)) {
                   streamIDs = streamIDs.concat([allStreams[streamID]])
                 }
                 if ((typeof target[allStreams[streamID]] !== 'undefined')
                     && (types.includes(target[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(target[allStreams[streamID]].workspace)
-                  || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
+                    && (workWorkspaces.includes(target[allStreams[streamID]].workspace)
+                  || workWorkspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
               }
             }
           }
@@ -3302,12 +3303,12 @@ async function run() {
                 // check if streamID is in correct workspace and of correct type
                 if ((typeof source[allStreams[streamID]] !== 'undefined')
                     && (types.includes(source[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(source[allStreams[streamID]].workspace)
-                  || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
+                    && (workWorkspaces.includes(source[allStreams[streamID]].workspace)
+                  || workWorkspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
                 if ((typeof target[allStreams[streamID]] !== 'undefined')
                     && (types.includes(target[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(target[allStreams[streamID]].workspace)
-                  || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
+                    && (workWorkspaces.includes(target[allStreams[streamID]].workspace)
+                  || workWorkspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
               }
             }
           }
