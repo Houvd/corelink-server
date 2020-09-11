@@ -93,7 +93,7 @@ const testTimeout = 10 * 60 * 1000 // 10 min frequency to test if something time
 const TCPControl = 20010
 const WSControl = 20012
 const port = []
-// const rooms = []
+// const workspaces = []
 // const users = []
 // ?? should a token be restricted to a specific IP/Port combination
 // users can have several tokens that are in use
@@ -125,7 +125,7 @@ source[ID] =  [] // stream ID
 source[ID]['IP'] = source IP address
 source[ID]['port'] = source port
 source[ID]['proto'] = ws or tcp or ws
-source[ID]['room'] = workspace name
+source[ID]['workspace'] = workspace name
 source[ID]['type'] = type of stream e.g. 3D, Audio, etc...
 source[ID]['alert'] = true/false (alert when new receiver subscribes)
 source[ID]['time'] = timeout for stream
@@ -143,7 +143,7 @@ target[ID] =  [] // stream ID
 target[ID]['IP'] = source IP address
 target[ID]['port'] = source port
 target[ID]['proto'] = udp or tcp or ws
-target[ID]['room'] = workspace name
+target[ID]['workspace'] = workspace name
 target[ID]['alert'] = true/false (Alert if stream of specific type becomse available)
 target[ID]['echo'] = true/false (send data to receivers with the same username)
 target[ID]['type'] = array of type of stream e.g. 3D, Audio, etc...
@@ -173,12 +173,12 @@ port.ws = 20013
 
 // *** ToDo: Remove legacy code once setup was completely changed to database
 /*
-rooms.Holodeck = []
-rooms.Holodeck.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
-rooms.Holodeck.owner = '1'
-rooms.Chalktalk = []
-rooms.Chalktalk.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
-rooms.Chalktalk.owner = '13'
+workspaces.Holodeck = []
+workspaces.Holodeck.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
+workspaces.Holodeck.owner = '1'
+workspaces.Chalktalk = []
+workspaces.Chalktalk.users = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
+workspaces.Chalktalk.owner = '13'
 */
 
 // initial way to persist changes is loading them from the database
@@ -380,26 +380,25 @@ async function run() {
 
 
   // pre-setting arrays with data while we convert the server to use only the database
-  let content = await knex('rooms')
-    .select('roomname', 'rooms.owner_id', 'group_user.user_id')
-    .leftJoin('group_room', 'room_id', '=', 'rooms.id')
-    .leftJoin('group_user', 'group_room.group_id', '=', 'group_user.group_id')
+  let content = await knex('workspaces')
+    .select('workspaceName', 'workspaces.owner_id', 'group_user.user_id')
+    .leftJoin('group_workspace', 'workspace_id', '=', 'workspaces.id')
+    .leftJoin('group_user', 'group_workspace.group_id', '=', 'group_user.group_id')
     .catch((err) => console.log(err))
 
-  const rooms = []
-  // eslint-disable-next-line no-restricted-syntax
+  const workspaces = []
   for (const key in content) {
     if (key) {
-      if (typeof rooms[content[key].roomname] === 'undefined') {
-        rooms[content[key].roomname] = []
+      if (typeof workspaces[content[key].workspaceName] === 'undefined') {
+        workspaces[content[key].workspaceName] = []
       }
-      if (typeof rooms[content[key].roomname].users === 'undefined') {
-        rooms[content[key].roomname].users = []
+      if (typeof workspaces[content[key].workspaceName].users === 'undefined') {
+        workspaces[content[key].workspaceName].users = []
       }
       if (content[key].user_id !== null) {
-        rooms[content[key].roomname].users.push(content[key].user_id.toString())
+        workspaces[content[key].workspaceName].users.push(content[key].user_id.toString())
       }
-      rooms[content[key].roomname].owner = content[key].owner_id.toString()
+      workspaces[content[key].workspaceName].owner = content[key].owner_id.toString()
     }
   }
 
@@ -441,7 +440,7 @@ async function run() {
     source[0].IP = ''
     source[0].port = 0
     source[0].proto = 'local'
-    source[0].room = 'Log'
+    source[0].workspace = 'Log'
     source[0].type = 'LogStream'
     source[0].alert = false
     source[0].time = Date.now()
@@ -499,13 +498,13 @@ async function run() {
             }
           }
         }
-        console.log(`Source: ${s}, User: ${user}, IP: ${source[s].IP}:${source[s].port}, proto: ${source[s].proto}, room: ${source[s].room}, alert: ${source[s].alert}, type: ${source[s].type}, time: ${source[s].time}, from: ${source[s].from}`)
+        console.log(`Source: ${s}, User: ${user}, IP: ${source[s].IP}:${source[s].port}, proto: ${source[s].proto}, workspace: ${source[s].workspace}, alert: ${source[s].alert}, type: ${source[s].type}, time: ${source[s].time}, from: ${source[s].from}`)
       }
     }
 
     for (t in target) {
       if (t) {
-        console.log(`Target: ${t}, IP: ${target[t].IP}:${target[t].port}, proto: ${target[t].proto}, room: ${target[t].room}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
+        console.log(`Target: ${t}, IP: ${target[t].IP}:${target[t].port}, proto: ${target[t].proto}, workspace: ${target[t].workspace}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
       }
     }
     for (sr in streamRelay) {
@@ -1087,14 +1086,14 @@ async function run() {
       const response = {}
       // *** ToDo: list only workspaces that user has access to.
       if (typeof data !== 'object') {
-        const workspaces = await knex('rooms')
-          .select('roomname')
+        const workspaces = await knex('workspaces')
+          .select('workspaceName')
           .catch((error) => {
             throw error
           })
         const result = []
         for (const workspace in workspaces) {
-          if (workspace) result.push(workspaces[workspace].roomname)
+          if (workspace) result.push(workspaces[workspace].workspaceName)
         }
         response.workspaceList = result
         response.statusCode = 0
@@ -1149,22 +1148,22 @@ async function run() {
       const response = {}
       if (typeof data === 'number') {
         if ('workspace' in message) {
-          // *** ToDo: remove legacy rooms array
-          if (typeof rooms[message.workspace] === 'undefined') {
-            rooms[message.workspace] = []
-            rooms[message.workspace].owner = data
-            rooms[message.workspace].users = [data]
+          // *** ToDo: remove legacy workspaces array
+          if (typeof workspaces[message.workspace] === 'undefined') {
+            workspaces[message.workspace] = []
+            workspaces[message.workspace].owner = data
+            workspaces[message.workspace].users = [data]
           }
 
-          // *** ToDo: need to sanitize room name befor inserting to database
-          const room = await knex('rooms')
+          // *** ToDo: need to sanitize workspace name befor inserting to database
+          const workspace = await knex('workspaces')
             .first('id')
-            .where('roomname', message.workspace)
+            .where('workspaceName', message.workspace)
             .catch((error) => {
               throw error
             })
-          if (typeof room === 'undefined') {
-            await knex('rooms').insert({ owner_id: data, roomname: message.workspace })
+          if (typeof workspace === 'undefined') {
+            await knex('workspaces').insert({ owner_id: data, workspaceName: message.workspace })
               .catch((error) => {
                 throw error
               })
@@ -1225,21 +1224,21 @@ async function run() {
       if (typeof data === 'number') {
         if ('workspace' in message) {
           // *** ToDo: make sure we cannot set default workspace that user has no access to */
-          const room = await knex('rooms')
+          const workspace = await knex('workspaces')
             .first('id')
-            .where('roomname', message.workspace)
+            .where('workspaceName', message.workspace)
             .catch((error) => {
               throw error
               // *** ToDo: throw correct error message
               // return getErrorMessage(10)
             })
-          if (typeof room === 'undefined') {
+          if (typeof workspace === 'undefined') {
             return getErrorMessage(10)
           }
           await knex('users')
             .where({ id: data })
             .update({
-              room_id: room.id,
+              workspace_id: workspace.id,
             })
             .catch((error) => {
               throw error
@@ -1297,14 +1296,14 @@ async function run() {
         })
       const response = {}
       if (typeof data === 'number') {
-        const room = await knex('users')
-          .select('roomname')
+        const workspace = await knex('users')
+          .select('workspaceName')
           .where('users.id', '=', data)
-          .leftJoin('rooms', 'room_id', '=', 'rooms.id')
+          .leftJoin('workspaces', 'workspace_id', '=', 'workspaces.id')
           .catch((err) => console.log(err))
 
-        if (typeof room !== 'undefined') {
-          response.workspace = room[0].roomname
+        if (typeof workspace !== 'undefined') {
+          response.workspace = workspace[0].workspaceName
         } else response.workspace = ''
 
         response.statusCode = 0
@@ -1359,17 +1358,17 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('workspace' in message) {
-          const room = await knex('rooms')
-            .where('roomname', message.workspace)
+          const workspace = await knex('workspaces')
+            .where('workspaceName', message.workspace)
             .del()
             .catch((error) => {
               throw error
             })
-          console.log(room)
-          if (typeof rooms[message.workspace] !== 'undefined') {
+          console.log(workspace)
+          if (typeof workspaces[message.workspace] !== 'undefined') {
             // *** ToDo: make sure that existing connections to this workspace will be terminated
-            // *** ToDo: remove legacy rooms array
-            delete rooms[message.workspace]
+            // *** ToDo: remove legacy workspaces array
+            delete workspaces[message.workspace]
 
             response.statusCode = 0
             return (response)
@@ -2267,7 +2266,7 @@ async function run() {
             source[streamID].IP = message.IP
             source[streamID].port = message.port
             source[streamID].proto = message.proto
-            source[streamID].room = message.workspace
+            source[streamID].workspace = message.workspace
             source[streamID].type = message.type
             source[streamID].time = Date.now()
             source[streamID].from = ''
@@ -2389,16 +2388,16 @@ async function run() {
         if (typeof workMessage.workspaces === 'string') workMessage.workspaces = [workMessage.workspaces]
         if (!Array.isArray(workMessage.workspaces)) workMessage.workspaces = []
 
-        // limit to rooms a user has access to
+        // limit to workspaces a user has access to
         let userWorkspace = await knex('group_user')
-          .select('rooms.roomname')
-          .join('group_room', 'group_user.group_id', '=', 'group_room.group_id')
-          .join('rooms', 'group_room.room_id', '=', 'rooms.id')
+          .select('workspaces.workspaceName')
+          .join('group_workspace', 'group_user.group_id', '=', 'group_workspace.group_id')
+          .join('workspaces', 'group_workspace.workspace_id', '=', 'workspaces.id')
           .where('user_id', '=', data)
           .catch((error) => {
             throw error
           })
-        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.roomname })
+        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
 
         if (workMessage.workspaces.length > 0) {
           for (workspace in userWorkspace) {
@@ -2416,9 +2415,8 @@ async function run() {
         for (workspace in userWorkspace) {
           if (workspace) {
             for (const key in source) {
-              if (source[key].room === userWorkspace[workspace]) {
-                if ((workMessage.types.length === 0)
-                || (workMessage.types.includes(source[key].type))) {
+              if (source[key].workspace === userWorkspace[workspace]) {
+                if ((workMessage.types.length === 0) || (workMessage.types.includes(source[key].type))) {
                   streamListElement.streamID = parseInt(key, 10)
                   // add usernames and app names to the specific streams
                   userApps = findApps(streamListElement.streamID)
@@ -2426,7 +2424,7 @@ async function run() {
                   streamListElement.apps = userApps.apps
                   streamListElement.type = source[key].type
                   streamListElement.meta = source[key].meta
-                  streamListElement.workspace = source[key].room
+                  streamListElement.workspace = source[key].workspace
                   response.senderList.push({ ...streamListElement })
                 }
               }
@@ -2520,7 +2518,7 @@ async function run() {
           }
           if (typeof source[streamID] !== 'undefined') {
             response.info.proto = source[streamID].proto
-            response.info.workspace = source[streamID].room
+            response.info.workspace = source[streamID].workspace
             response.info.type = source[streamID].type
             response.info.MTU = MTU
             if (typeof response.info.port !== 'undefined') response.info.port = source[streamID].port
@@ -2530,7 +2528,7 @@ async function run() {
           }
           if (typeof target[streamID] !== 'undefined') {
             response.info.proto = target[streamID].proto
-            response.info.workspace = target[streamID].room
+            response.info.workspace = target[streamID].workspace
             response.info.type = target[streamID].type
             response.info.MTU = MTU
             if (typeof response.info.port !== 'undefined') response.info.port = target[streamID].port
@@ -2753,7 +2751,7 @@ async function run() {
             target[streamID].IP = workMessage.IP
             target[streamID].port = workMessage.port
             target[streamID].proto = workMessage.proto
-            target[streamID].room = workMessage.workspace
+            target[streamID].workspace = workMessage.workspace
             // console.log(target[streamID]);
 
             if (('alert' in workMessage) && (workMessage.alert === true)) target[streamID].alert = true
@@ -3245,16 +3243,16 @@ async function run() {
           if (('workspaces' in message) && Array.isArray(message.workspaces) && (message.workspaces.length > 0)) workspaces = workspaces.concat(message.workspaces)
           if (('workspaces' in message) && (typeof message.workspaces === 'string')) workspaces.push(message.workspaces)
 
-          // limit to rooms a user has access to
+          // limit to workspaces a user has access to
           let userWorkspace = await knex('group_user')
-            .select('rooms.roomname')
-            .join('group_room', 'group_user.group_id', '=', 'group_room.group_id')
-            .join('rooms', 'group_room.room_id', '=', 'rooms.id')
+            .select('workspaces.workspaceName')
+            .join('group_workspace', 'group_user.group_id', '=', 'group_workspace.group_id')
+            .join('workspaces', 'group_workspace.workspace_id', '=', 'workspaces.id')
             .where('user_id', '=', data)
             .catch((error) => {
               throw error
             })
-          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.roomname })
+          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
 
           if (workspaces.length > 0) {
             for (const workspace in userWorkspace) {
@@ -3278,18 +3276,18 @@ async function run() {
                 allStreams = allStreams.concat(tokens[token].streams)
               }
             }
-            // check if streamID is in correct room and of correct type
+            // check if streamID is in correct workspace and of correct type
             for (streamID in allStreams) {
               if (streamID) {
                 if ((typeof source[allStreams[streamID]] !== 'undefined')
                     && (types.includes(source[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(source[allStreams[streamID]].room)
+                    && (workspaces.includes(source[allStreams[streamID]].workspace)
                     || workspaces.length === 0)) {
                   streamIDs = streamIDs.concat([allStreams[streamID]])
                 }
                 if ((typeof target[allStreams[streamID]] !== 'undefined')
                     && (types.includes(target[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(target[allStreams[streamID]].room)
+                    && (workspaces.includes(target[allStreams[streamID]].workspace)
                   || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
               }
             }
@@ -3301,14 +3299,14 @@ async function run() {
             for (streamID in allStreams) {
               if (streamID) {
                 if (globalConfig.debug) console.log('disconnect streamID', allStreams[streamID])
-                // check if streamID is in correct room and of correct type
+                // check if streamID is in correct workspace and of correct type
                 if ((typeof source[allStreams[streamID]] !== 'undefined')
                     && (types.includes(source[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(source[allStreams[streamID]].room)
+                    && (workspaces.includes(source[allStreams[streamID]].workspace)
                   || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
                 if ((typeof target[allStreams[streamID]] !== 'undefined')
                     && (types.includes(target[allStreams[streamID]].type) || types.length === 0)
-                    && (workspaces.includes(target[allStreams[streamID]].room)
+                    && (workspaces.includes(target[allStreams[streamID]].workspace)
                   || workspaces.length === 0)) streamIDs = streamIDs.concat([allStreams[streamID]])
               }
             }
@@ -3545,14 +3543,14 @@ async function run() {
       response.type = source[streamID].type
       response.meta = source[streamID].meta
       console.log('trying to send update ', response)
-      // get correct room information
-      const { room } = source[streamID]
+      // get correct workspace information
+      const { workspace } = source[streamID]
 
       // get targets that requested an alert and send update
       // var t = [];
       for (u in target) {
         if (target[u].alert
-            && (target[u].room === room)
+            && (target[u].workspace === workspace)
             && ((target[u].type.length === 0)
             || (target[u].type.includes(source[streamID].type)))) {
           u = parseInt(u, 10)
@@ -3729,13 +3727,13 @@ async function run() {
       const update = JSON.stringify(response)
       console.log('trying to send stale ', update)
 
-      // get correct room information
-      const { room } = source[streamID]
+      // get correct workspace information
+      const { workspace } = source[streamID]
 
       // get subscribed targets and send update (only if receiver wants updates)
       // var t = [];
       for (u in target) {
-        if (target[u].alert && (target[u].room === room)
+        if (target[u].alert && (target[u].workspace === workspace)
             && ((target[u].type.length === 0)
             || (target[u].type.includes(source[streamID].type)))) {
           u = parseInt(u, 10)
@@ -3882,7 +3880,7 @@ async function run() {
 
   // fill data list with available objects
   functions.listFunctions.info.responses.functionList.sample = Object.keys(functions)
-  functions.listWorkspaces.info.responses.workspaceList.sample = Object.keys(rooms)
+  functions.listWorkspaces.info.responses.workspaceList.sample = Object.keys(workspaces)
   functions.listServerFunctions.info.responses.functionList.sample = Object.keys(serverFunctions)
 
   const userList = []
