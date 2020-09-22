@@ -2985,7 +2985,7 @@ async function run() {
         },
         receiverID: {
           description: 'set the existing receiver streamID',
-          type: 'string',
+          type: 'number',
           sample: '$$receiver.streamID',
         },
         streamID: {
@@ -3026,6 +3026,7 @@ async function run() {
       const workMessage = message
       if (typeof data !== 'object') {
         console.log('*** unsubscribe ***')
+        if ('receiverID' in workMessage) { console.log('checkk1') }
         if ((('receiverID' in workMessage) && (typeof workMessage.receiverID === 'number') && (typeof target[workMessage.receiverID] !== 'undefined'))
                   && (('streamID' in workMessage) && ((typeof workMessage.streamID === 'number') || (Array.isArray(workMessage.streamID))))) {
           // unsubscribe streams
