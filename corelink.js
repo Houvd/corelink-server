@@ -1806,8 +1806,6 @@ async function run() {
             if (typeof oldUser !== 'undefined') {
               const admin = await knex('users')
                 .first('admin')
-                // ToDo: you can just use data instead of tokens[message.token].user,
-                // it has the user id in it, also token could be an app token
                 .where('id', tokens[message.token].user)
                 .catch((error) => {
                   throw error
