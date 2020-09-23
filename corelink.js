@@ -2973,8 +2973,8 @@ async function run() {
     info: {
       name: 'unsubscribe',
       description: 'unsubscribe streams from an existing receiver',
-      version: '1.0.0.0',
-      author: 'Robert Pahle',
+      version: '1.0.1.0',
+      author: 'Robert Pahle, Abhishek Khanna',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
       arguments: {
