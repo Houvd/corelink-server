@@ -2414,8 +2414,8 @@ async function run() {
           if (workspace) {
             for (const key in source) {
               if (source[key].room === userWorkspace[workspace]) {
-                // eslint-disable-next-line max-len
-                if ((workMessage.types.length === 0) || (workMessage.types.includes(source[key].type))) {
+                if ((workMessage.types.length === 0)
+                || (workMessage.types.includes(source[key].type))) {
                   streamListElement.streamID = parseInt(key, 10)
                   // add usernames and app names to the specific streams
                   userApps = findApps(streamListElement.streamID)
