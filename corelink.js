@@ -1,5 +1,7 @@
-/* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
 /* eslint-disable no-restricted-syntax */
+/* eslint-disable no-bitwise */
+/* eslint-disable no-underscore-dangle */ // this has to be here, since other packages use it
+
 
 /**
  * @file NodeJS Corelink core server
@@ -385,6 +387,7 @@ async function run() {
     .catch((err) => console.log(err))
 
   const rooms = []
+  // eslint-disable-next-line no-restricted-syntax
   for (const key in content) {
     if (key) {
       if (typeof rooms[content[key].roomname] === 'undefined') {
