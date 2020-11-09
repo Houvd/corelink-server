@@ -1,26 +1,26 @@
-exports.seed = (knex) => knex('rooms')
+exports.seed = (knex) => knex('workspaces')
   // Deletes ALL existing entries
   .del()
   // Inserts seed entries
-  .then(() => knex('rooms').insert([
+  .then(() => knex('workspaces').insert([
     {
       id: 0,
       owner_id: 1,
-      roomname: 'Log',
+      workspace_name: 'Log',
     },
     {
       id: 1,
       owner_id: 1,
-      roomname: 'Holodeck',
+      workspace_name: 'Holodeck',
     },
     {
       id: 2,
       owner_id: 1,
-      roomname: 'Chalktalk',
+      workspace_name: 'Chalktalk',
     },
     {
       id: 3,
       owner_id: 1,
-      roomname: 'Infinite',
+      workspace_name: 'Infinite',
     },
   ]))

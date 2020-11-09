@@ -6,16 +6,16 @@ exports.seed = (knex) => knex('groups')
     {
       id: 1,
       owner_id: 1,
-      groupname: 'Holodeck',
+      group_name: 'Holodeck',
     },
     {
       id: 2,
       owner_id: 1,
-      groupname: 'Chalktalk',
+      group_name: 'Chalktalk',
     },
     {
       id: 3,
       owner_id: 1,
-      groupname: 'Infinite',
+      group_name: 'Infinite',
     },
   ]))
