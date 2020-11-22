@@ -381,56 +381,70 @@ async function run() {
 
 
   // pre-setting arrays with data while we convert the server to use only the database
-  let content = await knex('workspaces')
-    .select('workspaceName', 'workspaces.owner_id', 'group_user.user_id')
+  let content = (await knex('workspaces')
+    .select('workspace_name', 'workspaces.owner_id', 'group_user.user_id')
     .leftJoin('group_workspace', 'workspace_id', '=', 'workspaces.id')
     .leftJoin('group_user', 'group_workspace.group_id', '=', 'group_user.group_id')
-    .catch((err) => console.log(err))
+    .catch((err) => console.log(err)))
+    .map((e) => ({
+      workspace: e.workspace_name,
+      userId: e.user_id,
+      ownerId: e.owner_id,
+    }))
 
   const workspaces = []
   for (const key in content) {
     if (key) {
-      if (typeof workspaces[content[key].workspaceName] === 'undefined') {
-        workspaces[content[key].workspaceName] = []
+      if (typeof workspaces[content[key].workspace] === 'undefined') {
+        workspaces[content[key].workspace] = []
       }
-      if (typeof workspaces[content[key].workspaceName].users === 'undefined') {
-        workspaces[content[key].workspaceName].users = []
+      if (typeof workspaces[content[key].workspace].users === 'undefined') {
+        workspaces[content[key].workspace].users = []
       }
-      if (content[key].user_id !== null) {
-        workspaces[content[key].workspaceName].users.push(content[key].user_id.toString())
+      if (content[key].userId !== null) {
+        workspaces[content[key].workspace].users.push(content[key].userId.toString())
       }
-      workspaces[content[key].workspaceName].owner = content[key].owner_id.toString()
+      workspaces[content[key].workspace].owner = content[key].ownerId.toString()
     }
   }
 
   const users = []
-  content = await knex('users')
+  content = (await knex('users')
     .select('id', 'username')
     .orderBy('id')
-    .catch((err) => console.log(err))
+    .catch((err) => console.log(err)))
+    .map((e) => ({
+      userId: e.id,
+      username: e.username,
+    }))
   for (const key in content) {
     if (key) {
-      const { id, username } = content[key]
-      users[id] = []
-      users[id].username = username
+      const { userId, username } = content[key]
+      users[userId] = []
+      users[userId].username = username
     }
   }
 
-  content = await knex('apps')
-    .select('appname', 'token', 'time')
+  content = (await knex('apps')
+    .select('app_name', 'token', 'time')
     .orderBy('id')
-    .catch((err) => console.log(err))
+    .catch((err) => console.log(err)))
+    .map((e) => ({
+      app: e.app_name,
+      token: e.token,
+      time: e.time,
+    }))
 
   for (const key in content) {
     if (key) {
-      const { appname } = content[key]
+      const { app } = content[key]
       const { token } = content[key]
       let { time } = content[key]
 
       if (time == null) time = 0
       apps[token] = []
       apps[token].time = time
-      apps[token].name = appname
+      apps[token].name = app
       apps[token].streams = []
     }
   }
@@ -608,6 +622,7 @@ async function run() {
     console.log('token: ', message.token)
     if ('token' in message) {
       // check if token is valid for a user
+      // todo: token is not converting with map function
       const token = await knex('tokens')
         .first('user_id', 'time')
         .where('token', message.token)
@@ -618,12 +633,12 @@ async function run() {
       if ((typeof token !== 'undefined') && ((Date.now() - controlTimeout) < token.time)) return token.user_id
 
       // check if token is valid for an app
-      const app = await knex('apps')
-        .first('id', 'time')
+      const app = (await knex('apps')
+        .first('time')
         .where('token', message.token)
         .catch((error) => {
           throw error
-        })
+        }))
       if (typeof app !== 'undefined') return message.token
 
       return getErrorMessage(4)
@@ -1088,13 +1103,13 @@ async function run() {
       // *** ToDo: list only workspaces that user has access to.
       if (typeof data !== 'object') {
         const workspacesName = await knex('workspaces')
-          .select('workspaceName')
+          .select('workspace_name')
           .catch((error) => {
             throw error
           })
         const result = []
         for (const workspace in workspacesName) {
-          if (workspace) result.push(workspacesName[workspace].workspaceName)
+          if (workspace) result.push(workspacesName[workspace].workspace_name)
         }
         response.workspaceList = result
         response.statusCode = 0
@@ -1159,12 +1174,12 @@ async function run() {
           // *** ToDo: need to sanitize workspace name befor inserting to database
           const workspace = await knex('workspaces')
             .first('id')
-            .where('workspaceName', message.workspace)
+            .where('workspace_name', message.workspace)
             .catch((error) => {
               throw error
             })
           if (typeof workspace === 'undefined') {
-            await knex('workspaces').insert({ owner_id: data, workspaceName: message.workspace })
+            await knex('workspaces').insert({ owner_id: data, workspace_name: message.workspace })
               .catch((error) => {
                 throw error
               })
@@ -1227,7 +1242,7 @@ async function run() {
           // *** ToDo: make sure we cannot set default workspace that user has no access to */
           const workspace = await knex('workspaces')
             .first('id')
-            .where('workspaceName', message.workspace)
+            .where('workspace_name', message.workspace)
             .catch((error) => {
               throw error
               // *** ToDo: throw correct error message
@@ -1298,13 +1313,13 @@ async function run() {
       const response = {}
       if (typeof data === 'number') {
         const workspace = await knex('users')
-          .select('workspaceName')
+          .select('workspace_name')
           .where('users.id', '=', data)
           .leftJoin('workspaces', 'workspace_id', '=', 'workspaces.id')
           .catch((err) => console.log(err))
 
         if (typeof workspace !== 'undefined') {
-          response.workspace = workspace[0].workspaceName
+          response.workspace = workspace[0].workspace_name
         } else response.workspace = ''
 
         response.statusCode = 0
@@ -1360,7 +1375,7 @@ async function run() {
       if (typeof data !== 'object') {
         if ('workspace' in message) {
           const workspace = await knex('workspaces')
-            .where('workspaceName', message.workspace)
+            .where('workspace_name', message.workspace)
             .del()
             .catch((error) => {
               throw error
@@ -1717,14 +1732,14 @@ async function run() {
         if ('group' in message) {
           const oldGroup = await knex('groups')
             .first('id')
-            .where('groupname', message.group)
+            .where('group_name', message.group)
             .catch((error) => {
               throw error
             })
           if (typeof oldGroup === 'undefined') {
             console.log('no old user found')
             await knex('groups').insert({
-              owner_id: tokens[message.token].user, groupname: message.group,
+              owner_id: tokens[message.token].user, group_name: message.group,
             })
               .catch((error) => {
                 throw error
@@ -1793,7 +1808,7 @@ async function run() {
         if ('group' in message) {
           const oldGroup = await knex('groups')
             .first('id', 'owner_id')
-            .where('groupname', message.group)
+            .where('group_name', message.group)
             .catch((error) => {
               throw error
             })
@@ -1889,7 +1904,7 @@ async function run() {
         if ('group' in message) {
           const oldGroup = await knex('groups')
             .first('id', 'owner_id')
-            .where('groupname', message.group)
+            .where('group_name', message.group)
             .catch((error) => {
               throw error
             })
@@ -1999,7 +2014,7 @@ async function run() {
                 throw error
               })
             const command = await knex('groups')
-              .where('groupname', message.group)
+              .where('group_name', message.group)
               .update('owner_id', owner.id)
               .catch((error) => {
                 throw error
@@ -2063,7 +2078,7 @@ async function run() {
       if (typeof data !== 'object') {
         if ('group' in message) {
           const command = await knex('groups')
-            .where('groupname', message.group)
+            .where('group_name', message.group)
             .del()
             .catch((error) => {
               throw error
@@ -2123,13 +2138,13 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         const groupList = await knex('groups')
-          .select('groupname')
+          .select('group_name')
           .catch((error) => {
             throw error
           })
         const result = []
         for (const grp in groupList) {
-          if (grp) result.push(groupList[grp].groupname)
+          if (grp) result.push(groupList[grp].group_name)
         }
         response.groupList = result
         response.statusCode = 0
@@ -2391,14 +2406,14 @@ async function run() {
 
         // limit to workspaces a user has access to
         let userWorkspace = await knex('group_user')
-          .select('workspaces.workspaceName')
+          .select('workspaces.workspace_name')
           .join('group_workspace', 'group_user.group_id', '=', 'group_workspace.group_id')
           .join('workspaces', 'group_workspace.workspace_id', '=', 'workspaces.id')
           .where('user_id', '=', data)
           .catch((error) => {
             throw error
           })
-        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
+        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspace_name })
 
         if (workMessage.workspaces.length > 0) {
           for (workspace in userWorkspace) {
@@ -3246,14 +3261,14 @@ async function run() {
 
           // limit to workspaces a user has access to
           let userWorkspace = await knex('group_user')
-            .select('workspaces.workspaceName')
+            .select('workspaces.workspace_name')
             .join('group_workspace', 'group_user.group_id', '=', 'group_workspace.group_id')
             .join('workspaces', 'group_workspace.workspace_id', '=', 'workspaces.id')
             .where('user_id', '=', data)
             .catch((error) => {
               throw error
             })
-          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
+          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspace_name })
 
           if (workWorkspaces.length > 0) {
             for (const workspace in userWorkspace) {
