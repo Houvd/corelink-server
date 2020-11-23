@@ -626,11 +626,12 @@ async function run() {
       const token = await knex('tokens')
         .first('user_id', 'time')
         .where('token', message.token)
+        .then((e) => ({ userId: e.user_id, time: e.time }))
         .catch((error) => {
           throw error
         })
 
-      if ((typeof token !== 'undefined') && ((Date.now() - controlTimeout) < token.time)) return token.user_id
+      if ((typeof token !== 'undefined') && ((Date.now() - controlTimeout) < token.time)) return token.userId
 
       // check if token is valid for an app
       const app = (await knex('apps')
@@ -711,18 +712,17 @@ async function run() {
         const user = await knex('users')
           .first('id', 'password', 'salt')
           .where('username', message.username)
+          .then((e) => ({ userId: e.id, password: e.password, salt: e.salt }))
           .catch((error) => {
             throw error
           })
-
         if ((typeof user !== 'undefined') && (hashSha512(message.password, user.salt).passwordHash === user.password)) {
           response.token = crypto.createHash('sha256')
             .update(message.username + message.password + (new Date().getTime()))
             .digest('hex')
-
           await knex('tokens')
             .insert({
-              user_id: user.id,
+              user_id: user.userId,
               token: response.token,
               time: Date.now(),
               IP,
@@ -737,7 +737,7 @@ async function run() {
           // *** ToDo: remove legacy token array
           tokens[response.token] = []
           tokens[response.token].time = Date.now() // timeout data
-          tokens[response.token].user = user.id // holds the user id for the token
+          tokens[response.token].user = user.userId // holds the user id for the token
           tokens[response.token].streams = [] // provision for streams that get added
           tokens[response.token].conn = conn
           return (response)
@@ -748,13 +748,14 @@ async function run() {
         const app = await knex('apps')
           .first('id')
           .where('token', message.token)
+          .then((e) => ({ appId: e.id }))
           .catch((error) => {
             throw error
           })
         // *** ToDo: App can only be run once, since it has only one token...
         if ((typeof app !== 'undefined')) {
           await knex('apps')
-            .where({ id: app.id })
+            .where({ id: app.appId })
             .update({
               time: Date.now(),
               IP,
@@ -1102,14 +1103,17 @@ async function run() {
       const response = {}
       // *** ToDo: list only workspaces that user has access to.
       if (typeof data !== 'object') {
-        const workspacesName = await knex('workspaces')
+        const workspacesName = (await knex('workspaces')
           .select('workspace_name')
           .catch((error) => {
             throw error
-          })
+          }))
+          .map((e) => ({
+            workspace: e.workspace_name,
+          }))
         const result = []
         for (const workspace in workspacesName) {
-          if (workspace) result.push(workspacesName[workspace].workspace_name)
+          if (workspace) result.push(workspacesName[workspace].workspace)
         }
         response.workspaceList = result
         response.statusCode = 0
@@ -1178,6 +1182,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
+          // .then((e) => ({ workspaceId: e.id }))
           if (typeof workspace === 'undefined') {
             await knex('workspaces').insert({ owner_id: data, workspace_name: message.workspace })
               .catch((error) => {
@@ -1242,7 +1247,7 @@ async function run() {
           // *** ToDo: make sure we cannot set default workspace that user has no access to */
           const workspace = await knex('workspaces')
             .first('id')
-            .where('workspace_name', message.workspace)
+            .where('workspace_name', message.workspace).then((e) => ({ workspaceId: e.id }))
             .catch((error) => {
               throw error
               // *** ToDo: throw correct error message
@@ -1254,7 +1259,7 @@ async function run() {
           await knex('users')
             .where({ id: data })
             .update({
-              workspace_id: workspace.id,
+              workspace_id: workspace.workspaceId,
             })
             .catch((error) => {
               throw error
@@ -1312,14 +1317,16 @@ async function run() {
         })
       const response = {}
       if (typeof data === 'number') {
-        const workspace = await knex('users')
+        const workspace = (await knex('users')
           .select('workspace_name')
           .where('users.id', '=', data)
           .leftJoin('workspaces', 'workspace_id', '=', 'workspaces.id')
-          .catch((err) => console.log(err))
+          .catch((err) => console.log(err)))
+          .map((e) => ({ workspace: e.workspace_name }))
 
+        console.log('jdfbvjkbdjbvd', workspace)
         if (typeof workspace !== 'undefined') {
-          response.workspace = workspace[0].workspace_name
+          response.workspace = workspace[0].workspace
         } else response.workspace = ''
 
         response.statusCode = 0
@@ -1380,7 +1387,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          console.log(workspace)
+          if (globalConfig.debug && workspace) console.log(message.workspace, ' was deleted sucessfully')
           if (typeof workspaces[message.workspace] !== 'undefined') {
             // *** ToDo: make sure that existing connections to this workspace will be terminated
             // *** ToDo: remove legacy workspaces array
@@ -1472,6 +1479,7 @@ async function run() {
           const oldUser = await knex('users')
             .first('id')
             .where('username', workMessage.username)
+           // .then((e) => ({ userId: e.id }))
             .catch((error) => {
               throw error
             })
@@ -1479,8 +1487,13 @@ async function run() {
             console.log('no old user found')
             if (typeof message.admin === 'undefined') workMessage.admin = false
             await knex('users').insert({
-              // eslint-disable-next-line max-len
-              username: workMessage.username, password: password.password, salt: password.salt, email: workMessage.email, first: workMessage.first, last: workMessage.last, admin: workMessage.admin,
+              username: workMessage.username,
+              password: password.password,
+              salt: password.salt,
+              email: workMessage.email,
+              first: workMessage.first,
+              last: workMessage.last,
+              admin: workMessage.admin,
             })
               .catch((error) => {
                 throw error
