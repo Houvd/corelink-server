@@ -1561,7 +1561,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          console.log(command)
+          if (globalConfig.debug && command) console.log(tokens[message.token].user, ' password updated')
 
           response.statusCode = 0
           return (response)
@@ -1624,7 +1624,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          console.log(command)
+          if (globalConfig.debug && command) console.log( message.username, ' was deleted successfully')
 
           response.statusCode = 0
           return (response)
@@ -1817,6 +1817,7 @@ async function run() {
         })
       const response = {}
       // ToDo: what happens when the message is an app?
+      // .then will not work as it breaking the promise
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
@@ -1913,6 +1914,7 @@ async function run() {
           throw error
         })
       const response = {}
+      // .then wont work as it breask the promise
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
