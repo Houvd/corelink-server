@@ -381,16 +381,15 @@ async function run() {
 
 
   // pre-setting arrays with data while we convert the server to use only the database
-  let content = (await knex('workspaces')
-    .select('workspace_name', 'workspaces.owner_id', 'group_user.user_id')
+  let content = await knex('workspaces')
+    .select({
+      workspace: 'workspace_name',
+      userId: 'group_user.user_id',
+      ownerId: 'workspaces.owner_id',
+    })
     .leftJoin('group_workspace', 'workspace_id', '=', 'workspaces.id')
     .leftJoin('group_user', 'group_workspace.group_id', '=', 'group_user.group_id')
-    .catch((err) => console.log(err)))
-    .map((e) => ({
-      workspace: e.workspace_name,
-      userId: e.user_id,
-      ownerId: e.owner_id,
-    }))
+    .catch((err) => console.log(err))
 
   const workspaces = []
   for (const key in content) {
@@ -621,7 +620,6 @@ async function run() {
     console.log('token: ', message.token)
     if ('token' in message) {
       // check if token is valid for a user
-      // todo: token is not converting with map function
       const token = await knex('tokens')
         .first({ userId: 'user_id', time: 'time' })
         .where('token', message.token)
@@ -1812,7 +1810,6 @@ async function run() {
         })
       const response = {}
       // ToDo: what happens when the message is an app?
-      // .then will not work as it breaking the promise
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
@@ -1909,7 +1906,6 @@ async function run() {
           throw error
         })
       const response = {}
-      // .then wont work as it breask the promise
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
