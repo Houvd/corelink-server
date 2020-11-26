@@ -1479,7 +1479,7 @@ async function run() {
           const oldUser = await knex('users')
             .first('id')
             .where('username', workMessage.username)
-           // .then((e) => ({ userId: e.id }))
+          // .then((e) => ({ userId: e.id }))
             .catch((error) => {
               throw error
             })
@@ -1624,7 +1624,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          if (globalConfig.debug && command) console.log( message.username, ' was deleted successfully')
+          if (globalConfig.debug && command) console.log(message.username, ' was deleted successfully')
 
           response.statusCode = 0
           return (response)
@@ -3276,7 +3276,7 @@ async function run() {
 
           // limit to workspaces a user has access to
           let userWorkspace = await knex('group_user')
-            .select('workspaces.workspace_name')
+            .select({ workspaceName: 'workspaces.workspace_name' })
             .join('group_workspace', 'group_user.group_id', '=', 'group_workspace.group_id')
             .join('workspaces', 'group_workspace.workspace_id', '=', 'workspaces.id')
             .where('user_id', '=', data)
