@@ -409,14 +409,14 @@ async function run() {
   }
 
   const users = []
-  content = (await knex('users')
-    .select('id', 'username')
+  content = await knex('users')
+    .select({
+      userId: 'id',
+      username: 'username',
+    })
     .orderBy('id')
-    .catch((err) => console.log(err)))
-    .map((e) => ({
-      userId: e.id,
-      username: e.username,
-    }))
+    .catch((err) => console.log(err))
+
   for (const key in content) {
     if (key) {
       const { userId, username } = content[key]
@@ -425,15 +425,14 @@ async function run() {
     }
   }
 
-  content = (await knex('apps')
-    .select('app_name', 'token', 'time')
+  content = await knex('apps')
+    .select({
+      app: 'app_name',
+      token: 'token',
+      time: 'time',
+    })
     .orderBy('id')
-    .catch((err) => console.log(err)))
-    .map((e) => ({
-      app: e.app_name,
-      token: e.token,
-      time: e.time,
-    }))
+    .catch((err) => console.log(err))
 
   for (const key in content) {
     if (key) {
@@ -624,9 +623,8 @@ async function run() {
       // check if token is valid for a user
       // todo: token is not converting with map function
       const token = await knex('tokens')
-        .first('user_id', 'time')
+        .first({ userId: 'user_id', time: 'time' })
         .where('token', message.token)
-        .then((e) => ({ userId: e.user_id, time: e.time }))
         .catch((error) => {
           throw error
         })
@@ -710,9 +708,12 @@ async function run() {
         // for (var key in users) if ((users[key]['username'] === message['username'])
         //  && (users[key]['password'] === message['password'])) authenticated = key
         const user = await knex('users')
-          .first('id', 'password', 'salt')
+          .first({
+            userId: 'id',
+            password: 'password',
+            salt: 'salt',
+          })
           .where('username', message.username)
-          .then((e) => ({ userId: e.id, password: e.password, salt: e.salt }))
           .catch((error) => {
             throw error
           })
@@ -746,9 +747,8 @@ async function run() {
       }
       if ('token' in message) {
         const app = await knex('apps')
-          .first('id')
+          .first({ appId: 'id' })
           .where('token', message.token)
-          .then((e) => ({ appId: e.id }))
           .catch((error) => {
             throw error
           })
@@ -1103,14 +1103,13 @@ async function run() {
       const response = {}
       // *** ToDo: list only workspaces that user has access to.
       if (typeof data !== 'object') {
-        const workspacesName = (await knex('workspaces')
-          .select('workspace_name')
+        const workspacesName = await knex('workspaces')
+          .select({
+            workspace: 'workspace_name',
+          })
           .catch((error) => {
             throw error
-          }))
-          .map((e) => ({
-            workspace: e.workspace_name,
-          }))
+          })
         const result = []
         for (const workspace in workspacesName) {
           if (workspace) result.push(workspacesName[workspace].workspace)
@@ -1177,12 +1176,11 @@ async function run() {
 
           // *** ToDo: need to sanitize workspace name befor inserting to database
           const workspace = await knex('workspaces')
-            .first('id')
+            .first({ workspaceId: 'id' })
             .where('workspace_name', message.workspace)
             .catch((error) => {
               throw error
             })
-          // .then((e) => ({ workspaceId: e.id }))
           if (typeof workspace === 'undefined') {
             await knex('workspaces').insert({ owner_id: data, workspace_name: message.workspace })
               .catch((error) => {
@@ -1246,8 +1244,8 @@ async function run() {
         if ('workspace' in message) {
           // *** ToDo: make sure we cannot set default workspace that user has no access to */
           const workspace = await knex('workspaces')
-            .first('id')
-            .where('workspace_name', message.workspace).then((e) => ({ workspaceId: e.id }))
+            .first({ workspaceId: 'id' })
+            .where('workspace_name', message.workspace)
             .catch((error) => {
               throw error
               // *** ToDo: throw correct error message
@@ -1317,14 +1315,12 @@ async function run() {
         })
       const response = {}
       if (typeof data === 'number') {
-        const workspace = (await knex('users')
-          .select('workspace_name')
+        const workspace = await knex('users')
+          .select({ workspace: 'workspace_name' })
           .where('users.id', '=', data)
           .leftJoin('workspaces', 'workspace_id', '=', 'workspaces.id')
-          .catch((err) => console.log(err)))
-          .map((e) => ({ workspace: e.workspace_name }))
+          .catch((err) => console.log(err))
 
-        console.log('jdfbvjkbdjbvd', workspace)
         if (typeof workspace !== 'undefined') {
           response.workspace = workspace[0].workspace
         } else response.workspace = ''
@@ -1477,9 +1473,8 @@ async function run() {
         if ('username' in message) {
           const password = saltHashPassword(workMessage.password)
           const oldUser = await knex('users')
-            .first('id')
+            .first({ userId: 'id' })
             .where('username', workMessage.username)
-          // .then((e) => ({ userId: e.id }))
             .catch((error) => {
               throw error
             })
@@ -1744,7 +1739,7 @@ async function run() {
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
-            .first('id')
+            .first({ groupId: 'id' })
             .where('group_name', message.group)
             .catch((error) => {
               throw error
@@ -1821,7 +1816,7 @@ async function run() {
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
-            .first('id', 'owner_id')
+            .first({ groupId: 'id', ownerId: 'owner_id' })
             .where('group_name', message.group)
             .catch((error) => {
               throw error
@@ -1830,7 +1825,7 @@ async function run() {
           if (typeof oldGroup !== 'undefined') {
             console.log('group found')
             const oldUser = await knex('users')
-              .first('id')
+              .first({ userId: 'id' })
               .where('username', message.user)
               .catch((error) => {
                 throw error
@@ -1842,11 +1837,11 @@ async function run() {
                 .catch((error) => {
                   throw error
                 })
-              if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
+              if ((oldGroup.ownerId === tokens[message.token].user) || (admin.admin === 1)) {
                 console.log('login user is either the admin or owner')
 
                 await knex('group_user').insert({
-                  owner_id: tokens[message.token].user, group_id: oldGroup.id, user_id: oldUser.id,
+                  owner_id: tokens[message.token].user, group_id: oldGroup.groupId, user_id: oldUser.userId,
                 })
                   .catch((error) => {
                     throw error
@@ -1918,7 +1913,7 @@ async function run() {
       if (typeof data !== 'object') {
         if ('group' in message) {
           const oldGroup = await knex('groups')
-            .first('id', 'owner_id')
+            .first({ groupId: 'id', ownerId: 'owner_id' })
             .where('group_name', message.group)
             .catch((error) => {
               throw error
@@ -1927,7 +1922,7 @@ async function run() {
           if (typeof oldGroup !== 'undefined') {
             console.log('group found')
             const oldUser = await knex('users')
-              .first('id')
+              .first({ userId: 'id' })
               .where('username', message.user)
               .catch((error) => {
                 throw error
@@ -1939,17 +1934,19 @@ async function run() {
                 .catch((error) => {
                   throw error
                 })
-              console.log('owner details')
-              console.log(admin)
-              if ((oldGroup.owner_id === tokens[message.token].user) || (admin.admin === 1)) {
-                console.log('login user is either the admin or owner')
+              if (globalConfig.debug) {
+                console.log('owner details')
+                console.log(admin)
+              }
+              if ((oldGroup.ownerId === tokens[message.token].user) || (admin.admin === 1)) {
+                if (globalConfig.debug) console.log('login user is either the admin or owner')
                 const command = await knex('group_user')
-                  .where('user_id', oldUser.id).where('group_id', oldGroup.id)
+                  .where('user_id', oldUser.userId).where('group_id', oldGroup.groupId)
                   .del()
                   .catch((error) => {
                     throw error
                   })
-                console.log(command)
+                if (globalConfig.debug && command) console.log(oldUser.username, ' removed from the group', oldGroup.groupId)
                 response.statusCode = 0
                 return (response)
               }
@@ -2023,18 +2020,18 @@ async function run() {
             })
           if (admin.admin === 1) {
             const owner = await knex('users')
-              .first('id')
+              .first({ userId: 'id' })
               .where('username', message.username)
               .catch((error) => {
                 throw error
               })
             const command = await knex('groups')
               .where('group_name', message.group)
-              .update('owner_id', owner.id)
+              .update('owner_id', owner.userId)
               .catch((error) => {
                 throw error
               })
-            console.log(command)
+            if (globalConfig.debug && command) console.log(owner.username, ' was made the group owner')
             response.statusCode = 0
             return (response)
           }
@@ -2098,7 +2095,8 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          console.log(command)
+          if (globalConfig.debug && command) console.log(message.group, ' was removed')
+
           response.statusCode = 0
           return (response)
         }
@@ -2153,13 +2151,13 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         const groupList = await knex('groups')
-          .select('group_name')
+          .select({ groupName: 'group_name' })
           .catch((error) => {
             throw error
           })
         const result = []
         for (const grp in groupList) {
-          if (grp) result.push(groupList[grp].group_name)
+          if (grp) result.push(groupList[grp].groupName)
         }
         response.groupList = result
         response.statusCode = 0
@@ -2421,14 +2419,14 @@ async function run() {
 
         // limit to workspaces a user has access to
         let userWorkspace = await knex('group_user')
-          .select('workspaces.workspace_name')
+          .select({ workspaceName: 'workspaces.workspace_name' })
           .join('group_workspace', 'group_user.group_id', '=', 'group_workspace.group_id')
           .join('workspaces', 'group_workspace.workspace_id', '=', 'workspaces.id')
           .where('user_id', '=', data)
           .catch((error) => {
             throw error
           })
-        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspace_name })
+        userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
 
         if (workMessage.workspaces.length > 0) {
           for (workspace in userWorkspace) {
@@ -3283,7 +3281,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspace_name })
+          userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
 
           if (workWorkspaces.length > 0) {
             for (const workspace in userWorkspace) {
