@@ -7,10 +7,12 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle, Abhishek Khanna
- * @version V6.0.0.0
+ * @version V6.0.0.1
  */
 
-const serverVersion = 'v6.0.0.0'
+const serverVersion = 'v6.0.0.1'
+// v6.0.0.1
+// - removed all references to room replaced with workspace
 // v6.0.0.0
 // - data protocol changes
 // v5.0.0.0
