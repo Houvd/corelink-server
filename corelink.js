@@ -10,7 +10,9 @@
  * @version V6.0.0.1
  */
 
-const serverVersion = 'v6.0.0.1'
+const serverVersion = 'v6.0.0.2'
+// v6.0.0.2
+// - tcp proper split of combined packets
 // v6.0.0.1
 // - removed all references to room replaced with workspace
 // v6.0.0.0
@@ -3956,14 +3958,14 @@ async function run() {
     const sourceID = msg.readUInt32LE(4)
     // eslint-disable-next-line no-bitwise
     const decodeHeader = !!(headerSize & 32768)
-    headerSize = headerSize && 32767
+    // headerSize = headerSize & 32767
 
 
     // console.log('sourceID', sourceID, typeof sourceID)
 
     const last = Date.now()
     // eslint-disable-next-line no-bitwise
-    headerSize &= 32767
+    headerSize &= 32767 // *** ToDo: it seems we are already doing this above
 
     let header
     let data
@@ -3975,7 +3977,7 @@ async function run() {
     let message
     let type
     let targetID
-    // *** ToDo: validate that this message is ttruely a sender message that is authenticated
+    // *** ToDo: validate that this message is truely a sender message that is authenticated
     // console.log(`server got from ${rinfo.address}:${rinfo.port}`);
     // decoding header
     // console.log('message: ',msg);
@@ -3992,24 +3994,29 @@ async function run() {
       let pointer = 0
       // for combined packets we need to match the source/federation id and the overall size
       while (msg.length > calculatedSize) {
-        pointer = calculatedSize
         calculatedSize += 8
         calculatedSize += msg.readUInt16LE(pointer)
         calculatedSize += msg.readUInt16LE(pointer + 2)
-        if (msg.readUInt32LE(pointer + 4) !== sourceID) {
-          console.log('Wrong source ID\'s in combined packet')
-          return console.error('Wrong source ID\'s in combined packet')
+        if (msg.length < calculatedSize) {
+          console.log(`Combined packet has wrong size (${msg.length} vs. ${calculatedSize}).`)
+          return console.error(`Combined packet has wrong size (${msg.length} vs. ${calculatedSize}).`)
         }
+        data = Buffer.allocUnsafe(calculatedSize - pointer)
+        msg.copy(data, 0, pointer, calculatedSize)
+        relayData(data, remoteAddress, remotePort)
+        pointer = calculatedSize
       }
+
       if (msg.length !== calculatedSize) {
-        console.log(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
-        return console.error(`Packet has the wrong size (${msg.length} vs. ${8 + headerSize + dataSize}).`)
+        console.log(`Combined packet has still the wrong size (${msg.length} vs. ${calculatedSize}).`)
+        return console.error(`Combined packet has still the wrong size (${msg.length} vs. ${calculatedSize}).`)
       }
+      return 'relaydata split end'
     }
 
     // log out debug information
     if (globalConfig.debug && (sourceID !== 0)) {
-      // data = Buffer.allocUnsafe(dataSize)
+      // datadata = Buffer.allocUnsafe(dataSize)
       // msg.copy(data, 0, 8 + headerSize)
       // console.log('Receiving '+header['ID']+` b${msg.length} h${headerSize} d${dataSize}
       // to ${target[targetID]['IP']}:${target[targetID]['port']}`);
@@ -4134,6 +4141,7 @@ async function run() {
   function handleDataConnection(conn) {
     const remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
     const { remotePort } = conn
+    let buffer = []
 
     if (typeof connections[remoteAddress] === 'undefined') connections[remoteAddress] = []
     connections[remoteAddress][remotePort] = []
@@ -4145,7 +4153,15 @@ async function run() {
     conn.setNoDelay(true)
 
     conn.on('data', (msg) => {
-      relayData(msg, remoteAddress, remotePort)
+      if (msg.length === 65536) {
+        buffer.push(msg)
+        return
+      }
+      if (buffer.length > 0) {
+        buffer.push(msg)
+        relayData(Buffer.concat(buffer), remoteAddress, remotePort)
+        buffer = []
+      } else relayData(msg, remoteAddress, remotePort)
     })
 
     conn.once('close', () => {
