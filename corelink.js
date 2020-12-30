@@ -7,7 +7,7 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle, Abhishek Khanna
- * @version V6.0.0.1
+ * @version V6.0.0.2
  */
 
 const serverVersion = 'v6.0.0.2'
@@ -2623,6 +2623,11 @@ async function run() {
           default: false,
           type: 'boolen',
         },
+        subcribe: {
+          description: 'to subcribe to all the Stream',
+          default: true,
+          type: 'boolen',
+        },
         IP: {
           description: 'IP address from which the connection will be made (this is usually the IP one gets from the auth function)',
           type: 'string',
@@ -2701,7 +2706,7 @@ async function run() {
         if ((typeof workMessage === 'object') && ('workspace' in workMessage)) {
           // ToDo: check if IP is given
           if (!('port' in workMessage)) workMessage.port = 0
-
+          if (!('subcribe' in workMessage)) workMessage.subcribe = true
           // get appropriate streamIDs
           if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
             workMessage.streamIDs = []
@@ -2824,18 +2829,17 @@ async function run() {
 
           // designate streams to be directly relayed ot this target
           console.log('streamRelay', streamRelay)
-          for (stream in workMessage.streamList) {
-            if (stream) {
-              // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamRelay[workMessage.streamList[stream].streamID] !== 'undefined') {
-                console.log('line 2270', stream)
-                console.log('line 2271', workMessage.streamList[stream])
-                console.log('line 2272', streamRelay[workMessage.streamList[stream].streamID])
-                if (typeof streamRelay[workMessage.streamList[stream].streamID][streamID] === 'undefined') {
-                  // eslint-disable-next-line max-len
-                  serverFunctions.subscriber.process(workMessage.streamList[stream].streamID, streamID)
+          if (workMessage.subcribe) {
+            for (stream in workMessage.streamList) {
+              if (stream) {
+                // send subscriber message to sender streams that are newly subscribed to
+                if (typeof streamRelay[workMessage.streamList[stream].streamID] !== 'undefined') {
+                  if (typeof streamRelay[workMessage.streamList[stream].streamID][streamID] === 'undefined') {
+                    // eslint-disable-next-line max-len
+                    serverFunctions.subscriber.process(workMessage.streamList[stream].streamID, streamID)
+                  }
+                  streamRelay[workMessage.streamList[stream].streamID][streamID] = []
                 }
-                streamRelay[workMessage.streamList[stream].streamID][streamID] = []
               }
             }
           }
