@@ -2576,7 +2576,7 @@ async function run() {
     info: {
       name: 'receiver',
       description: 'register a new stream as receiver',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -2866,7 +2866,7 @@ async function run() {
     info: {
       name: 'subscribe',
       description: 'subscribe additional streams to an existing receiver',
-      version: '1.0.0.0',
+      version: '1.0.0.1',
       author: 'Robert Pahle',
       email: 'robert.pahle@gmail.com',
       doc_href: 'https:// dev.nyu-x.org/networktest',
@@ -2881,7 +2881,7 @@ async function run() {
           type: 'string',
           sample: '$$receiver.streamID',
         },
-        streamID: {
+        streamIDs: {
           description: 'array of stream IDs to receive. new streams will be added to existing already subscribed streams.',
           type: 'array',
           default: [],
@@ -2930,10 +2930,10 @@ async function run() {
         console.log('*** subscribe ***')
         if ((('receiverID' in workMessage) && (workMessage.receiverID !== '') && (typeof target[workMessage.receiverID] !== 'undefined'))) {
           // get all streamIDs if no list is given
-          if (!('streamID' in workMessage) || (workMessage.streamID.length === 0)) {
-            workMessage.streamID = []
+          if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
+            workMessage.streamIDs = []
             for (sourceID in source) {
-              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamID.push(parseInt(sourceID, 10))
+              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamIDs.push(parseInt(sourceID, 10))
             }
           }
 
@@ -2944,8 +2944,8 @@ async function run() {
               s = parseInt(s, 10)
               for (t in streamRelay[s]) {
                 if ((parseInt(t, 10) === workMessage.receiverID)
-                    && (!workMessage.streamID.includes(s))) {
-                  workMessage.streamID.push(s)
+                    && (!workMessage.streamIDs.includes(s))) {
+                  workMessage.streamIDs.push(s)
                 }
               }
             }
@@ -2954,24 +2954,24 @@ async function run() {
           // remove all streamIDs that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes
           // to query and bring them up...)
-          for (stream in workMessage.streamID) {
-            if (!(workMessage.streamID[stream] in source)) {
-              workMessage.streamID.splice(stream, 1)
+          for (stream in workMessage.streamIDs) {
+            if (!(workMessage.streamIDs[stream] in source)) {
+              workMessage.streamIDs.splice(stream, 1)
             }
           }
 
           // add usernames to the specific streams
           workMessage.streamList = []
-          for (stream in workMessage.streamID) {
+          for (stream in workMessage.streamIDs) {
             if (stream) {
               streamListElement = {}
-              streamListElement.streamID = parseInt(workMessage.streamID[stream], 10)
-              streamListElement.type = source[workMessage.streamID[stream]].type
-              streamListElement.meta = source[workMessage.streamID[stream]].meta
+              streamListElement.streamID = parseInt(workMessage.streamIDs[stream], 10)
+              streamListElement.type = source[workMessage.streamIDs[stream]].type
+              streamListElement.meta = source[workMessage.streamIDs[stream]].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(workMessage.streamID[stream])
+              userApps = findApps(workMessage.streamIDs[stream])
               streamListElement.user = userApps.user
               streamListElement.apps = userApps.apps
 
@@ -3020,7 +3020,7 @@ async function run() {
           type: 'number',
           sample: '$$receiver.streamID',
         },
-        streamID: {
+        streamIDs: {
           description: 'array of stream IDs to unsubscribe.',
           type: 'array',
           sample: ['$$sender.streamID'],
@@ -3058,9 +3058,10 @@ async function run() {
       const workMessage = message
       if (typeof data !== 'object') {
         console.log('*** unsubscribe ***')
-        if ('receiverID' in workMessage) { console.log('checkk1') }
+        if ((typeof workMessage.streamIDs === 'number') || (Array.isArray(workMessage.streamIDs))) { console.log(workMessage) }
+
         if ((('receiverID' in workMessage) && (typeof workMessage.receiverID === 'number') && (typeof target[workMessage.receiverID] !== 'undefined'))
-                  && (('streamID' in workMessage) && ((typeof workMessage.streamID === 'number') || (Array.isArray(workMessage.streamID))))) {
+                  && (('streamIDs' in workMessage) && ((typeof workMessage.streamIDs === 'number') || (Array.isArray(workMessage.streamIDs))))) {
           // unsubscribe streams
           workMessage.streamList = []
           for (s in streamRelay) {
@@ -3069,7 +3070,7 @@ async function run() {
               for (t in streamRelay[s]) {
                 if (t) {
                   t = parseInt(t, 10)
-                  if ((t === workMessage.receiverID) && (workMessage.streamID.includes(s))) {
+                  if ((t === workMessage.receiverID) && (workMessage.streamIDs.includes(s))) {
                     workMessage.streamList.push(s)
                     delete streamRelay[s][t]
                     // send dropped message to sender streams to inform them
