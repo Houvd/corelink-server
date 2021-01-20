@@ -1677,15 +1677,11 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         const userList = await knex('users')
-          .select('username')
+          .select(['username', 'email', 'first', 'admin'])
           .catch((error) => {
             throw error
           })
-        const result = []
-        for (const usr in userList) {
-          if (usr) result.push(userList[usr].username)
-        }
-        response.userList = result
+        response.userList = userList
         response.statusCode = 0
         return (response)
       }
