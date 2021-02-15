@@ -1472,8 +1472,7 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         const workMessage = message
-        if ('username' in message) {
-          const password = saltHashPassword(workMessage.password)
+        if ('username' in message && 'password' in message && 'email' in message && 'first' in message && 'last' in message) {
           const oldUser = await knex('users')
             .first({ userId: 'id' })
             .where('username', workMessage.username)
@@ -1482,6 +1481,7 @@ async function run() {
             })
           if (typeof oldUser === 'undefined') {
             console.log('no old user found')
+            const password = saltHashPassword(workMessage.password)
             if (typeof message.admin === 'undefined') workMessage.admin = false
             await knex('users').insert({
               username: workMessage.username,
@@ -1623,6 +1623,167 @@ async function run() {
             })
           if (globalConfig.debug && command) console.log(message.username, ' was deleted successfully')
 
+          response.statusCode = 0
+          return (response)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  }
+
+  functions.getUser = {
+    info: {
+      name: 'getUser',
+      description: 'get user with username',
+      version: '1.0.0.1',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'getUser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+        username: {
+          description: 'username of the selected User',
+          type: 'string',
+          sample: 'Testuser',
+        },
+      },
+      responses: {
+        user: {
+          description: 'data of the user',
+          type: 'array',
+          sample: [],
+        },
+        statusCode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        if ('username' in message) {
+          console.log('get User:', message.username)
+          const command = await knex('users')
+            .first(['username', 'email', 'first', 'last', 'admin'])
+            .where('username', message.username)
+            .catch((error) => {
+              throw error
+            })
+          if (globalConfig.debug && command) console.log(message.username, ' data was fetched from DB')
+
+          response.user = command
+          response.statusCode = 0
+          return (response)
+        }
+        return getErrorMessage(3)
+      }
+      return (data)
+    },
+  }
+  functions.setUser = {
+    info: {
+      name: 'setUser',
+      description: 'get user with username',
+      version: '1.0.0.1',
+      author: 'Abhishek Khanna',
+      email: 'ak7907@nyu.edu',
+      doc_href: 'https:// dev.nyu-x.org/networktest',
+      arguments: {
+        function: {
+          description: 'function to select and run',
+          type: 'string',
+          sample: 'setUser',
+        },
+        token: {
+          description: 'token for the user to authenticate',
+          type: 'string',
+        },
+        username: {
+          description: 'name of the user',
+          type: 'string',
+          sample: 'newuser',
+        },
+        password: {
+          description: 'password of the user',
+          type: 'string',
+          sample: 'password',
+        },
+        admin: {
+          description: 'user is an admin',
+          type: 'boolean',
+          default: false,
+        },
+        first: {
+          description: 'first name of the user',
+          type: 'string',
+          sample: 'firstname',
+        },
+        last: {
+          description: 'last name of the user',
+          type: 'string',
+          sample: 'lastname',
+        },
+        email: {
+          description: 'email of the user',
+          type: 'string',
+          sample: 'test@gmail.com',
+        },
+      },
+      responses: {
+        statusCode: {
+          description: 'result code of the function',
+          type: 'string',
+          sample: 0,
+        },
+        message: {
+          description: 'optional status message',
+          optional: true,
+          type: 'string',
+        },
+      },
+    },
+    async process(message) {
+      const data = await checkAuth(message)
+        .catch((error) => {
+          throw error
+        })
+      const response = {}
+      if (typeof data !== 'object') {
+        const workMessage = message
+        if ('oldUsername' in message && 'username' in message && 'email' in message && 'first' in message && 'last' in message) {
+          const command = await knex('users')
+            .where('username', workMessage.oldUsername)
+            .update({
+              username: workMessage.username,
+              email: workMessage.email,
+              first: workMessage.first,
+              last: workMessage.last,
+            })
+            .catch((error) => {
+              throw error
+            })
+
+          if (globalConfig.debug && command) console.log(message.username, ' was updated successfully')
           response.statusCode = 0
           return (response)
         }
