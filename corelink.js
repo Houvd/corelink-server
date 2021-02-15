@@ -1718,6 +1718,11 @@ async function run() {
           description: 'token for the user to authenticate',
           type: 'string',
         },
+        oldUsername: {
+          description: 'name of the user',
+          type: 'string',
+          sample: 'newuser',
+        },
         username: {
           description: 'name of the user',
           type: 'string',
