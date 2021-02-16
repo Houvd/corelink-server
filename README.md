@@ -52,7 +52,7 @@ cd server
 node corelink.js
 ```
 
-### test sending and receiving packages
+### Test sending and receiving packages
 
 After starting the server the sender and receiver scripts can be used to test the server
 In separate terminals next to the server start both applications.
