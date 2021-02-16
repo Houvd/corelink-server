@@ -1,7 +1,6 @@
 # Installations instructions for the Corelink Server
 
 ### Required Software
-##### Serveral packages are Required
 - Git
 - NodeJS (please install the current version and enable compilation support)
 
