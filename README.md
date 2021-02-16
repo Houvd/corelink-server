@@ -1,5 +1,10 @@
 # Installations instructions for the Corelink Server
 
+### Required Software
+##### Serveral packages are Required
+- Git
+- NodeJS (please install the current version and enable compilation support)
+
 ### Clone the repository and go into repository folder
 ```bash
 git clone https://dev.nyu-x.org/holodeck/networktest.git
@@ -30,7 +35,7 @@ copy knexfile.js.sample knexfile.js
 ### Create database with latest tables
 ```bash
 cd server/config
-node ../../node_modules/knex/bin/cli.js migrate:up
+node ../../node_modules/knex/bin/cli.js migrate:latest
 ```
 
 ### Seed database with basic data
@@ -48,8 +53,26 @@ cd server
 node corelink.js
 ```
 
-# Upgrade instructions for the Corelink Server
+### test sending and receiving packages
 
+After starting the server the sender and receiver scripts can be used to test the server
+In separate terminals next to the server start both applications.
+First start the sender:
+```bash
+cd tools/sender
+node senderUDP-lib.js
+```
+When the sender starts the first time it will ask for the IP address to connect to the server. In this example use 127.0.0.1, then press enter twice to use the preset username and password.
+
+Then start the listener:
+```bash
+cd tools/listener
+node listenerUDP-lib.js
+```
+It should not ask for the IP adresses again. Just press enter twice to start the appliaction.
+
+
+# Upgrade instructions for the Corelink Server
 
 ### Pull latest version
 ```bash
@@ -85,5 +108,3 @@ cd server/config
 node ../../node_modules/knex/bin/cli.js migrate:latest
 node ../../node_modules/knex/bin/cli.js seed:run
 ```
-
-
