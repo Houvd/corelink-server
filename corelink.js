@@ -4349,7 +4349,7 @@ async function run() {
   const fileServer = new httpStatic.Server('./public', { cache: 3600 })
 
   const httpsControlServer = https.createServer(httpsOptions, (req, res) => {
-    if (req.url === '/') {
+    if (req.url === '/version') {
       res.writeHead(200)
       res.end(`Corelink Server ${serverVersion}`)
     } else {
