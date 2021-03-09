@@ -4368,7 +4368,6 @@ async function run() {
     const { remoteAddress } = req.connection
     const { remotePort } = req.connection
     let send = ''
-    let message
     // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
     // controlConnection[remoteAddress] = [];
     // controlConnection[remoteAddress][remotePort]=conn;
@@ -4378,6 +4377,7 @@ async function run() {
     console.log('new client WS control connection from %s:%s', remoteAddress, remotePort)
 
     conn.on('message', async (data) => {
+      let message
       console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
       try {
         message = JSON.parse(data)
