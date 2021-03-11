@@ -4365,8 +4365,8 @@ async function run() {
 
   wsControlServer.on('connection', (conn, req) => {
   // const IP = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
-    const { remoteAddress } = req.connection
-    const { remotePort } = req.connection
+    const { remoteAddress } = req.socket
+    const { remotePort } = req.socket
     let send = ''
     // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
     // controlConnection[remoteAddress] = [];
