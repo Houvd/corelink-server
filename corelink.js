@@ -4353,7 +4353,7 @@ async function run() {
       res.writeHead(200)
       res.end(`Corelink Server ${serverVersion}`)
     } else {
-      console.log(`${req.connection.remoteAddress} ${req.method} ${req.url}`)
+      console.log(`${req.socket.remoteAddress} ${req.method} ${req.url}`)
       req.addListener('end', () => {
         fileServer.serve(req, res)
       }).resume()
@@ -4433,7 +4433,7 @@ async function run() {
   console.log(`trying to bind WS port ${port.ws}`)
 
   const httpsDataServer = https.createServer(httpsOptions, (req, res) => {
-    console.log(`New Request... ${req.connection.remoteAddress} ${req.method} ${req.url}`)
+    console.log(`New Request... ${req.socket.remoteAddress} ${req.method} ${req.url}`)
     res.writeHead(200)
     res.end('Corelink Data Port')
   })
@@ -4444,8 +4444,8 @@ async function run() {
   WSDataServer.on('connection', (conn, req) => {
   // const IP = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
-    const { remoteAddress } = req.connection
-    const { remotePort } = req.connection
+    const { remoteAddress } = req.socket
+    const { remotePort } = req.socket
     console.log(`Connected new WS client from ${remoteAddress} port ${remotePort}`)
 
     if (typeof connections[remoteAddress] === 'undefined') connections[remoteAddress] = []
