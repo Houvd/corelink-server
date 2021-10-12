@@ -2785,8 +2785,8 @@ async function run() {
           default: false,
           type: 'boolen',
         },
-        subcribe: {
-          description: 'to subcribe to all the Stream',
+        subscribe: {
+          description: 'to subscribe to all the Stream',
           default: true,
           type: 'boolen',
         },
@@ -2868,7 +2868,7 @@ async function run() {
         if ((typeof workMessage === 'object') && ('workspace' in workMessage)) {
           // ToDo: check if IP is given
           if (!('port' in workMessage)) workMessage.port = 0
-          if (!('subcribe' in workMessage)) workMessage.subcribe = true
+          if (!('subscribe' in workMessage)) workMessage.subscribe = true
           // get appropriate streamIDs
           if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
             workMessage.streamIDs = []
@@ -2991,7 +2991,7 @@ async function run() {
 
           // designate streams to be directly relayed ot this target
           console.log('streamRelay', streamRelay)
-          if (workMessage.subcribe) {
+          if (workMessage.subscribe) {
             for (stream in workMessage.streamList) {
               if (stream) {
                 // send subscriber message to sender streams that are newly subscribed to
