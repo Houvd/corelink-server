@@ -3,6 +3,7 @@
 ### Required Software
 - Git
 - NodeJS (please install the current version and enable compilation support)
+- Python (required by NPM)
 
 ### Clone the repository and go into repository folder
 ```bash
