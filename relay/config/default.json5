@@ -1,0 +1,19 @@
+{
+    // server key for ssl encryption
+    key: 'C:/Users/Rob/corelink/corelink-server/relay/config/server-key.pem',
+
+    // server certificate for sll encryption
+    cert: 'C:/Users/Rob/corelink/corelink-server/relay/config/server-crt.pem',
+
+    // comment this line, if you dont use 127.0.0.1 for testing. A valid
+    // certificate on the server side is required.
+    // Change the certificate authority if you are using a server with self
+    // signed certificate.
+    ca: 'C:/Users/Rob/corelink/corelink-server/relay/config/ca-crt.pem',
+
+    // Control server host name
+    host: 'corelink.hpc.nyu.edu',
+
+    // Control server port
+    port: '20012'
+}
