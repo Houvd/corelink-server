@@ -1,0 +1,20 @@
+
+exports.up = (knex) => knex.schema.createTable('group_user', (table) => {
+  table.increments()
+  table.integer('owner_id').notNullable().unsigned()
+  table.foreign('owner_id').references('id').inTable('users')
+    .onUpdate('CASCADE')
+    .onDelete('RESTRICT')
+  table.integer('user_id').notNullable().unsigned()
+  table.foreign('user_id').references('id').inTable('users')
+    .onUpdate('CASCADE')
+    .onDelete('CASCADE')
+  table.integer('group_id').notNullable().unsigned()
+  table.foreign('group_id').references('id').inTable('groups')
+    .onUpdate('CASCADE')
+    .onDelete('CASCADE')
+  table.timestamp('created_at').default(knex.fn.now())
+  table.timestamp('updated_at').default(knex.fn.now())
+})
+
+exports.down = (knex) => knex.schema.dropTableIfExists('group_user')
