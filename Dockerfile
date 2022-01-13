@@ -1,4 +1,4 @@
-FROM docker.io/node
+FROM docker.io/node:16-bullseye
 
 RUN apt update -y && apt install mc htop net-tools git -y
 ADD config/ /app/config/
