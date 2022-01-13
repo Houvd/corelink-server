@@ -77,7 +77,7 @@ let logStdOut = true
 fs.access('dockerlog', fs.constants.F_OK, (err) => {
   if (!err) {
     logFile = true
-    logStdOut = true
+    logStdOut = false
   }
 })
 
