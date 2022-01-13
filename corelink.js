@@ -2872,7 +2872,12 @@ async function run() {
           // get appropriate streamIDs
           if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
             workMessage.streamIDs = []
-            for (sourceID in source) if ((workMessage.workspace === source[sourceID].workspace) && (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type)))) workMessage.streamIDs.push(parseInt(sourceID, 10))
+            for (sourceID in source) 
+              if ((workMessage.workspace === source[sourceID].workspace) 
+                  && (!('type' in workMessage) 
+                    || (workMessage.type.length === 0) 
+                    || (workMessage.type.includes(source[sourceID].type)))) 
+                workMessage.streamIDs.push(parseInt(sourceID, 10))
           }
 
           // remove all streamIDs that are not in source (we silently drop
@@ -3095,7 +3100,10 @@ async function run() {
           if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
             workMessage.streamIDs = []
             for (sourceID in source) {
-              if (!('type' in workMessage) || (workMessage.type.length === 0) || (workMessage.type.includes(source[sourceID].type))) workMessage.streamIDs.push(parseInt(sourceID, 10))
+              if (!('type' in target[workMessage.receiverID]) 
+                  || (target[workMessage.receiverID].type.length === 0) 
+                  || (target[workMessage.receiverID].type.includes(source[sourceID].type))) 
+                workMessage.streamIDs.push(parseInt(sourceID, 10))
             }
           }
 
