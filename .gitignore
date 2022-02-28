@@ -127,9 +127,9 @@ config/default.json5
 *.pyc
 
 # Server runtime data
-server/config/knexfile.js
-server/config/default.json5
-server/data/
+config/knexfile.js
+config/default.json5
+data/
 
 */*.idea
 
