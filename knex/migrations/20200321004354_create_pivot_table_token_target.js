@@ -1,0 +1,15 @@
+exports.up = (knex) => knex.schema.createTable('token_target', (table) => {
+  table.increments()
+  table.integer('token_id').notNullable().unsigned()
+  table.foreign('token_id').references('id').inTable('tokens')
+    .onUpdate('CASCADE')
+    .onDelete('CASCADE')
+  table.integer('target_id').notNullable().unsigned()
+  table.foreign('target_id').references('id').inTable('targets')
+    .onUpdate('CASCADE')
+    .onDelete('CASCADE')
+  table.timestamp('created_at').default(knex.fn.now())
+  table.timestamp('updated_at').default(knex.fn.now())
+})
+
+exports.down = (knex) => knex.schema.dropTableIfExists('token_target')

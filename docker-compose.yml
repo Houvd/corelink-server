@@ -1,0 +1,31 @@
+version: '2.1'
+
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: "networktest:latest"
+    restart: unless-stopped
+    ports:
+      - "20080:80/tcp"
+      - "20443:443/tcp"
+      - "20010:20010/tcp"
+      - "20011:20011/udp"
+      - "20011:20011/tcp"
+      - "20012:20012/tcp"
+      - "20013:20013/tcp"
+    networks:
+      bridge:
+        ipv4_address: 10.0.1.200
+    volumes:
+      - ../../../data:/app/data/
+      - ../../../public:/app/public/
+
+networks:
+  bridge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24
+          #docker-compose v3+ do not use ip_range ip_range: 10.0.1.0/24
