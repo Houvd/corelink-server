@@ -32,19 +32,9 @@
   "dependencies": {
     "config": "^3.3.7",
     "https": "^1.0.0",
-    "knex": "^0.21.5",
+    "knex": "^0.95.15",
     "node-static": "^0.7.11",
     "sqlite3": "^5.0.0",
-    "ws": "^7.5.7"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^2.29.0",
-    "@typescript-eslint/parser": "^2.29.0",
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb": "^18.1.0",
-    "eslint-plugin-import": "^2.20.2",
-    "eslint-plugin-jsx-a11y": "^6.2.3",
-    "eslint-plugin-react": "^7.19.0",
-    "eslint-plugin-react-hooks": "^2.5.1"
+    "ws": "^8.5.0"
   }
 }
