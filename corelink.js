@@ -7,10 +7,12 @@
 /**
  * @file NodeJS Corelink core server
  * @author Robert Pahle, Abhishek Khanna
- * @version V6.0.0.2
+ * @version V6.0.0.3
  */
 
-const serverVersion = 'v6.0.0.2'
+const serverVersion = 'v6.0.0.3'
+// v6.0.0.3
+// - fix listStreams to allow owner to list
 // v6.0.0.2
 // - tcp proper split of combined packets
 // v6.0.0.1
@@ -2575,11 +2577,17 @@ async function run() {
       const workMessage = message
       if (typeof data !== 'object') {
         if (!('workspaces' in workMessage)) workMessage.workspaces = []
-
         if (typeof workMessage.workspaces === 'string') workMessage.workspaces = [workMessage.workspaces]
         if (!Array.isArray(workMessage.workspaces)) workMessage.workspaces = []
 
         // limit to workspaces a user has access to
+        let ownerWorkspace = await knex('workspaces')
+          .where('owner_id', '=', data)
+          .catch((error) => {
+            throw error
+          })
+        ownerWorkspace.forEach((value, key) => { ownerWorkspace[key] = value.workspace_name })
+
         let userWorkspace = await knex('group_user')
           .select({ workspaceName: 'workspaces.workspace_name' })
           .join('group_workspace', 'group_user.group_id', '=', 'group_workspace.group_id')
@@ -2589,6 +2597,8 @@ async function run() {
             throw error
           })
         userWorkspace.forEach((value, key) => { userWorkspace[key] = value.workspaceName })
+        userWorkspace = [...userWorkspace, ...ownerWorkspace]
+        userWorkspace = [...new Set(userWorkspace)];
 
         if (workMessage.workspaces.length > 0) {
           for (workspace in userWorkspace) {
