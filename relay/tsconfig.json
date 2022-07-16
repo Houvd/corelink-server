@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "alwaysStrict": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "strict": true,
+        "strictFunctionTypes": true,
+        "baseUrl": "./",
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "allowJs": true,
+        "checkJs": true,
+        "outDir": "./dist",
+        "target": "ES6",
+        "module": "CommonJS",
+        "charset": "utf8",
+        "moduleResolution": "Node",
+        "noImplicitAny": true,
+        "pretty": true,
+        "rootDirs": ["./", "./src"]
+    },
+    "include": ["src/**/*.ts", "src/**/*.js"]
+}
