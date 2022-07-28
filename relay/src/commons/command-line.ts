@@ -54,6 +54,8 @@ export namespace Corelink {
             new commander.Option(
                 "-ll, --log-level", "Override the log level in configuration. If not supplied, value will be defaulted from configuration."
             ).default(null).argParser((val, prev) => {
+                console.log(val);
+                console.log(prev);
             })
         );
 

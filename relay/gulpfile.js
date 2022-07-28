@@ -7,11 +7,19 @@
 // use 'strict'
 // jshint esversion: 6
 
-const { series, parallel } = require("gulp");
 const fancyLog = require("fancy-log");
+const { series } = require("gulp");
 const fs = require("fs");
 
-const buildDir = "./dist";
+let buildDir = "./dist";
+
+function _cb(cb) {
+    if (cb) cb();
+}
+
+function setupProject(cb) {
+    _cb(cb);
+}
 
 function clean(cb) {
     fancyLog.log(`Checking if '${buildDir}' exists`);
@@ -20,8 +28,6 @@ function clean(cb) {
         fs.rm(buildDir, { recursive: true, force: true });
         fancyLog.log(`Removed: ${buildDir}`);
     } else fancyLog.log(`Directory does not exist: ${buildDir}. Moving on..`);
-
-    if (cb) cb();
 }
 
 function doBuild(cb) {
