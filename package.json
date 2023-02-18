@@ -1,8 +1,8 @@
 {
-  "name": "corelink-server",
+  "name": "corelink-server-docs",
   "description": "",
-  "version": "6.0.2",
-  "main": "corelink.js",
+  "version": "2.0.0",
+  "main": "",
   "keywords": [],
   "author": {
     "name": "Robert Pahle",
@@ -10,8 +10,8 @@
   },
   "contributors": [
     {
-      "email": "ak7907@nyu.edu",
-      "name": "abhishek Khanna"
+      "email": "ss14885@nyu.edu",
+      "name": "Sidharth Shyamsukha"
     }
   ],
   "license": "MIT",
@@ -22,19 +22,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://dev.hpc.nyu.edu/corelink/corelink-server.git"
+    "url": "https://dev.hpc.nyu.edu/corelink/corelink-documentation.git"
   },
   "scripts": {
-    "test": "node  tests/tests.js",
-    "start": "node corelink.js",
     "devinstall": "npm install && node ./knex/knex.js && cd config && node ../node_modules/knex/bin/cli.js migrate:rollback && node ../node_modules/knex/bin/cli.js migrate:latest && node ../node_modules/knex/bin/cli.js seed:run"
   },
   "dependencies": {
     "config": "^3.3.7",
     "https": "^1.0.0",
+    "inquirer": "^8.2.4",
     "knex": "^0.95.15",
     "node-static": "^0.7.11",
     "sqlite3": "^5.0.0",
+    "websocket": "^1.0.34",
     "ws": "^8.5.0"
   }
 }

@@ -1,0 +1,227 @@
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style type="text/css">
+        td {
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body style="margin: 2.5%">
+    <h1 style="color:rgba(0, 0, 0, 0.911)" ;font-family:serif> Server Initiated Control Functions</h1>
+    <h4 style="color:rgba(0, 0, 0, 0.911)" ;font-family:serif> Name:update</h4>
+    <h4 style="color:rgba(70, 70, 70, 0.911)" ;font-family:serif>Description:update a receiver with a new stream from
+        sender</h4>
+    <table class="table table-bordered" style="margin: auto">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">argument</th>
+                <th scope="col">description</th>
+                <th scope="col">type</th>
+                <th scope="col">sample</th>
+                <th scope="col"> default</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="active">
+                <td>function</td>
+                <td>function that was triggered</td>
+                <td>string</td>
+                <td>update</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>receiverID</td>
+                <td>receiverID that matched the new sender</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>streamID</td>
+                <td>streamID that was updated</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>user</td>
+                <td>username of for the stream that is announced</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>apps</td>
+                <td>list of app names that have processed this stream</td>
+                <td>array</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>type</td>
+                <td>the type of the stream (e.g. 3d, audio) that was updated</td>
+                <td>string</td>
+                <td>undefined</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>meta</td>
+                <td>metadata from the sender stream</td>
+                <td>string</td>
+                <td>undefined</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>token</td>
+                <td>optional token to authenticate the message</td>
+                <td>string</td>
+                <td>undefined</td>
+                <td>undefined</td>
+            </tr>
+        </tbody>
+    </table> <br>
+    <h4 style="color:rgba(0, 0, 0, 0.911)" ;font-family:serif> Name:subscriber</h4>
+    <h4 style="color:rgba(70, 70, 70, 0.911)" ;font-family:serif>Description:Update a sender with a new stream that
+        subscribed.</h4>
+    <table class="table table-bordered" style="margin: auto">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">argument</th>
+                <th scope="col">description</th>
+                <th scope="col">type</th>
+                <th scope="col">sample</th>
+                <th scope="col"> default</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="active">
+                <td>function</td>
+                <td>function that was triggered</td>
+                <td>string</td>
+                <td>subscriber</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>senderID</td>
+                <td>senderID that the receiver subscribed to</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>receiverID</td>
+                <td>receiverID that subscribed</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>user</td>
+                <td>username of for the stream that is subscribed</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>app</td>
+                <td>app name for the stream that subscribed</td>
+                <td>array</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>meta</td>
+                <td>metadata from the receiver stream</td>
+                <td>string</td>
+                <td>undefined</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>token</td>
+                <td>optional token to authenticate the message</td>
+                <td>string</td>
+                <td>undefined</td>
+                <td>undefined</td>
+            </tr>
+        </tbody>
+    </table> <br>
+    <h4 style="color:rgba(0, 0, 0, 0.911)" ;font-family:serif> Name:stale</h4>
+    <h4 style="color:rgba(70, 70, 70, 0.911)" ;font-family:serif>Description:Update a receiver that stream is stale and
+        not in use anymore. A sender might have dropped or the stream might have timed out.</h4>
+    <table class="table table-bordered" style="margin: auto">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">argument</th>
+                <th scope="col">description</th>
+                <th scope="col">type</th>
+                <th scope="col">sample</th>
+                <th scope="col"> default</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="active">
+                <td>function</td>
+                <td>function that was triggered</td>
+                <td>string</td>
+                <td>stale</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>streamID</td>
+                <td>streamID that is stale</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>token</td>
+                <td>optional token to authenticate message</td>
+                <td>string</td>
+                <td>undefined</td>
+                <td>undefined</td>
+            </tr>
+        </tbody>
+    </table> <br>
+    <h4 style="color:rgba(0, 0, 0, 0.911)" ;font-family:serif> Name:dropped</h4>
+    <h4 style="color:rgba(70, 70, 70, 0.911)" ;font-family:serif>Description:Update a sender that receivers have dropped
+        or unsubscribed.</h4>
+    <table class="table table-bordered" style="margin: auto">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">argument</th>
+                <th scope="col">description</th>
+                <th scope="col">type</th>
+                <th scope="col">sample</th>
+                <th scope="col"> default</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="active">
+                <td>function</td>
+                <td>function that was triggered</td>
+                <td>string</td>
+                <td>dropped</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>streamID</td>
+                <td>receiverID that was dropped</td>
+                <td>string</td>
+                <td>0</td>
+                <td>undefined</td>
+            </tr>
+            <tr class="active">
+                <td>token</td>
+                <td>optional token to authenticate message</td>
+                <td>string</td>
+                <td>undefined</td>
+                <td>undefined</td>
+            </tr>
+        </tbody>
+    </table> <br>
+
+</html>
