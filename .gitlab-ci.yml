@@ -7,24 +7,24 @@ before_script:
   - git config --global user.email "$GITLAB_USER_EMAIL"
   - git config --global user.name "$GITLAB_USER_NAME"
 
-# server-artifact:
-#   image: alpine
-#   stage: artifact
-#   resource_group: artifact
-#   script:
-#     - apk add zip
-#     - git clone --branch server-artifact https://deploy-token:${GIT_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git server-artifact
-#     - cd server-artifact
-#     - rm -rf *
-#     - cd ..
-#     - zip -r server.zip .
-#     - mv server.zip server-artifact
-#     - cd server-artifact
-#     - git add .
-#     - git commit -m "$CI_COMMIT_AUTHOR commit $CI_COMMIT_DESCRIPTION with sha $CI_COMMIT_SHA" --allow-empty
-#     - git push --force
-#   only:
-#     - dev
+server-artifact:
+  image: alpine
+  stage: artifact
+  resource_group: artifact
+  script:
+    - apk add zip
+    - git clone --branch server-artifact https://deploy-token:${GIT_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git server-artifact
+    - cd server-artifact
+    - rm -rf *
+    - cd ..
+    - zip -r server.zip .
+    - mv server.zip server-artifact
+    - cd server-artifact
+    - git add .
+    - git commit -m "$CI_COMMIT_AUTHOR commit $CI_COMMIT_DESCRIPTION with sha $CI_COMMIT_SHA" --allow-empty
+    - git push --force
+  only:
+    - dev
 
 server-deploy:
   image: node:latest
