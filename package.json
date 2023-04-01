@@ -1,5 +1,5 @@
 {
-  "name": "@corelinkhub/corelink-server",
+  "name": "corelink-server",
   "description": "",
   "version": "6.0.2",
   "main": "corelink.js",

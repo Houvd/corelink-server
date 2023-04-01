@@ -1,6 +1,5 @@
 stages:
   - artifact
-  - deploy
 
 before_script:
   - apk update && apk add git
@@ -25,18 +24,3 @@ server-artifact:
     - git push --force
   only:
     - dev
-
-server-deploy:
-  image: node:latest
-  stage: deploy
-  resource_group: deploy
-  before_script: 
-    - git config --global user.email "$GITLAB_USER_EMAIL"
-    - git config --global user.name "$GITLAB_USER_NAME"
-  rules:
-    - if: $CI_COMMIT_TAG
-  script:
-    - npm version $CI_COMMIT_TAG
-    # - echo "//${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=${CI_JOB_TOKEN}">.npmrc
-    - npm publish
-
