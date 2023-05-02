@@ -48,3 +48,74 @@ server-deploy:
     # - echo "//${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=${CI_JOB_TOKEN}">.npmrc
     - npm publish
 
+pages:
+  image: node:16-alpine3.16
+  stage: build
+  script:
+    - apk add bash
+    - apk add unzip
+    - apk add curl
+    - git clone https://deploy-token:${GIT_PUSH_TOKEN}@dev.hsrn.nyu.edu/corelink/corelink-server.git
+    - curl https://dev.hsrn.nyu.edu/api/v4/projects/corelink%2Fcorelink-client/jobs/artifacts/dev/raw/javascript-client.zip\?job\=javascript-artifact --output javascript-client.zip
+    - unzip javascript-client.zip
+    - cd javascript/ 
+    - npm run devinstall 
+    - cd ../corelink-server/
+    - npm run devinstall
+    - nohup node corelink.js & 
+    - sleep 2
+    - cd docs_scripts/
+    - node client_function_docs_generator.js
+    - node server_functions_documentation_generator.js
+    - node documentFunctions.js
+    - node documentServerFunctions.js
+    - cd ../../
+    - mv Corelink_Client_Initiated_Functions.html ./public
+    - mv Corelink_Client_Initiated_Functions.md ./public
+    - mv Corelink_Server_Initiated_Functions.md ./public
+    - mv Corelink_Server_Initiated_Functions.html ./public
+    - cd public/
+    - git add .
+    - git commit -m "$CI_COMMIT_AUTHOR commit $CI_COMMIT_DESCRIPTION with sha $CI_COMMIT_SHA" --allow-empty
+    - git push --force
+  artifacts:
+    paths:
+      - public
+  only:
+    - dev
+
+pages-test:
+  image: node:16-alpine3.16
+  stage: build
+  script:
+    - mkdir pages
+    - apk add curl
+    - apk add unzip
+    - git clone https://deploy-token:${GIT_PUSH_TOKEN}@dev.hsrn.nyu.edu/corelink/corelink-server.git
+    - curl https://dev.hsrn.nyu.edu/api/v4/projects/corelink%2Fcorelink-client/jobs/artifacts/dev/raw/javascript-client.zip\?job\=javascript-artifact --output javascript-client.zip
+    - unzip javascript-client.zip
+    - cd javascript/ 
+    - npm run devinstall 
+    - cd ../corelink-server/
+    - npm run devinstall
+    - nohup node corelink.js & 
+    - sleep 2
+    - cd docs_scripts/
+    - node client_function_docs_generator.js
+    - node server_functions_documentation_generator.js
+    - node documentFunctions.js
+    - node documentServerFunctions.js
+    - cd ../../
+    - mv Corelink_Client_Initiated_Functions.html ./pages
+    - mv Corelink_Client_Initiated_Functions.md ./pages
+    - mv Corelink_Server_Initiated_Functions.md ./pages
+    - mv Corelink_Server_Initiated_Functions.html ./pages
+    - cd public/
+    - git add .
+    - git commit -m "$CI_COMMIT_AUTHOR commit $CI_COMMIT_DESCRIPTION with sha $CI_COMMIT_SHA" --allow-empty
+    - git push --force
+  artifacts:
+    paths:
+      - pages
+  except:
+    - dev
