@@ -67,7 +67,7 @@ const https = require('https')
 const httpStatic = require('node-static')
 const config = require('./config/configure')
 const knex = require('./knex/knex.js')
-
+const { createLogger } = require('./logger');
 
 // should the server output be piped into a corelink stream
 // to logging to file copy dockerlog.js.sample to dockerlog.js
@@ -319,72 +319,33 @@ function saltHashPassword(userPassword) {
 
 //* **************** Server */
 async function run() {
-  // setup logging
-
-  // setup file logging of the dockerlog.js file is available
-  let log
-  let logErr
-  if (logFile) {
-    const timestamp = new Date(Date.now())
-    const timeString = `${timestamp.getFullYear()}_${timestamp
-      .getMonth().toString().padStart(2, '0')}_${timestamp
-      .getDate().toString().padStart(2, '0')}_${timestamp
-      .getHours().toString().padStart(2, '0')}_${timestamp
-      .getMinutes().toString().padStart(2, '0')}_${timestamp
-      .getSeconds().toString().padStart(2, '0')}`
-    log = await fs.createWriteStream(`data/${timeString}_node.access.log`, { flags: 'a' })
-    logErr = await fs.createWriteStream(`data/${timeString}_node.error.log`, { flags: 'a' })
-
-    console.log(`Selecting ${timeString}_node.access.log to log.`)
-  }
-
-  const stdOut = process.stdout.write
-  const stdErr = process.stderr.write
-
-  function write(...args) {
-    if (logStdOut) stdOut.apply(process.stdout, args)
-    if (logFile) log.write(...args)
-    const data = Buffer.from(`${Date.now()} ${args[0]}`)
-    const header = Buffer.alloc(8)
-
-    header.writeUInt16LE(0, 0)
-    header.writeUInt16LE(data.length, 2)
-    header.writeUInt32LE(0, 4)
-
-    const packet = [header, data]
-    const message = Buffer.concat(packet)
-    // eslint-disable-next-line no-use-before-define
-    if (logStream) relayData(message)
-  }
-
-  function writeErr(...args) {
-    if (logStdOut) stdErr.apply(process.stderr, args)
-    if (logFile) logErr.write(...args)
-    const data = Buffer.from(`${Date.now()} ${args[0]}`)
-    const header = Buffer.alloc(8)
-    header.writeUInt16LE(0, 0)
-    header.writeUInt16LE(data.length, 2)
-    header.writeUInt32LE(0, 4)
-
-
-    const packet = [header, data]
-    const message = Buffer.concat(packet)
-    // eslint-disable-next-line no-use-before-define
-    if (logStream) relayData(message)
-  }
-
-  process.stdout.write = write
-  process.stderr.write = writeErr
-
   // catch exceptions
-  process.on('uncaughtException', (e) => {
-    console.error((e && e.stack) ? e.stack : e)
+  process.on('uncaughtException', (err) => {
+    log.fatal(err, 'uncaught exception detected');
   })
 
   process.on('unhandledRejection', (reason, promise) => {
-    console.error(reason, promise)
+    log.fatal({ reason, promise }, 'unhandled rejection detected')
   })
 
+  function relayLogs(...args) {
+    if (logStream) {
+      const data = Buffer.from(`${Date.now()} ${args[0]}`)
+      const header = Buffer.alloc(8)
+
+      header.writeUInt16LE(0, 0)
+      header.writeUInt16LE(data.length, 2)
+      header.writeUInt32LE(0, 4)
+
+      const packet = [header, data]
+      const message = Buffer.concat(packet)
+      // eslint-disable-next-line no-use-before-define
+      relayData(message)
+    }
+  }
+
+  // Instantiate the logger.
+  const log = createLogger({ serverVersion, logFile, logStdOut, customFn: relayLogs });
 
   // pre-setting arrays with data while we convert the server to use only the database
   let content = await knex('workspaces')
@@ -395,7 +356,7 @@ async function run() {
     })
     .leftJoin('group_workspace', 'workspace_id', '=', 'workspaces.id')
     .leftJoin('group_user', 'group_workspace.group_id', '=', 'group_user.group_id')
-    .catch((err) => console.log(err))
+    .catch((err) => log.error(err, 'error occurred while querying content'))
 
   const workspaces = []
   for (const key in content) {
@@ -420,7 +381,7 @@ async function run() {
       username: 'username',
     })
     .orderBy('id')
-    .catch((err) => console.log(err))
+    .catch((err) => log.error(err, 'error occurred while querying users'))
 
   for (const key in content) {
     if (key) {
@@ -437,7 +398,7 @@ async function run() {
       time: 'time',
     })
     .orderBy('id')
-    .catch((err) => console.log(err))
+    .catch((err) => log.error(err, 'error occurred while querying apps'))
 
   for (const key in content) {
     if (key) {
@@ -491,17 +452,15 @@ async function run() {
     let IP
     let connectionPort
 
-    console.log('Listing Streams')
-    // console.log(tokens);
-    // console.log(source);
+    log.info('listing streams')
     for (token in tokens) {
       if (token !== '') {
-        console.log(`Token: ${token}, user: ${users[tokens[token].user].username}, streams: ${tokens[token].streams.toString()}, time: ${tokens[token].time}`)
+        log.info(`token: ${token}, user: ${users[tokens[token].user].username}, streams: ${tokens[token].streams.toString()}, time: ${tokens[token].time}`);
       }
     }
     for (token in apps) {
       if (token) {
-        console.log(`Token: ${token}, app: ${apps[token].name}, streams: ${apps[token].streams.toString()}, time: ${apps[token].time}`)
+        log.info(`token: ${token}, app: ${apps[token].name}, streams: ${apps[token].streams.toString()}, time: ${apps[token].time}`)
       }
     }
 
@@ -517,27 +476,27 @@ async function run() {
             }
           }
         }
-        console.log(`Source: ${s}, User: ${user}, IP: ${source[s].IP}:${source[s].port}, proto: ${source[s].proto}, workspace: ${source[s].workspace}, alert: ${source[s].alert}, type: ${source[s].type}, time: ${source[s].time}, from: ${source[s].from}`)
+        log.info(`source: ${s}, User: ${user}, IP: ${source[s].IP}:${source[s].port}, proto: ${source[s].proto}, workspace: ${source[s].workspace}, alert: ${source[s].alert}, type: ${source[s].type}, time: ${source[s].time}, from: ${source[s].from}`)
       }
     }
 
     for (t in target) {
       if (t) {
-        console.log(`Target: ${t}, IP: ${target[t].IP}:${target[t].port}, proto: ${target[t].proto}, workspace: ${target[t].workspace}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
+        log.info(`target: ${t}, IP: ${target[t].IP}:${target[t].port}, proto: ${target[t].proto}, workspace: ${target[t].workspace}, alert: ${target[t].alert}, type: ${target[t].type}, time: ${target[t].time}`)
       }
     }
     for (sr in streamRelay) {
       if (sr) {
-        for (tsr in streamRelay[sr]) if (tsr) console.log(`Relaying ${sr} -> ${tsr}`)
+        for (tsr in streamRelay[sr]) if (tsr) log.info(`relaying ${sr} -> ${tsr}`)
       }
     }
-    console.log('Streamrelay:', streamRelay)
+    log.info({ streamRelay }, 'streamRelay')
 
     for (IP in connections) {
       if (IP) {
         for (connectionPort in connections[IP]) {
           if (connectionPort) {
-            console.log(`Connection stored for ${IP}:${connectionPort}`)
+            log.info(`connection stored for ${IP}:${connectionPort}`)
           }
         }
       }
@@ -556,11 +515,11 @@ async function run() {
 
     if ((key.charCodeAt(0) === 27) && (key.charCodeAt(1) === 91)) {
       if ((key.charCodeAt(2) === 65)) {
-        console.log('Debug on')
+        log.info('debug on')
         globalConfig.debug = true
       }
       if ((key.charCodeAt(2) === 66)) {
-        console.log('Debug off')
+        log.info('debug off')
         globalConfig.debug = false
       }
     }
@@ -572,7 +531,7 @@ async function run() {
     let apps
     let userApps
     let token
-    if (globalConfig.debug) console.log('findApps', streamID)
+    if (globalConfig.debug) log.debug(`findApps: ${streamID}`)
     user = ''
     apps = []
     if ((typeof source[streamID] !== 'undefined') && (source[streamID].from !== '')) {
@@ -623,7 +582,7 @@ async function run() {
   }
 
   async function checkAuth(message) {
-    console.log('token: ', message.token)
+    log.info(`token: ${message.token}`)
     if ('token' in message) {
       // check if token is valid for a user
       const token = await knex('tokens')
@@ -817,7 +776,7 @@ async function run() {
       },
     },
     async process(message) {
-      console.log('*** keep alive ***')
+      log.debug('*** keep alive ***')
       const response = {}
       const data = await checkAuth(message)
         .catch((error) => {
@@ -825,7 +784,7 @@ async function run() {
         })
       response.statusCode = 0
       if (typeof data !== 'object') {
-        console.log(response)
+        log.info(response, 'response')
         return (response)
       }
       return (data)
@@ -878,7 +837,7 @@ async function run() {
       response.statusCode = 0
       if (typeof data !== 'object') {
         response.functionList = Object.keys(functions)
-        console.log(response)
+        log.info(response, 'response')
         return (response)
       }
       return (data)
@@ -931,7 +890,7 @@ async function run() {
       response.statusCode = 0
       if (typeof data !== 'object') {
         response.functionList = Object.keys(serverFunctions)
-        console.log(response)
+        log.info(response, 'response')
         return (response)
       }
       return (data)
@@ -1323,7 +1282,7 @@ async function run() {
           .select({ workspace: 'workspace_name' })
           .where('users.id', '=', data)
           .leftJoin('workspaces', 'workspace_id', '=', 'workspaces.id')
-          .catch((err) => console.log(err))
+          .catch((err) => log.error(err, 'error occurred while querying users'))
 
         if (typeof workspace !== 'undefined') {
           response.workspace = workspace[0].workspace
@@ -1387,7 +1346,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          if (globalConfig.debug && workspace) console.log(message.workspace, ' was deleted sucessfully')
+          if (globalConfig.debug && workspace) log.info(`${message.workspace} was deleted successfully`)
           if (typeof workspaces[message.workspace] !== 'undefined') {
             // *** ToDo: make sure that existing connections to this workspace will be terminated
             // *** ToDo: remove legacy workspaces array
@@ -1482,7 +1441,7 @@ async function run() {
               throw error
             })
           if (typeof oldUser === 'undefined') {
-            console.log('no old user found')
+            log.info('no old user found')
             const password = saltHashPassword(workMessage.password)
             if (typeof message.admin === 'undefined') workMessage.admin = false
             await knex('users').insert({
@@ -1560,7 +1519,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          if (globalConfig.debug && command) console.log(tokens[message.token].user, ' password updated')
+          if (globalConfig.debug && command) log.info(`${tokens[message.token].user} password updated`)
 
           response.statusCode = 0
           return (response)
@@ -1616,14 +1575,14 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('username' in message) {
-          console.log('Removing User:', message.username)
+          log.info(`removing user: ${message.username}`)
           const command = await knex('users')
             .where('username', message.username)
             .del()
             .catch((error) => {
               throw error
             })
-          if (globalConfig.debug && command) console.log(message.username, ' was deleted successfully')
+          if (globalConfig.debug && command) log.info(`${message.username} was deleted successfully`)
 
           response.statusCode = 0
           return (response)
@@ -1684,14 +1643,14 @@ async function run() {
       const response = {}
       if (typeof data !== 'object') {
         if ('username' in message) {
-          console.log('get User:', message.username)
+          log.info(`get user: ${message.username}`)
           const command = await knex('users')
             .first(['username', 'email', 'first', 'last', 'admin'])
             .where('username', message.username)
             .catch((error) => {
               throw error
             })
-          if (globalConfig.debug && command) console.log(message.username, ' data was fetched from DB')
+          if (globalConfig.debug && command) log.info(`${message.username} data was fetched from DB`)
 
           response.user = command
           response.statusCode = 0
@@ -1790,7 +1749,7 @@ async function run() {
               throw error
             })
 
-          if (globalConfig.debug && command) console.log(message.username, ' was updated successfully')
+          if (globalConfig.debug && command) log.info(`${message.username} was updated successfully`)
           response.statusCode = 0
           return (response)
         }
@@ -1911,7 +1870,7 @@ async function run() {
               throw error
             })
           if (typeof oldGroup === 'undefined') {
-            console.log('no old user found')
+            log.info('no old user found')
             await knex('groups').insert({
               owner_id: tokens[message.token].user, group_name: message.group,
             })
@@ -1988,7 +1947,7 @@ async function run() {
             })
 
           if (typeof oldGroup !== 'undefined') {
-            console.log('group found')
+            log.info('group found')
             const oldUser = await knex('users')
               .first({ userId: 'id' })
               .where('username', message.user)
@@ -2003,7 +1962,7 @@ async function run() {
                   throw error
                 })
               if ((oldGroup.ownerId === tokens[message.token].user) || (admin.admin === 1)) {
-                console.log('login user is either the admin or owner')
+                log.info('login user is either the admin or owner')
 
                 await knex('group_user').insert({
                   owner_id: tokens[message.token].user, group_id: oldGroup.groupId, user_id: oldUser.userId,
@@ -2084,7 +2043,7 @@ async function run() {
             })
 
           if (typeof oldGroup !== 'undefined') {
-            console.log('group found')
+            log.info('group found')
             const oldUser = await knex('users')
               .first({ userId: 'id' })
               .where('username', message.user)
@@ -2099,18 +2058,17 @@ async function run() {
                   throw error
                 })
               if (globalConfig.debug) {
-                console.log('owner details')
-                console.log(admin)
+                log.info(admin, 'owner details')
               }
               if ((oldGroup.ownerId === tokens[message.token].user) || (admin.admin === 1)) {
-                if (globalConfig.debug) console.log('login user is either the admin or owner')
+                if (globalConfig.debug) log.info('login user is either the admin or owner')
                 const command = await knex('group_user')
                   .where('user_id', oldUser.userId).where('group_id', oldGroup.groupId)
                   .del()
                   .catch((error) => {
                     throw error
                   })
-                if (globalConfig.debug && command) console.log(oldUser.username, ' removed from the group', oldGroup.groupId)
+                if (globalConfig.debug && command) log.info(`${oldUser.username} removed from the group ${oldGroup.groupId}`)
                 response.statusCode = 0
                 return (response)
               }
@@ -2195,7 +2153,7 @@ async function run() {
               .catch((error) => {
                 throw error
               })
-            if (globalConfig.debug && command) console.log(owner.username, ' was made the group owner')
+            if (globalConfig.debug && command) log.info(`${owner.username} was made the group owner`)
             response.statusCode = 0
             return (response)
           }
@@ -2259,7 +2217,7 @@ async function run() {
             .catch((error) => {
               throw error
             })
-          if (globalConfig.debug && command) console.log(message.group, ' was removed')
+          if (globalConfig.debug && command) log.info(`${message.group} was removed`)
 
           response.statusCode = 0
           return (response)
@@ -2435,11 +2393,11 @@ async function run() {
       let token
       const response = {}
       if (typeof data !== 'object') {
-        console.log('*** sender ***')
+        log.debug('*** sender ***')
         if (('workspace' in message) && ('proto' in message) && ('type' in message) && ((message.proto === 'udp') || (message.proto === 'tcp') || (message.proto === 'ws'))) {
           if (('senderID' in message) && (message.senderID !== '') && (typeof source[message.senderID] !== 'undefined')) {
             streamID = message.senderID
-            console.log(`used existing sender streamID: ${streamID}`)
+            log.info(`used existing sender streamID: ${streamID}`)
           } else {
             streamID = null
             while ((streamID === null) || (typeof source[streamID] !== 'undefined') || (typeof target[streamID] !== 'undefined')) {
@@ -2448,7 +2406,7 @@ async function run() {
               // .update(message.workspace + message.proto + (new Date().getTime()))
               // .digest('hex').substr(0, 7)
             }
-            console.log(`created new sender streamID: ${streamID}`)
+            log.info(`created new sender streamID: ${streamID}`)
             streamRelay[streamID] = []
           }
           if ((typeof source[streamID] === 'undefined')
@@ -2569,7 +2527,7 @@ async function run() {
           throw error
         })
 
-      console.log('*** listStreams ***')
+      log.debug('*** listStreams ***')
       const response = {}
       let workspace
       const streamListElement = {}
@@ -2874,7 +2832,7 @@ async function run() {
       const workMessage = message
 
       if (typeof data !== 'object') {
-        console.log('*** receiver ***')
+        log.debug('*** receiver ***')
         if ((typeof workMessage === 'object') && ('workspace' in workMessage)) {
           // ToDo: check if IP is given
           if (!('port' in workMessage)) workMessage.port = 0
@@ -2882,11 +2840,11 @@ async function run() {
           // get appropriate streamIDs
           if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
             workMessage.streamIDs = []
-            for (sourceID in source) 
-              if ((workMessage.workspace === source[sourceID].workspace) 
-                  && (!('type' in workMessage) 
-                    || (workMessage.type.length === 0) 
-                    || (workMessage.type.includes(source[sourceID].type)))) 
+            for (sourceID in source)
+              if ((workMessage.workspace === source[sourceID].workspace)
+                  && (!('type' in workMessage)
+                    || (workMessage.type.length === 0)
+                    || (workMessage.type.includes(source[sourceID].type))))
                 workMessage.streamIDs.push(parseInt(sourceID, 10))
           }
 
@@ -2919,7 +2877,7 @@ async function run() {
                   || ((typeof apps[workMessage.token] !== 'undefined')
                   && ((!('echo' in workMessage)) || (('echo' in workMessage) && (workMessage.echo !== true))))) {
                 workMessage.streamList.push(streamListElement)
-              } else console.log(`skipping stream from same user ${workMessage.streamIDs[stream]}`)
+              } else log.info(`skipping stream from same user ${workMessage.streamIDs[stream]}`)
             }
           }
 
@@ -2934,7 +2892,7 @@ async function run() {
 
           if (('receiverID' in workMessage) && (workMessage.receiverID !== '') && (typeof target[workMessage.receiverID] !== 'undefined')) {
             streamID = workMessage.receiverID
-            console.log(`used existing receiver streamID: ${streamID}`)
+            log.info(`used existing receiver streamID: ${streamID}`)
             // console.log(target[streamID]);
           } else {
             // create a new target streamID
@@ -2945,7 +2903,7 @@ async function run() {
               // .update(workMessage.workspace + workMessage.proto + (new Date().getTime()))
               // .digest('hex').substr(0, 7)
             }
-            console.log(`created new receiver streamID: ${streamID}`)
+            log.info(`created new receiver streamID: ${streamID}`)
           }
 
           if ((typeof target[streamID] === 'undefined')
@@ -3005,7 +2963,7 @@ async function run() {
           if (typeof apps[workMessage.token] !== 'undefined') apps[workMessage.token].streams.push(streamID)
 
           // designate streams to be directly relayed ot this target
-          console.log('streamRelay', streamRelay)
+          log.info(streamRelay, 'streamRelay')
           if (workMessage.subscribe) {
             for (stream in workMessage.streamList) {
               if (stream) {
@@ -3104,15 +3062,15 @@ async function run() {
       // *** ToDo: Only allow user to get streams with correct access permissions */
 
       if (typeof data !== 'object') {
-        console.log('*** subscribe ***')
+        log.debug('*** subscribe ***')
         if ((('receiverID' in workMessage) && (workMessage.receiverID !== '') && (typeof target[workMessage.receiverID] !== 'undefined'))) {
           // get all streamIDs if no list is given
           if (!('streamIDs' in workMessage) || (workMessage.streamIDs.length === 0)) {
             workMessage.streamIDs = []
             for (sourceID in source) {
-              if (!('type' in target[workMessage.receiverID]) 
-                  || (target[workMessage.receiverID].type.length === 0) 
-                  || (target[workMessage.receiverID].type.includes(source[sourceID].type))) 
+              if (!('type' in target[workMessage.receiverID])
+                  || (target[workMessage.receiverID].type.length === 0)
+                  || (target[workMessage.receiverID].type.includes(source[sourceID].type)))
                 workMessage.streamIDs.push(parseInt(sourceID, 10))
             }
           }
@@ -3172,7 +3130,7 @@ async function run() {
           response = {}
           response.statusCode = 0
           response.streamList = workMessage.streamList
-          if (globalConfig.debug) console.log(response)
+          if (globalConfig.debug) log.debug(response, 'response')
           return (response)
         }
         return getErrorMessage(3)
@@ -3237,8 +3195,8 @@ async function run() {
       let response = {}
       const workMessage = message
       if (typeof data !== 'object') {
-        console.log('*** unsubscribe ***')
-        if ((typeof workMessage.streamIDs === 'number') || (Array.isArray(workMessage.streamIDs))) { console.log(workMessage) }
+        log.debug('*** unsubscribe ***')
+        if ((typeof workMessage.streamIDs === 'number') || (Array.isArray(workMessage.streamIDs))) { log.info(workMessage) }
 
         if ((('receiverID' in workMessage) && (typeof workMessage.receiverID === 'number') && (typeof target[workMessage.receiverID] !== 'undefined'))
                   && (('streamIDs' in workMessage) && ((typeof workMessage.streamIDs === 'number') || (Array.isArray(workMessage.streamIDs))))) {
@@ -3338,7 +3296,7 @@ async function run() {
           throw error
         })
       if (typeof data !== 'object') {
-        console.log('*** setGlobalSetting ***')
+        log.debug('*** setGlobalSetting ***')
         const workMessage = message
         if (typeof data === 'number') {
           // check if user
@@ -3361,7 +3319,7 @@ async function run() {
                   default:
                     break
                 }
-                console.log('Setting variable: ', workMessage.config, ' to value: ', workMessage.value)
+                log.info(`setting variable: ${workMessage.config} to value: ${workMessage.value}`)
                 globalConfig[workMessage.config] = workMessage.value
                 break
               default:
@@ -3430,8 +3388,8 @@ async function run() {
       },
     },
     async process(message) {
-      console.log('*** disconnect ***')
-      console.log('message', message)
+      log.debug('*** disconnect ***')
+      log.info(message, 'message')
       const data = await checkAuth(message)
         .catch((error) => {
           throw error
@@ -3486,7 +3444,7 @@ async function run() {
             // find all streamID's for that user
             for (token in tokens) {
               if (user === tokens[token].user) {
-                console.log('streams in token', tokens[token].streams)
+                log.info({ streams: tokens[token].streams }, 'streams in token')
                 allStreams = allStreams.concat(tokens[token].streams)
               }
             }
@@ -3512,7 +3470,7 @@ async function run() {
             allStreams = apps[message.token].streams
             for (streamID in allStreams) {
               if (streamID) {
-                if (globalConfig.debug) console.log('disconnect streamID', allStreams[streamID])
+                if (globalConfig.debug) log.debug(`disconnect streamID: ${allStreams[streamID]}`)
                 // check if streamID is in correct workspace and of correct type
                 if ((typeof source[allStreams[streamID]] !== 'undefined')
                     && (types.includes(source[allStreams[streamID]].type) || types.length === 0)
@@ -3536,9 +3494,9 @@ async function run() {
         for (streamKey in streamIDs) {
           if (streamKey) {
             streamID = streamIDs[streamKey]
-            console.log('deleting', streamID)
+            log.info(`deleting: ${streamID}`)
             if ((typeof source[streamID] !== 'undefined') || (typeof target[streamID] !== 'undefined')) {
-              console.log(`Cleaning up stream ${streamID}`)
+              log.info(`cleaning up stream ${streamID}`)
               // *** ToDo: in addition,need to make sure that the actual connection is disconnected
               if ((typeof source[streamID] !== 'undefined')
                                 && (typeof source[streamID].IP !== 'undefined')
@@ -3636,7 +3594,7 @@ async function run() {
         })
 
       if (typeof data !== 'object') {
-        console.log('*** expire not implemented ***')
+        log.debug('*** expire not implemented ***')
         const response = {}
         response.statusCode = 0
         return response
@@ -3756,7 +3714,7 @@ async function run() {
 
       response.type = source[streamID].type
       response.meta = source[streamID].meta
-      console.log('trying to send update ', response)
+      log.info(response, 'trying to send update')
       // get correct workspace information
       const { workspace } = source[streamID]
 
@@ -3775,10 +3733,10 @@ async function run() {
               if (((users[tokens[token].user].username !== response.user)
                                   && (target[u].echo !== true))
                                   || (target[u].echo === true)) {
-                console.log(`updating client: ${token} : ${u}`)
+                log.info(`updating client: ${token} : ${u}`)
                 if (typeof tokens[token].conn.write === 'function') tokens[token].conn.write(update)
                 if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState !== 'undefined') && (tokens[token].conn.readyState === 1)) tokens[token].conn.send(update)
-              } else console.log('skipping stream from same user.')
+              } else log.info('skipping stream from same user.')
             }
           }
           for (token in apps) {
@@ -3786,10 +3744,10 @@ async function run() {
               if ((!response.apps.includes(apps[token].name)
                                   && (target[u].echo !== true))
                                   || (target[u].echo === true)) {
-                console.log(`updating app client: ${token} : ${u}`)
+                log.info(`updating app client: ${token} : ${u}`)
                 if (typeof apps[token].conn.write === 'function') apps[token].conn.write(update)
                 if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState !== 'undefined') && (apps[token].conn.readyState === 1)) apps[token].conn.send(update)
-              } else console.log('skipping stream from same app.')
+              } else log.info('skipping stream from same app.')
             }
           }
         }
@@ -3883,22 +3841,22 @@ async function run() {
       response.type = target[receiverID].type
       response.meta = target[receiverID].meta
       const update = JSON.stringify(response)
-      console.log('trying to send subscriber update ', update)
+      log.info(`trying to send subscriber update: ${update}`)
 
       // send update to sender
       if (typeof userToken !== 'undefined') {
-        console.log(`updating sender: ${userToken} : ${senderID}`)
+        log.info(`updating sender: ${userToken} : ${senderID}`)
         if (typeof tokens[userToken].conn.write === 'function') {
           tokens[userToken].conn.write(update)
-          console.log('Finished subscriber update (1).')
+          log.info('Finished subscriber update (1).')
         }
         if ((typeof tokens[userToken].conn.send === 'function') && (typeof tokens[userToken].conn.readyState !== 'undefined') && (tokens[userToken].conn.readyState === 1)) {
           tokens[userToken].conn.send(update)
-          console.log('Finished subscriber update (2).')
+          log.info('Finished subscriber update (2).')
         }
       }
       if (typeof appToken !== 'undefined') {
-        console.log(`updating app client: ${appToken} : ${senderID}`)
+        log.info(`updating app client: ${appToken} : ${senderID}`)
         if (typeof apps[appToken].conn.write === 'function') apps[appToken].conn.write(update)
         if ((typeof apps[appToken].conn.send === 'function') && (typeof apps[appToken].conn.readyState !== 'undefined') && (apps[appToken].conn.readyState === 1)) apps[appToken].conn.send(update)
       }
@@ -3939,7 +3897,7 @@ async function run() {
       response.streamID = streamID
 
       const update = JSON.stringify(response)
-      console.log('trying to send stale ', update)
+      log.info(`trying to send stale ${update}`)
 
       // get correct workspace information
       const { workspace } = source[streamID]
@@ -3956,10 +3914,10 @@ async function run() {
               if (((users[tokens[token].user].username !== response.user)
                                   && (target[u].echo !== true))
                                   || (target[u].echo === true)) {
-                console.log(`updating client: ${token} : ${u}`)
+                log.info(`updating client: ${token} : ${u}`)
                 if (typeof tokens[token].conn.write === 'function') tokens[token].conn.write(update)
                 if ((typeof tokens[token].conn.send === 'function') && (typeof tokens[token].conn.readyState !== 'undefined') && (tokens[token].conn.readyState === 1)) tokens[token].conn.send(update)
-              } else console.log('skipping stream from same user.')
+              } else log.info('skipping stream from same user.')
             }
           }
           for (token in apps) {
@@ -3967,10 +3925,10 @@ async function run() {
               if ((!response.apps.includes(apps[token].name)
                                   && (target[u].echo !== true))
                                   || (target[u].echo === true)) {
-                console.log(`updating app client: ${token} : ${u}`)
+                log.info(`updating app client: ${token} : ${u}`)
                 if (typeof apps[token].conn.write === 'function') apps[token].conn.write(update)
                 if ((typeof apps[token].conn.send === 'function') && (typeof apps[token].conn.readyState !== 'undefined') && (apps[token].conn.readyState === 1)) apps[token].conn.send(update)
-              } else console.log('skipping stream from same app.')
+              } else log.info('skipping stream from same app.')
             }
           }
         }
@@ -4013,7 +3971,7 @@ async function run() {
       response.streamID = receiverID
 
       const update = JSON.stringify(response)
-      console.log('trying to send dropped update ', update)
+      log.info(`trying to send dropped update: ${update}`)
 
       // get tokens for this stream
       for (token in tokens) {
@@ -4031,12 +3989,12 @@ async function run() {
 
       // send update to sender
       if (typeof userToken !== 'undefined') {
-        console.log(`updating sender: ${userToken} : ${sourceID}`)
+        log.info(`updating sender: ${userToken} : ${sourceID}`)
         if (typeof tokens[userToken].conn.write === 'function') tokens[userToken].conn.write(update)
         if ((typeof tokens[userToken].conn.send === 'function') && (typeof tokens[userToken].conn.readyState !== 'undefined') && (tokens[userToken].conn.readyState === 1)) tokens[userToken].conn.send(update)
       }
       if (typeof appToken !== 'undefined') {
-        console.log(`updating app client: ${appToken} : ${sourceID}`)
+        log.info(`updating app client: ${appToken} : ${sourceID}`)
         if (typeof apps[appToken].conn.write === 'function') apps[appToken].conn.write(update)
         if ((typeof apps[appToken].conn.send === 'function') && (typeof apps[appToken].conn.readyState !== 'undefined') && (apps[appToken].conn.readyState === 1)) apps[appToken].conn.send(update)
       }
@@ -4055,16 +4013,16 @@ async function run() {
       // console.log(controlConnection[remoteAddress][remotePort]);
 
       // at this point we have a new connection that is not yet authenticated
-      console.log('new client TCP control connection from %s :%s', remoteAddress, remotePort)
+      log.info(`new client TCP control connection from ${remoteAddress}:${remotePort}`)
       conn.setNoDelay(true)
       conn.setKeepAlive(true)
 
       conn.on('data', async (data) => {
-        console.log('TCP control connection data from %s :%j', remoteAddress, data.toString('utf8'))
+        log.info(`tcp control connection data from ${remoteAddress}:${data.toString('utf8')}`)
         try {
           message = JSON.parse(data)
-        } catch (e) {
-          console.log(`Received message not a proper JSON:${data.toString()}`)
+        } catch (err) {
+          log.error(err, `received message not a proper json:${data.toString()}`)
           return
         }
         if (('function' in message) && (message.function in functions)) {
@@ -4075,19 +4033,21 @@ async function run() {
             send.ID = message.ID
             send = JSON.stringify(send)
           }
-          console.log(`sending:${send}`)
+          log.info(`sending:${send}`)
           conn.write(send)
-        } else console.log(getErrorMessage(2))
+        } else {
+          log.info(getErrorMessage(2))
+        }
       })
 
       conn.once('close', () => {
         // *** ToDo: unset the array element for the connection
-        console.log('TCP control connection from %s closed', remoteAddress)
+        log.info(`tcp control connection from ${remoteAddress} closed`)
       })
 
       conn.on('error', (err) => {
         // *** ToDo: unset the array element for the connection
-        console.log('TCP control connection %s error: %s', remoteAddress, err.message)
+        log.error(err, `tcp control connection ${remoteAddress} error`)
       })
     }
   }
@@ -4101,37 +4061,37 @@ async function run() {
   users.forEach((user) => {
     userList.push(user.username)
   })
-  console.log('Functions: ', functions.listFunctions.info.responses.functionList.sample)
-  console.log('Server functions: ', Object.keys(serverFunctions))
-  console.log('Workspaces: ', functions.listWorkspaces.info.responses.workspaceList.sample)
-  console.log('Users: ', userList)
-  console.log('Apps:', apps)
+  log.info({ functions: functions.listFunctions.info.responses.functionList.sample }, 'functions')
+  log.info({ server_functions: Object.keys(serverFunctions) }, 'server functions')
+  log.info({ workspaces: functions.listWorkspaces.info.responses.workspaceList.sample }, 'workspaces')
+  log.info({ users: userList }, 'users')
+  log.info({ apps }, 'apps')
 
 
   // TCP control setup
-  console.log(`trying to bind TCP control port ${TCPControl}`)
+  log.info(`trying to bind tcp control port ${TCPControl}`)
 
   const TCPControlServer = net.createServer()
   TCPControlServer.on('connection', handleControlConnection)
 
   TCPControlServer.listen(TCPControl, '0.0.0.0', () => {
-    console.log('TCP control server listening to %j:%j', TCPControlServer.address().address, TCPControlServer.address().port)
+    log.info(`tcp control server listening to ${TCPControlServer.address().address}:${TCPControlServer.address().port}`)
   })
 
   // UDP data transfer setup
-  console.log(`trying to bind UDP port ${port.udp}`)
+  log.info(`trying to bind UDP port ${port.udp}`)
 
   const UDPDataServer = dgram.createSocket('udp4')
 
   UDPDataServer.on('error', (err) => {
-    console.log(`server error:\n${err.stack}`)
+    log.error(err, 'udp server error')
     // clean up connection ?
     UDPDataServer.close()
   })
 
   UDPDataServer.on('listening', () => {
     const address = UDPDataServer.address()
-    console.log(`UDP data server listening ${address.address}:${address.port}`)
+    log.info(`udp data server listening ${address.address}:${address.port}`)
   })
 
   UDPDataServer.bind(port.udp)
@@ -4169,8 +4129,8 @@ async function run() {
 
     // check for packet too small
     if (msg.length < 8) {
-      console.log('Packet is too small')
-      return console.error('Packet is too small')
+      log.error({ msg }, 'packet is too small')
+      return
     }
     // check for packet inconsistent size
     if (msg.length !== 8 + headerSize + dataSize) {
@@ -4183,8 +4143,8 @@ async function run() {
         calculatedSize += msg.readUInt16LE(pointer)
         calculatedSize += msg.readUInt16LE(pointer + 2)
         if (msg.length < calculatedSize) {
-          console.log(`Combined packet has wrong size (${msg.length} vs. ${calculatedSize}).`)
-          return console.error(`Combined packet has wrong size (${msg.length} vs. ${calculatedSize}).`)
+          log.error({ msg }, `combined packet has wrong size (${msg.length} vs. ${calculatedSize})`)
+          return
         }
         data = Buffer.allocUnsafe(calculatedSize - pointer)
         msg.copy(data, 0, pointer, calculatedSize)
@@ -4193,8 +4153,8 @@ async function run() {
       }
 
       if (msg.length !== calculatedSize) {
-        console.log(`Combined packet has still the wrong size (${msg.length} vs. ${calculatedSize}).`)
-        return console.error(`Combined packet has still the wrong size (${msg.length} vs. ${calculatedSize}).`)
+        log.error({ msg }, `combined packet has still the wrong size (${msg.length} vs. ${calculatedSize}).`)
+        return
       }
       return 'relaydata split end'
     }
@@ -4209,9 +4169,9 @@ async function run() {
         if (typeof source[sourceID] !== 'undefined') {
           // console.log('source[sourceID]', source[sourceID])
           // console.log('message', msg.toString())
-          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from ${source[sourceID].IP}:${source[sourceID].port}`)
+          log.info(`receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from ${source[sourceID].IP}:${source[sourceID].port}`)
         } else {
-          console.log(`Receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from unknown source`)
+          log.info(`receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from unknown source`)
         }
       }
       // console.log(data)
@@ -4222,9 +4182,9 @@ async function run() {
       header = msg.toString('ascii', 8, headerSize + 8)
       try {
         header = JSON.parse(header)
-      } catch (e) {
-        console.log(`error during parsing ${e}`)
-        return console.error(e)
+      } catch (err) {
+        log.error(err, 'error occurred during parsing')
+        return
       }
 
       // if we see the 'stamp' variable we will return a ping with the server stamped time
@@ -4249,7 +4209,7 @@ async function run() {
         switch (stream.proto) {
           case 'udp':
             UDPDataServer.send(message, remotePort, remoteAddress, (err) => {
-              if (err) console.log('socket error during ping', err)
+              if (err) log.error(err, 'socket error during ping')
             })
             break
           case 'tcp':
@@ -4259,9 +4219,9 @@ async function run() {
             stream.conn.send(message)
             break
           default:
-            console.log('wrong stream')
+            log.info('wrong stream')
         }
-        if (globalConfig.debug) console.log(`sending back ${stream.proto} ping:${JSON.stringify(header)}, IP:${remoteAddress}, port${remotePort}`)
+        if (globalConfig.debug) log.debug(`sending back ${stream.proto} ping:${JSON.stringify(header)}, IP:${remoteAddress}, port${remotePort}`)
         return 'done with echo'
       }
     }
@@ -4273,48 +4233,48 @@ async function run() {
         if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].IP !== 'undefined') && (target[targetID].IP !== '')) {
           if ((typeof target[targetID] !== 'undefined') && (typeof target[targetID].port !== 'undefined') && (target[targetID].port !== 0)) {
             if (globalConfig.debug && sourceID !== 0) {
-              console.log(`Sending ${sourceID} b${msg.length} h${headerSize} d${dataSize} to ${target[targetID].IP}:${target[targetID].port}`)
+              log.info(`sending ${sourceID} b${msg.length} h${headerSize} d${dataSize} to ${target[targetID].IP}:${target[targetID].port}`)
               // console.log(data)
             }
             target[targetID].time = last
             if (target[targetID].proto === 'udp') {
               UDPDataServer.send(msg, target[targetID].port, target[targetID].IP, (err) => {
-                if (err && (sourceID !== 0)) console.log('socket error', err)
+                if (err && (sourceID !== 0)) log.error(err, 'socket error')
               })
             } else if (target[targetID].proto === 'tcp') {
-              if (typeof target[targetID].conn === 'undefined' && (sourceID !== 0)) console.log('!!!! tcp connection not defined, dropping packet')
+              if (typeof target[targetID].conn === 'undefined' && (sourceID !== 0)) log.info('!!!! tcp connection not defined, dropping packet')
               else target[targetID].conn.write(msg)
-            } else if (((typeof target[targetID].conn === 'undefined') || (target[targetID].conn.readyState !== 1)) && (sourceID !== 0)) console.log('!!!! websocket connection not defined or closed, dropping packet')
+            } else if (((typeof target[targetID].conn === 'undefined') || (target[targetID].conn.readyState !== 1)) && (sourceID !== 0)) log.info('!!!! websocket connection not defined or closed, dropping packet')
             else target[targetID].conn.send(msg)
-          } else if (typeof target[targetID] === 'undefined' && (sourceID !== 0)) console.log(`${targetID} is not registered at all`)
+          } else if (typeof target[targetID] === 'undefined' && (sourceID !== 0)) log.info(`${targetID} is not registered at all`)
           else {
             types = ''
             for (type in target.targetID) {
               if (types === '') types = type
               else types = `${types}, ${type}`
             }
-            if (sourceID !== 0) console.log(`no port for stream ${targetID} [${types}], IP:${target[targetID].IP}, Timeout:${target[targetID].time}`)
+            if (sourceID !== 0) log.info(`no port for stream ${targetID} [${types}], IP:${target[targetID].IP}, Timeout:${target[targetID].time}`)
           }
-        } else if (sourceID !== 0) console.log(`no IP for stream ${sourceID}`)
+        } else if (sourceID !== 0) log.info(`no IP for stream ${sourceID}`)
       }
     } else if (sourceID in target) {
-      if (globalConfig.debug && (sourceID !== 0)) console.log(target[sourceID].IP)
-      console.log(`Trying to assign port and connections for ${sourceID}, ${remoteAddress}:${remotePort}`)
+      if (globalConfig.debug && (sourceID !== 0)) log.debug(target[sourceID].IP)
+      log.debug(`trying to assign port and connections for ${sourceID}, ${remoteAddress}:${remotePort}`)
       if (remoteAddress === target[sourceID].IP) {
-        if (globalConfig.debug) console.log('Target info ', target[sourceID])
+        if (globalConfig.debug) log.debug(`target info: ${target[sourceID]}`)
         if (target[sourceID].port === 0) {
-          if (sourceID !== 0) console.log(`Setting target port for ${remoteAddress} to ${remotePort} protocol ${target[sourceID].proto}`)
+          if (sourceID !== 0) log.info(`setting target port for ${remoteAddress} to ${remotePort} protocol ${target[sourceID].proto}`)
           target[sourceID].port = remotePort
           if ((target[sourceID].proto === 'tcp') || (target[sourceID].proto === 'ws')) {
-            if (sourceID !== 0) console.log(sourceID, 'adding the connection')
+            if (sourceID !== 0) log.info(sourceID, 'adding the connection')
             target[sourceID].conn = connections[remoteAddress][remotePort].conn
             delete connections[remoteAddress][remotePort]
             if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
           }
         }
-        if (sourceID !== 0) console.log(`no port for stream ${sourceID} [${types}], IP:${target[sourceID].IP}, Timeout:${target[sourceID].time}`)
+        if (sourceID !== 0) log.info(`no port for stream ${sourceID} [${types}], IP:${target[sourceID].IP}, Timeout:${target[sourceID].time}`)
       }
-    } else if (sourceID !== 0) console.log(`StreamID (${sourceID}) not authorized to send`)
+    } else if (sourceID !== 0) log.info(`streamID (${sourceID}) not authorized to send`)
 
     return 'relaydata end'
   }
@@ -4334,7 +4294,7 @@ async function run() {
     connections[remoteAddress][remotePort].time = Date.now()
 
     // at this point we have a new connection that is not yet authenticated
-    console.log('new TCP data connection from %s', remoteAddress)
+    log.info(`new TCP data connection from ${remoteAddress}`)
     conn.setNoDelay(true)
 
     conn.on('data', (msg) => {
@@ -4351,18 +4311,18 @@ async function run() {
 
     conn.once('close', () => {
       // *** ToDo: unset the array element for the connection
-      console.log('TCP data connection from %s closed', remoteAddress)
+      log.info(`tcp data connection from ${remoteAddress} closed`)
     })
 
     conn.on('error', (err) => {
       // *** ToDo: unset the array element for the connection
-      console.log('TCP data connection %s error: %s', remoteAddress, err.message)
+      log.error(err, `tcp data connection ${remoteAddress} error`)
     })
   }
 
 
   // WS control setup
-  console.log(`trying to bind WS control port ${WSControl}`)
+  log.info(`trying to bind WS control port ${WSControl}`)
 
   const fileServer = new httpStatic.Server('./public', { cache: 3600 })
 
@@ -4371,7 +4331,7 @@ async function run() {
       res.writeHead(200)
       res.end(`Corelink Server ${serverVersion}`)
     } else {
-      console.log(`${req.socket.remoteAddress} ${req.method} ${req.url}`)
+      log.info(`${req.socket.remoteAddress} ${req.method} ${req.url}`)
       req.addListener('end', () => {
         fileServer.serve(req, res)
       }).resume()
@@ -4392,15 +4352,15 @@ async function run() {
     // console.log(controlConnection[remoteAddress][remotePort]);
 
     // at this point we have a new connection that is not yet authenticated
-    console.log('new client WS control connection from %s:%s', remoteAddress, remotePort)
+    log.info(`new client WS control connection from ${remoteAddress}:${remotePort}`)
 
     conn.on('message', async (data) => {
       let message
-      console.log('WS connection control from %s: %j', remoteAddress, data.toString('utf8'))
+      log.info(`ws connection control from ${remoteAddress}: ${data.toString('utf8')}`)
       try {
         message = JSON.parse(data)
-      } catch (e) {
-        console.log(`Received message not a proper JSON:${data.toString()}`)
+      } catch (err) {
+        log.error(err, `received message not a proper JSON:${data.toString()}`)
         return
       }
       if (('function' in message) && (message.function in functions)) {
@@ -4411,7 +4371,7 @@ async function run() {
           send.ID = message.ID
           send = JSON.stringify(send)
         }
-        console.log(`sending:${send}`)
+        log.info(`sending:${send}`)
         conn.send(send)
       } else {
         // send =JSON.parse(getErrorMessage(2))
@@ -4421,37 +4381,37 @@ async function run() {
 
     conn.once('close', () => {
       // *** ToDo: unset the array element for the connection
-      console.log('WS control connection from %s closed', remoteAddress)
+      log.info(`ws control connection from ${remoteAddress} closed`)
     })
 
     conn.on('error', (err) => {
       // *** ToDo: unset the array element for the connection
-      console.log('WS control connection %s error: %s', remoteAddress, err.message)
+      log.error(err, `ws control connection ${remoteAddress} error`)
     })
   })
 
   wsControlServer.on('listening', () => {
     const address = wsControlServer.address()
-    console.log(`WS control server listening ${address.address}:${address.port}`)
+    log.info(`ws control server listening ${address.address}:${address.port}`)
   })
 
 
   // TCP data transfer setup
-  console.log(`trying to bind TCP port ${port.tcp}`)
+  log.info(`trying to bind tcp port ${port.tcp}`)
 
 
   const TCPDataServer = net.createServer()
   TCPDataServer.on('connection', handleDataConnection)
 
   TCPDataServer.listen(port.tcp, '0.0.0.0', () => {
-    console.log('TCP data server listening to %j:%j', TCPDataServer.address().address, TCPDataServer.address().port)
+    log.info(`tcp data server listening to ${TCPDataServer.address().address}:${TCPDataServer.address().port}`)
   })
 
   // WS data transfer setup
-  console.log(`trying to bind WS port ${port.ws}`)
+  log.info(`trying to bind WS port ${port.ws}`)
 
   const httpsDataServer = https.createServer(httpsOptions, (req, res) => {
-    console.log(`New Request... ${req.socket.remoteAddress} ${req.method} ${req.url}`)
+    log.info(`new request: ${req.socket.remoteAddress} ${req.method} ${req.url}`)
     res.writeHead(200)
     res.end('Corelink Data Port')
   })
@@ -4464,7 +4424,7 @@ async function run() {
 
     const { remoteAddress } = req.socket
     const { remotePort } = req.socket
-    console.log(`Connected new WS client from ${remoteAddress} port ${remotePort}`)
+    log.info(`connected new ws client from ${remoteAddress} port ${remotePort}`)
 
     if (typeof connections[remoteAddress] === 'undefined') connections[remoteAddress] = []
     connections[remoteAddress][remotePort] = []
@@ -4479,20 +4439,20 @@ async function run() {
       // *** ToDo: unset the array element for the connection
       delete connections[remoteAddress][remotePort]
       if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
-      console.log('---------------WS data connection from %s closed', remoteAddress)
+      log.info(`--------------- ws data connection from ${remoteAddress} closed`)
     })
 
     conn.on('error', (err) => {
       // *** ToDo: unset the array element for the connection
       delete connections[remoteAddress][remotePort]
       if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
-      console.log('WS data connection %s error: %s', remoteAddress, err.message)
+      log.error(err, `ws data connection ${remoteAddress} error`)
     })
   })
 
   WSDataServer.on('listening', () => {
     const address = WSDataServer.address()
-    console.log(`WS data server listening ${address.address}:${address.port}`)
+    log.info(`ws data server listening ${address.address}:${address.port}`)
   })
 
   function timeoutConnections() {
