@@ -1,5 +1,3 @@
-# _Issue Title_
-
 ## _Overview_
 
 >this captures the essence of what is needed. It usually describes the use case at hand e.g. for a bug request, "error while uploading a file" could be a possible statement with more description about how, when and where did the bug occur.

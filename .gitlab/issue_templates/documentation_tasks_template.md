@@ -1,5 +1,3 @@
-# _Issue Title_
-
 ## _Overview_
 
 ## _List of Documented Components_
