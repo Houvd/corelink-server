@@ -5,7 +5,7 @@ function sleep(ms) {
 }
 
 const run = async () => {
-  const nc = await connect({ servers: 'corelink.hsrn.nyu.edu:20014' });
+  const nc = await connect({ servers: 'nats://corelink.hsrn.nyu.edu:20014' });
 
   const subject = "benchmarking";
   const totalPackets = 25000;
