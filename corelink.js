@@ -331,13 +331,25 @@ async function run() {
   function relayLogs(...args) {
     if (logStream) {
       const data = Buffer.from(`${Date.now()} ${args[0]}`)
+      // The relay framing carries the payload length in a uint16, so it
+      // cannot represent more than 65535 bytes. Anything bigger (e.g. a
+      // very large streamRelay dump once many clients are connected)
+      // would make writeUInt16LE throw RangeError, which previously
+      // bubbled up through log.info() and aborted receiver.process(),
+      // leaving the client with an empty response (MTU=0). Truncate
+      // safely instead so log relay is best-effort and never breaks the
+      // request handler.
+      const MAX_RELAY_PAYLOAD = 0xFFFF
+      const payload = data.length > MAX_RELAY_PAYLOAD
+        ? data.slice(0, MAX_RELAY_PAYLOAD)
+        : data
       const header = Buffer.alloc(8)
 
       header.writeUInt16LE(0, 0)
-      header.writeUInt16LE(data.length, 2)
+      header.writeUInt16LE(payload.length, 2)
       header.writeUInt32LE(0, 4)
 
-      const packet = [header, data]
+      const packet = [header, payload]
       const message = Buffer.concat(packet)
       // eslint-disable-next-line no-use-before-define
       relayData(message)
@@ -555,6 +567,96 @@ async function run() {
     return { user, apps }
   }
 
+  // Garbage-collect every stream owned by the user/app whose control
+  // connection (TCP or WebSocket) is closing. Without this the custom
+  // NetMusic3D server keeps zombie senders/receivers in memory forever
+  // and they pollute every subsequent listStreams call for every other
+  // client. Safe to call repeatedly: the inner loops just no-op once
+  // the owner has already been emptied.
+  function cleanupStreamsForConn(conn, label) {
+    try {
+      // tokens[token].streams[] is polluted: it contains BOTH streams the
+      // client created (sender) AND streams it subscribed to (receiver).
+      // We must not delete other clients' senders just because this client
+      // subscribed to them. Iterate source/target directly and only remove
+      // entries whose own .conn matches the closing connection.
+      const removedOwnedSources = []
+      const removedOwnedTargets = []
+
+      for (const streamID in source) {
+        const s = source[streamID]
+        if (!s || s.controlConn !== conn) continue
+        try {
+          if (typeof s.IP !== 'undefined' && typeof s.port !== 'undefined'
+              && typeof connections[s.IP] !== 'undefined'
+              && typeof connections[s.IP][s.port] !== 'undefined') {
+            delete connections[s.IP][s.port]
+            if (Object.keys(connections[s.IP]).length === 0) delete connections[s.IP]
+          }
+          try { serverFunctions.stale.process(streamID) } catch (e) { log.warn(`stale.process failed for ${streamID}: ${e && e.message}`) }
+          try { delete streamRelay[streamID] } catch (e) { /* ignore */ }
+          delete source[streamID]
+          removedOwnedSources.push(streamID)
+        } catch (innerErr) {
+          log.error(innerErr, `cleanup source ${streamID} failed`)
+        }
+      }
+
+      for (const streamID in target) {
+        const t = target[streamID]
+        if (!t || t.controlConn !== conn) continue
+        try {
+          for (const relayStream in streamRelay) {
+            const relayMap = streamRelay[relayStream]
+            if (relayMap && typeof relayMap === 'object' && (streamID in relayMap)) {
+              try { serverFunctions.dropped.process(relayStream, streamID) } catch (e) { log.warn(`dropped.process failed: ${e && e.message}`) }
+              try { delete relayMap[streamID] } catch (e) { /* ignore */ }
+            }
+          }
+          if (typeof t.IP !== 'undefined' && typeof t.port !== 'undefined'
+              && typeof connections[t.IP] !== 'undefined'
+              && typeof connections[t.IP][t.port] !== 'undefined') {
+            delete connections[t.IP][t.port]
+            if (Object.keys(connections[t.IP]).length === 0) delete connections[t.IP]
+          }
+          delete target[streamID]
+          removedOwnedTargets.push(streamID)
+        } catch (innerErr) {
+          log.error(innerErr, `cleanup target ${streamID} failed`)
+        }
+      }
+
+      // Detach token/app from this closed connection and purge their stream
+      // lists of any IDs that no longer exist in source/target.
+      const purgeOwner = (ownerEntry) => {
+        if (!ownerEntry || !Array.isArray(ownerEntry.streams)) return
+        ownerEntry.streams = ownerEntry.streams.filter(
+          (sid) => (typeof source[sid] !== 'undefined') || (typeof target[sid] !== 'undefined')
+        )
+      }
+      for (const tokenKey in tokens) {
+        if (tokens[tokenKey] && tokens[tokenKey].conn === conn) {
+          tokens[tokenKey].conn = undefined
+        }
+        purgeOwner(tokens[tokenKey])
+      }
+      for (const appKey in apps) {
+        if (apps[appKey] && apps[appKey].conn === conn) {
+          apps[appKey].conn = undefined
+        }
+        purgeOwner(apps[appKey])
+      }
+
+      if (removedOwnedSources.length || removedOwnedTargets.length) {
+        log.info(`cleaning up streams (${label}): owned sources=${JSON.stringify(removedOwnedSources)} owned targets=${JSON.stringify(removedOwnedTargets)}`)
+      } else {
+        log.info(`cleaning up streams (${label}): nothing owned by this conn`)
+      }
+    } catch (outerErr) {
+      log.error(outerErr, `cleanupStreamsForConn (${label}) crashed`)
+    }
+  }
+
   // holds all error messages
   const errorList = []
   errorList[1] = 'Key Functionname not set'
@@ -573,6 +675,7 @@ async function run() {
   errorList[14] = 'User does not exist in Database'
   errorList[15] = 'Password not provided'
   errorList[16] = 'Current user is not admin'
+  errorList[17] = 'User is already authenticated on this server'
 
   function getErrorMessage(code) {
     const response = {}
@@ -589,8 +692,10 @@ async function run() {
         .first({ userId: 'user_id', time: 'time' })
         .where('token', message.token)
         .catch((error) => {
+          log.warn(`[TRACE] checkAuth knex(tokens) error for token=${message.token && message.token.slice(0,8)}: ${error && error.message}`)
           throw error
         })
+      log.warn(`[TRACE] checkAuth tokens lookup result token=${message.token && message.token.slice(0,8)} found=${typeof token !== 'undefined'} controlTimeout=${controlTimeout} now-controlTimeout=${Date.now() - controlTimeout} token.time=${token && token.time}`)
 
       if ((typeof token !== 'undefined') && ((Date.now() - controlTimeout) < token.time)) return token.userId
 
@@ -599,12 +704,15 @@ async function run() {
         .first('time')
         .where('token', message.token)
         .catch((error) => {
+          log.warn(`[TRACE] checkAuth knex(apps) error: ${error && error.message}`)
           throw error
         }))
       if (typeof app !== 'undefined') return message.token
 
+      log.warn(`[TRACE] checkAuth returning getErrorMessage(4) for token=${message.token && message.token.slice(0,8)}`)
       return getErrorMessage(4)
     }
+    log.warn(`[TRACE] checkAuth no token in message`)
     return getErrorMessage(3)
   }
 
@@ -681,6 +789,18 @@ async function run() {
             throw error
           })
         if ((typeof user !== 'undefined') && (hashSha512(message.password, user.salt).passwordHash === user.password)) {
+          // Reject if this user is already authenticated with a live
+          // (open) WebSocket connection. Prevents two clients with the
+          // same username from coexisting on the server.
+          for (const existingToken in tokens) {
+            const entry = tokens[existingToken]
+            if (entry && entry.user === user.userId
+                && entry.conn
+                && typeof entry.conn.readyState !== 'undefined'
+                && entry.conn.readyState === 1) {
+              return getErrorMessage(17)
+            }
+          }
           response.token = crypto.createHash('sha256')
             .update(message.username + message.password + (new Date().getTime()))
             .digest('hex')
@@ -2383,7 +2503,9 @@ async function run() {
         },
       },
     },
-    async process(message) {
+    async process(message, remoteAddress, controlConn) {
+      log.warn(`[TRACE] functions.sender.process called from ${remoteAddress}, msgID=${message && message.ID}, token=${message && message.token && message.token.slice(0,8)}`)
+      console.trace('[TRACE] sender.process stack')
       const data = await checkAuth(message)
         .catch((error) => {
           throw error
@@ -2421,6 +2543,9 @@ async function run() {
             source[streamID].type = message.type
             source[streamID].time = Date.now()
             source[streamID].from = ''
+            // NetMusic3D: tag the control socket that created this sender so
+            // cleanupStreamsForConn() can identify the owner on disconnect.
+            if (typeof controlConn !== 'undefined') source[streamID].controlConn = controlConn
 
             // allow from only if app token, otherwise users could post as another user
             if ((typeof message.from !== 'undefined')
@@ -2816,7 +2941,9 @@ async function run() {
         },
       },
     },
-    async process(message) {
+    async process(message, remoteAddress, controlConn) {
+      log.warn(`[TRACE] functions.receiver.process called from ${remoteAddress}, msgID=${message && message.ID}, token=${message && message.token && message.token.slice(0,8)} body=${JSON.stringify(message)}`)
+      try {
       const data = await checkAuth(message)
         .catch((error) => {
           throw error
@@ -2851,9 +2978,7 @@ async function run() {
           // remove all streamIDs that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes to
           // query and bring them up...)
-          for (stream in workMessage.streamIDs) {
-            if (typeof source[workMessage.streamIDs[stream]] === 'undefined') workMessage.streamIDs.splice(stream, 1)
-          }
+          workMessage.streamIDs = workMessage.streamIDs.filter((streamID) => typeof source[streamID] !== 'undefined')
           // add usernames to the specific streams
           workMessage.streamList = []
           for (stream in workMessage.streamIDs) {
@@ -2887,6 +3012,7 @@ async function run() {
           if ((workMessage.streamIDs.length < 1) && ((typeof workMessage.alert === 'undefined')
               || !((typeof workMessage.alert !== 'undefined') && (workMessage.alert === true)))) {
             // console.log(message);
+            log.warn(`[TRACE] receiver.process FAIL (no streamIDs and alert!=true) msgID=${message && message.ID} streamIDs=${JSON.stringify(workMessage.streamIDs)} alert=${workMessage.alert}`)
             return getErrorMessage(7)
           }
 
@@ -2921,6 +3047,9 @@ async function run() {
             target[streamID].port = workMessage.port
             target[streamID].proto = workMessage.proto
             target[streamID].workspace = workMessage.workspace
+            // NetMusic3D: tag the control socket that created this receiver so
+            // cleanupStreamsForConn() can identify the owner on disconnect.
+            if (typeof controlConn !== 'undefined') target[streamID].controlConn = controlConn
             // console.log(target[streamID]);
 
             if (('alert' in workMessage) && (workMessage.alert === true)) target[streamID].alert = true
@@ -2987,13 +3116,20 @@ async function run() {
           response.streamID = streamID
           response.streamList = workMessage.streamList
           response.MTU = MTU
+          log.warn(`[TRACE] receiver.process OK msgID=${message.ID} response=${JSON.stringify(response)}`)
           // console.log(message['proto'],port[message['proto']],response);
           // console.log(port);
           return (response)
         }
+        log.warn(`[TRACE] receiver.process FAIL (no workspace) msgID=${message && message.ID} workMessage=${JSON.stringify(workMessage)}`)
         return getErrorMessage(3)
       }
+      log.warn(`[TRACE] receiver.process FAIL (auth) msgID=${message && message.ID} data=${JSON.stringify(data)}`)
       return (data)
+      } catch (e) {
+        log.warn(`[TRACE] receiver.process THREW msgID=${message && message.ID} err=${e && e.message} stack=${e && e.stack}`)
+        throw e
+      }
     },
   }
 
@@ -3092,11 +3228,7 @@ async function run() {
           // remove all streamIDs that are not in source (we silently drop
           // streamID's in case they have disappeared during the time it takes
           // to query and bring them up...)
-          for (stream in workMessage.streamIDs) {
-            if (!(workMessage.streamIDs[stream] in source)) {
-              workMessage.streamIDs.splice(stream, 1)
-            }
-          }
+          workMessage.streamIDs = workMessage.streamIDs.filter((streamID) => streamID in source)
 
           // add usernames to the specific streams
           workMessage.streamList = []
@@ -3507,7 +3639,7 @@ async function run() {
                   delete connections[source[streamID].IP][source[streamID].port].conn
                   delete connections[source[streamID].IP][source[streamID].port].time
                   delete connections[source[streamID].IP][source[streamID].port]
-                  if (connections[source[streamID].IP].length === 0) {
+                  if (Object.keys(connections[source[streamID].IP]).length === 0) {
                     delete connections[source[streamID].IP]
                   }
                 }
@@ -3904,6 +4036,7 @@ async function run() {
 
       // get subscribed targets and send update (only if receiver wants updates)
       // var t = [];
+      const responseApps = Array.isArray(response.apps) ? response.apps : []
       for (u in target) {
         if (target[u].alert && (target[u].workspace === workspace)
             && ((target[u].type.length === 0)
@@ -3922,7 +4055,7 @@ async function run() {
           }
           for (token in apps) {
             if (apps[token].streams.includes(u)) {
-              if ((!response.apps.includes(apps[token].name)
+              if ((!responseApps.includes(apps[token].name)
                                   && (target[u].echo !== true))
                                   || (target[u].echo === true)) {
                 log.info(`updating app client: ${token} : ${u}`)
@@ -4001,12 +4134,112 @@ async function run() {
     },
   }
 
+  async function processControlMessage(message, remoteAddress, conn) {
+    if (!(('function' in message) && (message.function in functions))) return getErrorMessage(2)
+    if (message.function === 'sender' || message.function === 'receiver') {
+      log.warn(`[TRACE] processControlMessage dispatch func=${message.function} ID=${message.ID} from=${remoteAddress} connPort=${conn && conn.remotePort}`)
+    }
+
+    try {
+      const controlResult = await Promise.race([
+        message.function === 'auth'
+          ? functions[message.function].process(message, remoteAddress, conn)
+          : functions[message.function].process(message, remoteAddress, conn),
+        new Promise((resolve) => {
+          setTimeout(() => resolve(getErrorMessage(9)), 5000)
+        }),
+      ])
+      return controlResult
+    } catch (err) {
+      log.error(err, `error while processing control message ${message.function}`)
+      return getErrorMessage(9)
+    }
+  }
+
   function handleControlConnection(conn) {
-    let message
     if (typeof conn.remoteAddress !== 'undefined') {
       const remoteAddress = conn.remoteAddress.replace(/^.*:/, '')
       const { remotePort } = conn
-      let send = ''
+      let controlBuffer = ''
+
+      function extractControlMessages() {
+        const messages = []
+        let index = 0
+        while (index < controlBuffer.length) {
+          while ((index < controlBuffer.length) && /\s/.test(controlBuffer[index])) index += 1
+          if (index >= controlBuffer.length) {
+            controlBuffer = ''
+            break
+          }
+
+          const first = controlBuffer[index]
+          if ((first !== '{') && (first !== '[')) {
+            const nextObject = controlBuffer.indexOf('{', index + 1)
+            const nextArray = controlBuffer.indexOf('[', index + 1)
+            let nextStart = -1
+            if (nextObject === -1) nextStart = nextArray
+            else if (nextArray === -1) nextStart = nextObject
+            else nextStart = Math.min(nextObject, nextArray)
+
+            if (nextStart === -1) {
+              controlBuffer = ''
+              break
+            }
+            index = nextStart
+            continue
+          }
+
+          let depth = 0
+          let inString = false
+          let escaped = false
+          let end = -1
+          for (let i = index; i < controlBuffer.length; i += 1) {
+            const ch = controlBuffer[i]
+            if (inString) {
+              if (escaped) escaped = false
+              else if (ch === '\\') escaped = true
+              else if (ch === '"') inString = false
+              continue
+            }
+
+            if (ch === '"') {
+              inString = true
+              continue
+            }
+            if ((ch === '{') || (ch === '[')) depth += 1
+            else if ((ch === '}') || (ch === ']')) {
+              depth -= 1
+              if (depth === 0) {
+                end = i + 1
+                break
+              }
+            }
+          }
+
+          if (end === -1) {
+            controlBuffer = controlBuffer.slice(index)
+            return messages
+          }
+
+          const raw = controlBuffer.slice(index, end)
+          try {
+            messages.push(JSON.parse(raw))
+          } catch (err) {
+            log.error(err, `received malformed control json:${raw}`)
+          }
+          index = end
+        }
+
+        // Trim consumed bytes so already-parsed messages are not re-parsed
+        // on the next data event (otherwise the buffer keeps the old JSON and
+        // subsequent chunks cause duplicate dispatch of the same message ID).
+        if (index >= controlBuffer.length) {
+          controlBuffer = ''
+        } else if (index > 0) {
+          controlBuffer = controlBuffer.slice(index)
+        }
+        return messages
+      }
       // console.log('saving control connection to ' + remoteAddress + ':' + remotePort);
       // controlConnection[remoteAddress] = [];
       // controlConnection[remoteAddress][remotePort]=conn;
@@ -4018,36 +4251,32 @@ async function run() {
       conn.setKeepAlive(true)
 
       conn.on('data', async (data) => {
-        log.info(`tcp control connection data from ${remoteAddress}:${data.toString('utf8')}`)
-        try {
-          message = JSON.parse(data)
-        } catch (err) {
-          log.error(err, `received message not a proper json:${data.toString()}`)
-          return
-        }
-        if (('function' in message) && (message.function in functions)) {
-          if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
-          else send = JSON.stringify(await functions[message.function].process(message))
-          if ('ID' in message) {
-            send = JSON.parse(send)
-            send.ID = message.ID
+        const chunk = data.toString('utf8')
+        log.info(`tcp control connection data from ${remoteAddress}:${chunk}`)
+        controlBuffer += chunk
+
+        const parsedMessages = extractControlMessages()
+        for (const message of parsedMessages) {
+          let send = await processControlMessage(message, remoteAddress, conn)
+          if ('ID' in message) send.ID = message.ID
+          try {
             send = JSON.stringify(send)
+            log.info(`sending:${send}`)
+            conn.write(send)
+          } catch (err) {
+            log.error(err, 'failed to serialize TCP control response')
           }
-          log.info(`sending:${send}`)
-          conn.write(send)
-        } else {
-          log.info(getErrorMessage(2))
         }
       })
 
       conn.once('close', () => {
-        // *** ToDo: unset the array element for the connection
         log.info(`tcp control connection from ${remoteAddress} closed`)
+        cleanupStreamsForConn(conn, `tcp ${remoteAddress}:${remotePort}`)
       })
 
       conn.on('error', (err) => {
-        // *** ToDo: unset the array element for the connection
         log.error(err, `tcp control connection ${remoteAddress} error`)
+        cleanupStreamsForConn(conn, `tcp-err ${remoteAddress}:${remotePort}`)
       })
     }
   }
@@ -4097,6 +4326,12 @@ async function run() {
   UDPDataServer.bind(port.udp)
 
   function relayData(msg, remoteAddress, remotePort) {
+    // check for packet too small before decoding any field
+    if (!Buffer.isBuffer(msg) || msg.length < 8) {
+      log.error({ msgLength: msg?.length, remoteAddress, remotePort }, 'packet is too small')
+      return
+    }
+
     // decode header
     let headerSize = msg.readUInt16LE(0)
     const dataSize = msg.readUInt16LE(2)
@@ -4127,11 +4362,6 @@ async function run() {
     // decoding header
     // console.log('message: ',msg);
 
-    // check for packet too small
-    if (msg.length < 8) {
-      log.error({ msg }, 'packet is too small')
-      return
-    }
     // check for packet inconsistent size
     if (msg.length !== 8 + headerSize + dataSize) {
       // console.log('message:', remoteAddress, remotePort, msg.toString())
@@ -4139,6 +4369,10 @@ async function run() {
       let pointer = 0
       // for combined packets we need to match the source/federation id and the overall size
       while (msg.length > calculatedSize) {
+        if ((pointer + 4) > msg.length) {
+          log.error({ msgLength: msg.length, pointer, remoteAddress, remotePort }, 'combined packet header is truncated')
+          return
+        }
         calculatedSize += 8
         calculatedSize += msg.readUInt16LE(pointer)
         calculatedSize += msg.readUInt16LE(pointer + 2)
@@ -4159,6 +4393,26 @@ async function run() {
       return 'relaydata split end'
     }
 
+    // For senders created with port 0 (firewall/NAT mode), capture the observed endpoint.
+    if ((sourceID in source)
+        && (source[sourceID].IP === remoteAddress)
+        && (source[sourceID].port === 0)
+        && (remotePort > 0)) {
+      source[sourceID].port = remotePort
+    }
+
+    // Enforce that only the registered sender endpoint can publish under sourceID.
+    if (sourceID in source) {
+      if (source[sourceID].IP !== remoteAddress) {
+        if (sourceID !== 0) log.warn(`streamID (${sourceID}) source IP mismatch: got ${remoteAddress}:${remotePort}, expected ${source[sourceID].IP}:${source[sourceID].port}`)
+        return 'relaydata unauthorized sender'
+      }
+      if ((source[sourceID].port !== 0) && (source[sourceID].port !== remotePort)) {
+        if (sourceID !== 0) log.warn(`streamID (${sourceID}) source port mismatch: got ${remotePort}, expected ${source[sourceID].port}`)
+        return 'relaydata unauthorized sender'
+      }
+    }
+
     // log out debug information
     if (globalConfig.debug && (sourceID !== 0)) {
       // datadata = Buffer.allocUnsafe(dataSize)
@@ -4169,9 +4423,9 @@ async function run() {
         if (typeof source[sourceID] !== 'undefined') {
           // console.log('source[sourceID]', source[sourceID])
           // console.log('message', msg.toString())
-          log.info(`receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from ${source[sourceID].IP}:${source[sourceID].port}`)
+          log.info(`receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from ${remoteAddress}:${remotePort} (registered ${source[sourceID].IP}:${source[sourceID].port})`)
         } else {
-          log.info(`receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from unknown source`)
+          log.info(`receiving ${sourceID} b${msg.length} h${headerSize} d${dataSize} from ${remoteAddress}:${remotePort} (unknown source)`)
         }
       }
       // console.log(data)
@@ -4249,7 +4503,7 @@ async function run() {
           } else if (typeof target[targetID] === 'undefined' && (sourceID !== 0)) log.info(`${targetID} is not registered at all`)
           else {
             types = ''
-            for (type in target.targetID) {
+            for (type in target[targetID].type) {
               if (types === '') types = type
               else types = `${types}, ${type}`
             }
@@ -4269,10 +4523,10 @@ async function run() {
             if (sourceID !== 0) log.info(sourceID, 'adding the connection')
             target[sourceID].conn = connections[remoteAddress][remotePort].conn
             delete connections[remoteAddress][remotePort]
-            if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
+            if ((typeof connections[remoteAddress] !== 'undefined') && (Object.keys(connections[remoteAddress]).length === 0)) delete connections[remoteAddress]
           }
         }
-        if (sourceID !== 0) log.info(`no port for stream ${sourceID} [${types}], IP:${target[sourceID].IP}, Timeout:${target[sourceID].time}`)
+        if (sourceID !== 0) log.info(`no port for stream ${sourceID} [${target[sourceID].type}], IP:${target[sourceID].IP}, Timeout:${target[sourceID].time}`)
       }
     } else if (sourceID !== 0) log.info(`streamID (${sourceID}) not authorized to send`)
 
@@ -4363,30 +4617,25 @@ async function run() {
         log.error(err, `received message not a proper JSON:${data.toString()}`)
         return
       }
-      if (('function' in message) && (message.function in functions)) {
-        if (message.function === 'auth') send = JSON.stringify(await functions[message.function].process(message, remoteAddress, conn))
-        else send = JSON.stringify(await functions[message.function].process(message))
-        if ('ID' in message) {
-          send = JSON.parse(send)
-          send.ID = message.ID
-          send = JSON.stringify(send)
-        }
+      send = await processControlMessage(message, remoteAddress, conn)
+      if ('ID' in message) send.ID = message.ID
+      try {
+        send = JSON.stringify(send)
         log.info(`sending:${send}`)
         conn.send(send)
-      } else {
-        // send =JSON.parse(getErrorMessage(2))
-        conn.send(JSON.parse(getErrorMessage(2)))
+      } catch (err) {
+        log.error(err, 'failed to serialize WS control response')
       }
     })
 
     conn.once('close', () => {
-      // *** ToDo: unset the array element for the connection
       log.info(`ws control connection from ${remoteAddress} closed`)
+      cleanupStreamsForConn(conn, `ws ${remoteAddress}:${remotePort}`)
     })
 
     conn.on('error', (err) => {
-      // *** ToDo: unset the array element for the connection
       log.error(err, `ws control connection ${remoteAddress} error`)
+      cleanupStreamsForConn(conn, `ws-err ${remoteAddress}:${remotePort}`)
     })
   })
 
@@ -4438,14 +4687,14 @@ async function run() {
     conn.once('close', () => {
       // *** ToDo: unset the array element for the connection
       delete connections[remoteAddress][remotePort]
-      if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
+      if ((typeof connections[remoteAddress] !== 'undefined') && (Object.keys(connections[remoteAddress]).length === 0)) delete connections[remoteAddress]
       log.info(`--------------- ws data connection from ${remoteAddress} closed`)
     })
 
     conn.on('error', (err) => {
       // *** ToDo: unset the array element for the connection
       delete connections[remoteAddress][remotePort]
-      if (connections[remoteAddress].length === 0) delete connections[remoteAddress]
+      if ((typeof connections[remoteAddress] !== 'undefined') && (Object.keys(connections[remoteAddress]).length === 0)) delete connections[remoteAddress]
       log.error(err, `ws data connection ${remoteAddress} error`)
     })
   })
@@ -4471,9 +4720,10 @@ async function run() {
         for (port in connections[IP]) {
         // console.log('connections',connections[IP][port]['time'],connectTimeout,currentTime
         //    ,connections[IP][port]['time'] + connectTimeout - currentTime);
+          if (typeof connections[IP][port] === 'undefined') continue
           if (connections[IP][port].time + connectTimeout < currentTime) {
             delete connections[IP][port]
-            if (connections[IP].length === 0) delete connections[IP]
+            if ((typeof connections[IP] !== 'undefined') && (Object.keys(connections[IP]).length === 0)) delete connections[IP]
           }
         }
       }
@@ -4504,7 +4754,9 @@ async function run() {
       if (target[ID].time + streamTimeout < currentTime) {
         for (sID in streamRelay) {
           if (sID) {
-            for (tID in streamRelay) if (tID === ID) delete streamRelay[sID][tID]
+            for (tID in streamRelay[sID]) {
+              if (tID === ID) delete streamRelay[sID][tID]
+            }
             // dont remove sources that are still available from the relay
             // (let the sources time out separately)
             // if (streamRelay[sID].length === 0) delete streamRelay[sID]
