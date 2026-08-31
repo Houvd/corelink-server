@@ -2981,16 +2981,15 @@ async function run() {
           workMessage.streamIDs = workMessage.streamIDs.filter((streamID) => typeof source[streamID] !== 'undefined')
           // add usernames to the specific streams
           workMessage.streamList = []
-          for (stream in workMessage.streamIDs) {
-            if (stream) {
+          for (const senderID of workMessage.streamIDs) {
               streamListElement = {}
-              streamListElement.streamID = parseInt(workMessage.streamIDs[stream], 10)
-              streamListElement.type = source[workMessage.streamIDs[stream]].type
-              streamListElement.meta = source[workMessage.streamIDs[stream]].meta
+              streamListElement.streamID = parseInt(senderID, 10)
+              streamListElement.type = source[senderID].type
+              streamListElement.meta = source[senderID].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(workMessage.streamIDs[stream])
+              userApps = findApps(senderID)
               streamListElement.user = userApps.user
               streamListElement.apps = userApps.apps
 
@@ -3002,8 +3001,7 @@ async function run() {
                   || ((typeof apps[workMessage.token] !== 'undefined')
                   && ((!('echo' in workMessage)) || (('echo' in workMessage) && (workMessage.echo !== true))))) {
                 workMessage.streamList.push(streamListElement)
-              } else log.info(`skipping stream from same user ${workMessage.streamIDs[stream]}`)
-            }
+              } else log.info(`skipping stream from same user ${senderID}`)
           }
 
           // give error message if we dont have a streamID and are also not
@@ -3094,17 +3092,15 @@ async function run() {
           // designate streams to be directly relayed ot this target
           log.info(streamRelay, 'streamRelay')
           if (workMessage.subscribe) {
-            for (stream in workMessage.streamList) {
-              if (stream) {
+            for (const subscribedStream of workMessage.streamList) {
                 // send subscriber message to sender streams that are newly subscribed to
-                if (typeof streamRelay[workMessage.streamList[stream].streamID] !== 'undefined') {
-                  if (typeof streamRelay[workMessage.streamList[stream].streamID][streamID] === 'undefined') {
+                if (typeof streamRelay[subscribedStream.streamID] !== 'undefined') {
+                  if (typeof streamRelay[subscribedStream.streamID][streamID] === 'undefined') {
                     // eslint-disable-next-line max-len
-                    serverFunctions.subscriber.process(workMessage.streamList[stream].streamID, streamID)
+                    serverFunctions.subscriber.process(subscribedStream.streamID, streamID)
                   }
-                  streamRelay[workMessage.streamList[stream].streamID][streamID] = []
+                  streamRelay[subscribedStream.streamID][streamID] = []
                 }
-              }
             }
           }
 
@@ -3234,30 +3230,26 @@ async function run() {
 
           // add usernames to the specific streams
           workMessage.streamList = []
-          for (stream in workMessage.streamIDs) {
-            if (stream) {
+          for (const senderID of workMessage.streamIDs) {
               streamListElement = {}
-              streamListElement.streamID = parseInt(workMessage.streamIDs[stream], 10)
-              streamListElement.type = source[workMessage.streamIDs[stream]].type
-              streamListElement.meta = source[workMessage.streamIDs[stream]].meta
+              streamListElement.streamID = parseInt(senderID, 10)
+              streamListElement.type = source[senderID].type
+              streamListElement.meta = source[senderID].meta
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
-              userApps = findApps(workMessage.streamIDs[stream])
+              userApps = findApps(senderID)
               streamListElement.user = userApps.user
               streamListElement.apps = userApps.apps
 
               workMessage.streamList.push(streamListElement)
-            }
           }
 
           // designate streams to be directly relayed ot this target
-          for (stream in workMessage.streamList) {
-            if (stream) {
+          for (const subscribedStream of workMessage.streamList) {
               // send subscriber message to sender streams that are newly subscribed to
-              if (typeof streamRelay[workMessage.streamList[stream].streamID][workMessage.receiverID] === 'undefined') serverFunctions.subscriber.process(workMessage.streamList[stream].streamID, message.receiverID)
-              streamRelay[workMessage.streamList[stream].streamID][workMessage.receiverID] = []
-            }
+              if (typeof streamRelay[subscribedStream.streamID][workMessage.receiverID] === 'undefined') serverFunctions.subscriber.process(subscribedStream.streamID, message.receiverID)
+              streamRelay[subscribedStream.streamID][workMessage.receiverID] = []
           }
 
           // create result for client to connect as a receiver
