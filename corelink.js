@@ -583,27 +583,9 @@ async function run() {
       const removedOwnedSources = []
       const removedOwnedTargets = []
 
-      const hasOwnerReference = (streamID) => {
-        const sid = Number(streamID)
-        for (const tokenKey in tokens) {
-          const entry = tokens[tokenKey]
-          if (entry && Array.isArray(entry.streams) && entry.streams.includes(sid)) return true
-        }
-        for (const appKey in apps) {
-          const entry = apps[appKey]
-          if (entry && Array.isArray(entry.streams) && entry.streams.includes(sid)) return true
-        }
-        return false
-      }
-
       for (const streamID in source) {
         const s = source[streamID]
         if (!s || s.controlConn !== conn) continue
-        if (hasOwnerReference(streamID)) {
-          s.controlConn = undefined
-          log.info(`preserving source ${streamID} on conn close (${label}) because owner token/app still references it`)
-          continue
-        }
         try {
           if (typeof s.IP !== 'undefined' && typeof s.port !== 'undefined'
               && typeof connections[s.IP] !== 'undefined'
@@ -623,11 +605,6 @@ async function run() {
       for (const streamID in target) {
         const t = target[streamID]
         if (!t || t.controlConn !== conn) continue
-        if (hasOwnerReference(streamID)) {
-          t.controlConn = undefined
-          log.info(`preserving target ${streamID} on conn close (${label}) because owner token/app still references it`)
-          continue
-        }
         try {
           for (const relayStream in streamRelay) {
             const relayMap = streamRelay[relayStream]
