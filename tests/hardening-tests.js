@@ -196,9 +196,34 @@ async function sendTcpChunks(chunks, expectedResponses, timeoutMs = 5000) {
   })
 }
 
+let requestSocket
+let requestBuffer = ''
+const requestWaiters = new Map()
 async function sendTcpRequest(request, timeoutMs = 5000) {
-  const responses = await sendTcpChunks([JSON.stringify(request)], 1, timeoutMs)
-  return responses[0]
+  // Auth and owned streams belong to a live control connection. Keep that
+  // connection across E2E requests and correlate replies by ID, ignoring pushes.
+  if (!requestSocket || requestSocket.destroyed) {
+    requestBuffer = ''
+    requestSocket = net.createConnection({ host: HOST, port: CONTROL_TCP_PORT })
+    requestSocket.setEncoding('utf8')
+    requestSocket.on('data', data => {
+      requestBuffer += data
+      const parsed = extractJsonMessagesFromBuffer(requestBuffer); requestBuffer = parsed.rest
+      for (const reply of parsed.messages) {
+        const waiter = requestWaiters.get(reply.ID)
+        if (waiter) { requestWaiters.delete(reply.ID); waiter(null, reply) }
+      }
+    })
+    requestSocket.on('error', error => {
+      for (const waiter of requestWaiters.values()) waiter(error)
+      requestWaiters.clear()
+    })
+  }
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { requestWaiters.delete(request.ID); reject(new Error('Control request timed out: ' + request.function)) }, timeoutMs)
+    requestWaiters.set(request.ID, (error, reply) => { clearTimeout(timer); if (error) reject(error); else resolve(reply) })
+    requestSocket.write(JSON.stringify(request))
+  })
 }
 
 function createUdpPacket(sourceID, payload) {
@@ -468,6 +493,7 @@ async function runHardeningSuite() {
         // ignore cleanup failures
       }
     }
+    if (requestSocket) requestSocket.destroy()
     await stopOwnedServer(serverState)
   }
 

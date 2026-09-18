@@ -11,6 +11,8 @@
  */
 
 const serverVersion = 'v6.0.0.3'
+const timingDiagnostics = require('./timing-diagnostics')()
+const timingNow = () => Number(process.hrtime.bigint()) / 1e6
 // v6.0.0.3
 // - fix listStreams to allow owner to list
 // v6.0.0.2
@@ -446,7 +448,7 @@ async function run() {
 
 
   // start application
-  globalConfig.debug = true
+  globalConfig.debug = process.env.CORELINK_PACKET_DEBUG === '1'
 
   const stdin = process.openStdin()
   if (stdin.isTTY) stdin.setRawMode(true)
@@ -685,17 +687,15 @@ async function run() {
   }
 
   async function checkAuth(message) {
-    log.info(`token: ${message.token}`)
     if ('token' in message) {
       // check if token is valid for a user
       const token = await knex('tokens')
         .first({ userId: 'user_id', time: 'time' })
         .where('token', message.token)
         .catch((error) => {
-          log.warn(`[TRACE] checkAuth knex(tokens) error for token=${message.token && message.token.slice(0,8)}: ${error && error.message}`)
+          log.warn({ error: error && error.message }, 'Authentication database lookup failed')
           throw error
         })
-      log.warn(`[TRACE] checkAuth tokens lookup result token=${message.token && message.token.slice(0,8)} found=${typeof token !== 'undefined'} controlTimeout=${controlTimeout} now-controlTimeout=${Date.now() - controlTimeout} token.time=${token && token.time}`)
 
       if ((typeof token !== 'undefined') && ((Date.now() - controlTimeout) < token.time)) return token.userId
 
@@ -709,10 +709,8 @@ async function run() {
         }))
       if (typeof app !== 'undefined') return message.token
 
-      log.warn(`[TRACE] checkAuth returning getErrorMessage(4) for token=${message.token && message.token.slice(0,8)}`)
       return getErrorMessage(4)
     }
-    log.warn(`[TRACE] checkAuth no token in message`)
     return getErrorMessage(3)
   }
 
@@ -2942,7 +2940,6 @@ async function run() {
       },
     },
     async process(message, remoteAddress, controlConn) {
-      log.warn(`[TRACE] functions.receiver.process called from ${remoteAddress}, msgID=${message && message.ID}, token=${message && message.token && message.token.slice(0,8)} body=${JSON.stringify(message)}`)
       try {
       const data = await checkAuth(message)
         .catch((error) => {
@@ -3112,7 +3109,6 @@ async function run() {
           response.streamID = streamID
           response.streamList = workMessage.streamList
           response.MTU = MTU
-          log.warn(`[TRACE] receiver.process OK msgID=${message.ID} response=${JSON.stringify(response)}`)
           // console.log(message['proto'],port[message['proto']],response);
           // console.log(port);
           return (response)
@@ -4128,6 +4124,25 @@ async function run() {
     },
   }
 
+  const relayReceiverFeedback = require('./receiver-feedback')({ tokens, apps, source, target, streamRelay })
+  functions.receiverFeedback = {
+    info: { name: 'receiverFeedback', description: 'Versioned subscribed receiver quality report', version: '1.0.0' },
+    async process(message, remoteAddress, conn) {
+      const started = timingNow()
+      const auth = await checkAuth(message)
+      const authenticatedAt = timingNow()
+      if (typeof auth === 'object') return auth
+      const result = relayReceiverFeedback(message, conn)
+      timingDiagnostics.event('feedback_timing', {
+        senderID: message.senderID, receiverID: message.receiverID,
+        epoch: message.epoch, sequence: message.sequence,
+        authMs: authenticatedAt - started, totalMs: timingNow() - started,
+        status: result.statusCode, delivered: result.delivered || 0,
+      })
+      return result
+    },
+  }
+
   async function processControlMessage(message, remoteAddress, conn) {
     if (!(('function' in message) && (message.function in functions))) return getErrorMessage(2)
     if (message.function === 'sender' || message.function === 'receiver') {
@@ -4320,6 +4335,7 @@ async function run() {
   UDPDataServer.bind(port.udp)
 
   function relayData(msg, remoteAddress, remotePort) {
+    const relayStarted = timingNow()
     // check for packet too small before decoding any field
     if (!Buffer.isBuffer(msg) || msg.length < 8) {
       log.error({ msgLength: msg?.length, remoteAddress, remotePort }, 'packet is too small')
@@ -4487,6 +4503,7 @@ async function run() {
             target[targetID].time = last
             if (target[targetID].proto === 'udp') {
               UDPDataServer.send(msg, target[targetID].port, target[targetID].IP, (err) => {
+                timingDiagnostics.observe('udpCompletion', timingNow() - relayStarted, { sourceID, packetID: header && header.i })
                 if (err && (sourceID !== 0)) log.error(err, 'socket error')
               })
             } else if (target[targetID].proto === 'tcp') {
@@ -4524,6 +4541,7 @@ async function run() {
       }
     } else if (sourceID !== 0) log.info(`streamID (${sourceID}) not authorized to send`)
 
+    timingDiagnostics.observe('audioRelay', timingNow() - relayStarted, { sourceID, packetID: header && header.i })
     return 'relaydata end'
   }
 

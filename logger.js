@@ -5,13 +5,13 @@ function facade(log, customFn) {
   return {
     trace: (...args) => {
       log.trace(...args);
-      if (customFn && typeof customFn === 'function') {
+      if (log.isLevelEnabled('trace') && customFn && typeof customFn === 'function') {
         customFn(...args);
       }
     },
     debug: (...args) => {
       log.debug(...args);
-      if (customFn && typeof customFn === 'function') {
+      if (log.isLevelEnabled('debug') && customFn && typeof customFn === 'function') {
         customFn(...args);
       }
     },
