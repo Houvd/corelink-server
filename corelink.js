@@ -13,6 +13,9 @@
 const serverVersion = 'v6.0.0.3'
 const timingDiagnostics = require('./timing-diagnostics')()
 const timingNow = () => Number(process.hrtime.bigint()) / 1e6
+const trafficMetrics = require('./traffic-metrics')((event, data) => timingDiagnostics.event(event, data))
+const trafficMetricsTimer = setInterval(() => trafficMetrics.flush(), 1000)
+trafficMetricsTimer.unref()
 // v6.0.0.3
 // - fix listStreams to allow owner to list
 // v6.0.0.2
@@ -4124,6 +4127,24 @@ async function run() {
     },
   }
 
+  const receiverLinks = require('./receiver-link')({ source, target, streamRelay, emit: (event,data) => timingDiagnostics.event(event,data), account: (status,sid,rid,packet) => trafficMetrics.observe('selection',sid,rid,packet,status) })
+  const receiverLinkTimer = setInterval(() => receiverLinks.pump(), 2)
+  receiverLinkTimer.unref()
+  functions.receiverLink = {
+    async process(message, remoteAddress, conn) {
+      const auth = await checkAuth(message)
+      if (typeof auth === 'object') return auth
+      const owner = tokens[message.token] || apps[message.token]
+      const id = message.receiverID
+      if (!owner || owner.conn !== conn || !Number.isInteger(id) || !target[id] || !owner.streams.includes(id)) return { statusCode: 1, message: 'Receiver link requires its owning control connection' }
+      if (message.version !== 1 || typeof message.enabled !== 'boolean') return {statusCode:1,message:'Unsupported receiver link request'}
+      if (!message.enabled) { receiverLinks.stop(id); return {statusCode:0,version:1} }
+      if (typeof message.simulation !== 'boolean' || typeof message.adaptive !== 'boolean' || !Number.isFinite(message.capacityBps) || message.capacityBps<32000 || message.capacityBps>100000000 || !Number.isInteger(message.profile) || !receiverLinks.supportsProfile(message.profile) || !Number.isInteger(message.seed) || message.seed<1 || message.seed>1000000) return {statusCode:1,message:'Invalid receiver link parameters'}
+      receiverLinks.configure(id,{simulation:message.simulation,adaptive:message.adaptive,capacityBps:message.capacityBps,profile:message.profile,seed:message.seed})
+      return {statusCode:0,version:1,scope:'receiver-total',leaseMs:5000}
+    }
+  }
+
   const relayReceiverFeedback = require('./receiver-feedback')({ tokens, apps, source, target, streamRelay })
   functions.receiverFeedback = {
     info: { name: 'receiverFeedback', description: 'Versioned subscribed receiver quality report', version: '1.0.0' },
@@ -4133,6 +4154,7 @@ async function run() {
       const authenticatedAt = timingNow()
       if (typeof auth === 'object') return auth
       const result = relayReceiverFeedback(message, conn)
+      if (result.statusCode === 0) receiverLinks.feedback(message)
       timingDiagnostics.event('feedback_timing', {
         senderID: message.senderID, receiverID: message.receiverID,
         epoch: message.epoch, sequence: message.sequence,
@@ -4491,6 +4513,7 @@ async function run() {
     }
 
 
+    if (sourceID !== 0 && sourceID in source) trafficMetrics.observe('ingress', sourceID, null, msg, 'received')
     if (sourceID in streamRelay) { // console.log(header['ID']);
       source[sourceID].time = last
       for (targetID in streamRelay[sourceID]) {
@@ -4501,16 +4524,28 @@ async function run() {
               // console.log(data)
             }
             target[targetID].time = last
-            if (target[targetID].proto === 'udp') {
-              UDPDataServer.send(msg, target[targetID].port, target[targetID].IP, (err) => {
-                timingDiagnostics.observe('udpCompletion', timingNow() - relayStarted, { sourceID, packetID: header && header.i })
-                if (err && (sourceID !== 0)) log.error(err, 'socket error')
-              })
-            } else if (target[targetID].proto === 'tcp') {
-              if (typeof target[targetID].conn === 'undefined' && (sourceID !== 0)) log.info('!!!! tcp connection not defined, dropping packet')
-              else target[targetID].conn.write(msg)
-            } else if (((typeof target[targetID].conn === 'undefined') || (target[targetID].conn.readyState !== 1)) && (sourceID !== 0)) log.info('!!!! websocket connection not defined or closed, dropping packet')
-            else target[targetID].conn.send(msg)
+            const destination = target[targetID]
+            const trafficReceiverID = Number(targetID)
+            receiverLinks.relay(sourceID,trafficReceiverID,msg,outgoing => {
+              const completion = err => {
+                if(sourceID !== 0) trafficMetrics.observe('egress',sourceID,trafficReceiverID,outgoing,err?'failed':'completed')
+                if(err) log.error(err,'relay send failed')
+              }
+              if(destination.proto==='udp') {
+                if(sourceID!==0) trafficMetrics.observe('egress',sourceID,trafficReceiverID,outgoing)
+                const udpSendStarted = timingNow()
+                UDPDataServer.send(outgoing,destination.port,destination.IP,err=>{
+                  timingDiagnostics.observe('udpCompletion',timingNow()-udpSendStarted,{sourceID})
+                  completion(err)
+                })
+              } else if(destination.proto==='tcp' && destination.conn && !destination.conn.destroyed) {
+                if(sourceID!==0) trafficMetrics.observe('egress',sourceID,trafficReceiverID,outgoing)
+                destination.conn.write(outgoing,completion)
+              } else if(destination.conn && destination.conn.readyState===1) {
+                if(sourceID!==0) trafficMetrics.observe('egress',sourceID,trafficReceiverID,outgoing)
+                destination.conn.send(outgoing,completion)
+              }
+            })
           } else if (typeof target[targetID] === 'undefined' && (sourceID !== 0)) log.info(`${targetID} is not registered at all`)
           else {
             types = ''

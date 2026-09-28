@@ -24,6 +24,7 @@ module.exports = function createReceiverFeedback({ tokens, apps, source, target,
     const report = { function: 'receiverFeedback', version: 1, senderID, receiverID,
       epoch: message.epoch, sequence: message.sequence, echo: message.echo }
     for (const key of Object.keys(ranges)) report[key] = message[key]
+    if (Number.isSafeInteger(message.routeID) && message.routeID > 0) report.routeID = message.routeID
     const encoded = JSON.stringify(report)
     const destinations = new Set()
     for (const registry of [tokens, apps]) for (const session of Object.values(registry)) {

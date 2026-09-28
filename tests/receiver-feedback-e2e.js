@@ -41,6 +41,11 @@ async function main() {
     const r = await receiver.request({ function: 'receiver', workspace: 'Chalktalk', proto: 'udp', type: ['audio'], streamIDs: [s.streamID], IP: '127.0.0.1', port: 39002, alert: false })
     assert.equal(r.statusCode, 0)
     const sub = await receiver.request({ function: 'subscribe', receiverID: r.streamID, streamIDs: [s.streamID] }); assert.equal(sub.statusCode, 0)
+    const link = { function: 'receiverLink', version: 1, receiverID: r.streamID, enabled: true, simulation: true, adaptive: true, capacityBps: 6000000, profile: 4, seed: 42 }
+    assert.notEqual((await sender.request(link)).statusCode, 0)
+    assert.equal((await receiver.request(link)).statusCode, 0)
+    assert.notEqual((await receiver.request({...link,capacityBps:-1})).statusCode,0)
+    assert.equal((await receiver.request({...link,enabled:false})).statusCode,0)
     const report = { function: 'receiverFeedback', version: 1, senderID: s.streamID, receiverID: r.streamID, epoch: '18446744073709551615', sequence: 1, echo: 10, packets: 50, extraDelayMs: 15, jitterMs: 3, gapPercent: 4, latePercent: 2, bufferMs: 10 }
     assert.notEqual((await sender.request(report)).statusCode, 0)
     const reply = await receiver.request(report); assert.equal(reply.statusCode, 0); assert.equal(reply.delivered, 1)
@@ -53,4 +58,5 @@ async function main() {
     console.log('PASS Corelink TCP E2E: separate authenticated clients, subscription, feedback push to sender only, spoof rejection, validation, unsubscribe')
   } finally { sender.socket.destroy(); receiver.socket.destroy() }
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1 })
+if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1 })
+module.exports = { Client }

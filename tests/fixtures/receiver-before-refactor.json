@@ -1,0 +1,27 @@
+[
+  {
+    "profile": 0,
+    "delivered": 107635,
+    "sha256": "6a0125d4a030036d6567f678c2c556c0bd70a13e62b6d6ac18f6250beee63e8f"
+  },
+  {
+    "profile": 1,
+    "delivered": 8517,
+    "sha256": "0e2ae818ea4abfd5ff8a4a0c8d614f53e66968b9e1928b192533847a82d89014"
+  },
+  {
+    "profile": 2,
+    "delivered": 4097,
+    "sha256": "c1a99becc2f20816ea213206a6a269e0fada225079a8cd1aeb2668f2c790d73a"
+  },
+  {
+    "profile": 3,
+    "delivered": 107635,
+    "sha256": "99a46c0a479e6e8b6e6b81e2722aabcd74467af1d0b1040a891f96aa719ddf1e"
+  },
+  {
+    "profile": 4,
+    "delivered": 107618,
+    "sha256": "1f0c2acc67c9d456a634e1e1eb92024eb7930dc50f9ab73ef6bf46c0ae0bef96"
+  }
+]

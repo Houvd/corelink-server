@@ -1,0 +1,220 @@
+[
+  {
+    "periodSeconds": 24,
+    "stages": [
+      {
+        "untilSeconds": 24,
+        "fraction": 1
+      }
+    ],
+    "rippleAmplitude": 0,
+    "rippleFrequency": 2.1,
+    "rippleSeedScale": 0.01,
+    "rippleUntilSeconds": 24,
+    "backgroundFraction": 0.15,
+    "backgroundBurst": false,
+    "backgroundPeriodSeconds": 1,
+    "backgroundDuty": 0.25,
+    "backgroundHigh": 2.5,
+    "backgroundLow": 0.5,
+    "backgroundSeedScale": 0.013,
+    "burstyLoss": false,
+    "badEntryProbability": 0.0015,
+    "badExitProbability": 0.25,
+    "badCapacityFactor": 0.25,
+    "badLossProbability": 0.35,
+    "lossProbability": 0.001,
+    "delayMs": 10,
+    "jitterMs": 2,
+    "reorderProbability": 0.01,
+    "reorderDelayMs": 10,
+    "duplicateProbability": 0.001,
+    "duplicateDelayMs": 1,
+    "id": 0,
+    "name": "fixed"
+  },
+  {
+    "periodSeconds": 24,
+    "stages": [
+      {
+        "untilSeconds": 6,
+        "fraction": 1
+      },
+      {
+        "untilSeconds": 12,
+        "fraction": 0.35
+      },
+      {
+        "untilSeconds": 18,
+        "fraction": 0.65
+      },
+      {
+        "untilSeconds": 24,
+        "fraction": 1
+      }
+    ],
+    "rippleAmplitude": 0.08,
+    "rippleFrequency": 2.1,
+    "rippleSeedScale": 0.01,
+    "rippleUntilSeconds": 24,
+    "backgroundFraction": 0.15,
+    "backgroundBurst": true,
+    "backgroundPeriodSeconds": 1,
+    "backgroundDuty": 0.25,
+    "backgroundHigh": 2.5,
+    "backgroundLow": 0.5,
+    "backgroundSeedScale": 0.013,
+    "burstyLoss": false,
+    "badEntryProbability": 0.0015,
+    "badExitProbability": 0.25,
+    "badCapacityFactor": 0.25,
+    "badLossProbability": 0.35,
+    "lossProbability": 0.001,
+    "delayMs": 10,
+    "jitterMs": 2,
+    "reorderProbability": 0.01,
+    "reorderDelayMs": 10,
+    "duplicateProbability": 0.001,
+    "duplicateDelayMs": 1,
+    "id": 1,
+    "name": "competing-traffic"
+  },
+  {
+    "periodSeconds": 24,
+    "stages": [
+      {
+        "untilSeconds": 6,
+        "fraction": 1
+      },
+      {
+        "untilSeconds": 12,
+        "fraction": 0.35
+      },
+      {
+        "untilSeconds": 18,
+        "fraction": 0.65
+      },
+      {
+        "untilSeconds": 24,
+        "fraction": 1
+      }
+    ],
+    "rippleAmplitude": 0.08,
+    "rippleFrequency": 2.1,
+    "rippleSeedScale": 0.01,
+    "rippleUntilSeconds": 24,
+    "backgroundFraction": 0.15,
+    "backgroundBurst": true,
+    "backgroundPeriodSeconds": 1,
+    "backgroundDuty": 0.25,
+    "backgroundHigh": 2.5,
+    "backgroundLow": 0.5,
+    "backgroundSeedScale": 0.013,
+    "burstyLoss": true,
+    "badEntryProbability": 0.0015,
+    "badExitProbability": 0.25,
+    "badCapacityFactor": 0.25,
+    "badLossProbability": 0.35,
+    "lossProbability": 0.001,
+    "delayMs": 10,
+    "jitterMs": 2,
+    "reorderProbability": 0.01,
+    "reorderDelayMs": 10,
+    "duplicateProbability": 0.001,
+    "duplicateDelayMs": 1,
+    "id": 2,
+    "name": "bursty-loss"
+  },
+  {
+    "periodSeconds": 24,
+    "stages": [
+      {
+        "untilSeconds": 6,
+        "fraction": 1
+      },
+      {
+        "untilSeconds": 12,
+        "fraction": 0.6
+      },
+      {
+        "untilSeconds": 18,
+        "fraction": 0.8
+      },
+      {
+        "untilSeconds": 24,
+        "fraction": 1
+      }
+    ],
+    "rippleAmplitude": 0.08,
+    "rippleFrequency": 2.1,
+    "rippleSeedScale": 0.01,
+    "rippleUntilSeconds": 24,
+    "backgroundFraction": 0.15,
+    "backgroundBurst": false,
+    "backgroundPeriodSeconds": 1,
+    "backgroundDuty": 0.25,
+    "backgroundHigh": 2.5,
+    "backgroundLow": 0.5,
+    "backgroundSeedScale": 0.013,
+    "burstyLoss": false,
+    "badEntryProbability": 0.0015,
+    "badExitProbability": 0.25,
+    "badCapacityFactor": 0.25,
+    "badLossProbability": 0.35,
+    "lossProbability": 0.001,
+    "delayMs": 10,
+    "jitterMs": 2,
+    "reorderProbability": 0.01,
+    "reorderDelayMs": 10,
+    "duplicateProbability": 0.001,
+    "duplicateDelayMs": 1,
+    "id": 3,
+    "name": "moderate-recovery"
+  },
+  {
+    "periodSeconds": 138,
+    "stages": [
+      {
+        "untilSeconds": 6,
+        "fraction": 1
+      },
+      {
+        "untilSeconds": 12,
+        "fraction": 0.6
+      },
+      {
+        "untilSeconds": 18,
+        "fraction": 0.8
+      },
+      {
+        "untilSeconds": 138,
+        "fraction": 1
+      }
+    ],
+    "rippleAmplitude": 0.08,
+    "rippleFrequency": 2.1,
+    "rippleSeedScale": 0.01,
+    "rippleUntilSeconds": 18,
+    "backgroundFraction": 0.15,
+    "backgroundBurst": false,
+    "backgroundPeriodSeconds": 1,
+    "backgroundDuty": 0.25,
+    "backgroundHigh": 2.5,
+    "backgroundLow": 0.5,
+    "backgroundSeedScale": 0.013,
+    "burstyLoss": false,
+    "badEntryProbability": 0.0015,
+    "badExitProbability": 0.25,
+    "badCapacityFactor": 0.25,
+    "badLossProbability": 0.35,
+    "lossProbability": 0.001,
+    "delayMs": 10,
+    "jitterMs": 2,
+    "reorderProbability": 0.01,
+    "reorderDelayMs": 10,
+    "duplicateProbability": 0.001,
+    "duplicateDelayMs": 1,
+    "id": 4,
+    "name": "long-recovery"
+  }
+]
