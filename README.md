@@ -1,5 +1,9 @@
 # corelink-server
 
+For the updated NetMusic3D server on macOS or Linux, follow
+[NETMUSIC3D-SERVER.md](NETMUSIC3D-SERVER.md). Use the setup/start scripts described
+there; the upstream development instructions below can reset existing data.
+
 =======
 # Installations instructions for the Corelink Server
 
