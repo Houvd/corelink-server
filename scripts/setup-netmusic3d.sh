@@ -12,8 +12,10 @@ command -v node >/dev/null && command -v npm >/dev/null || {
 }
 mkdir -p data
 [[ -f config/knexfile.js ]] || cp config/knexfile.js.sample config/knexfile.js
-[[ -f config/default.json5 ]] || cp config/default.json5.sample config/default.json5
 npm ci
+# The upstream configurator expands certificate paths for this machine.
+# Copying the sample verbatim leaves paths relative to the wrong directory.
+node -e "require('./config/configure')"
 node scripts/prepare-database.js
 npm run test:receiver
 printf '\nServer ready. Start with: bash scripts/start-netmusic3d.sh\n'
