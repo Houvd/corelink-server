@@ -1,132 +1,79 @@
+'use strict';
+const fs = require('fs');
+const path = require('path');
 const pino = require('pino');
 
-// The logger interface that the application needs to depend on.
-function facade(log, customFn) {
-  return {
-    trace: (...args) => {
-      log.trace(...args);
-      if (log.isLevelEnabled('trace') && customFn && typeof customFn === 'function') {
-        customFn(...args);
-      }
-    },
-    debug: (...args) => {
-      log.debug(...args);
-      if (log.isLevelEnabled('debug') && customFn && typeof customFn === 'function') {
-        customFn(...args);
-      }
-    },
-    info: (...args) => {
-      log.info(...args);
-      if (customFn && typeof customFn === 'function') {
-        customFn(...args);
-      }
-    },
-    warn: (...args) => {
-      log.warn(...args);
-      if (customFn && typeof customFn === 'function') {
-        customFn(...args);
-      }
-    },
-    error: (...args) => {
-      log.error(...args);
-      if (customFn && typeof customFn === 'function') {
-        customFn(...args);
-      }
-    },
-    fatal: (...args) => {
-      log.fatal(...args);
-      if (customFn && typeof customFn === 'function') {
-        customFn(...args);
-      }
-    },
+// Independent of Pino: a broken transport must never be used to report itself.
+let nextEmergency = 0;
+let emergencyFileAttempted = false;
+function reportEmergency(error, context = 'logger') {
+  const now = Date.now();
+  if (now < nextEmergency) return;
+  nextEmergency = now + 10000;
+  const detail = error instanceof Error ? error : new Error(String(error));
+  const record = {
+    utc: new Date(now).toISOString(), pid: process.pid, context,
+    name: detail.name, code: detail.code,
+    message: String(detail.message).slice(0, 2048),
+    stack: String(detail.stack || '').slice(0, 8192),
   };
+  // Keep the first failure even if the terminal is closed; no application log args.
+  let saved;
+  if (!emergencyFileAttempted) {
+    emergencyFileAttempted = true;
+    try {
+      fs.mkdirSync('data', { recursive: true });
+      saved = path.resolve('data', `logger-failure-${process.pid}-${now}.json`);
+      fs.writeFileSync(saved, JSON.stringify(record, null, 2), { flag: 'wx', mode: 0o600 });
+    } catch (_) { /* stderr still gets the original failure below. */ }
+  }
+  try {
+    fs.writeSync(2, `[Corelink emergency] ${JSON.stringify(record)}${saved ? '\nFailure saved: ' + saved : ''}\n`);
+  } catch (_) { /* A closed stderr cannot cause another logging failure. */ }
 }
 
 function generateTimeString() {
-  const timestamp = new Date(Date.now());
-  return `${timestamp.getFullYear()}_${timestamp
-    .getMonth().toString().padStart(2, '0')}_${timestamp
-      .getDate().toString().padStart(2, '0')}_${timestamp
-        .getHours().toString().padStart(2, '0')}_${timestamp
-          .getMinutes().toString().padStart(2, '0')}_${timestamp
-            .getSeconds().toString().padStart(2, '0')}`;
+  return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
-function getTransports(options) {
-  const logFile = options && options.logFile;
-  const logStdOut = options && options.logStdOut;
-
-  const targets = [];
-
-  if (logStdOut) {
-    targets.push({ target: 'pino/file' });
-  }
-
-  // Create two separate file transports for stdout and stderr, if logFile is enabled.
-  if (logFile) {
-    const timeString = generateTimeString();
-    const stdout = {
-      level: 'info',
-      target: 'pino/file',
-      options: {
-        destination: `data/${timeString}_node.access.log`,
-      },
-    };
-    const stderr = {
-      level: 'error',
-      target: 'pino/file',
-      options: {
-        destination: `data/${timeString}_node.error.log`,
-      },
-    };
-    targets.push(stdout, stderr);
-  }
-
-  // The pino/file transport uses pino.destination() under the hood.
-  // The main difference between the two is that the former runs in a worker thread
-  // while the latter runs in the main thread. When logging only to the standard output
-  // or local files, using pino/file may introduce some overhead because the data has
-  // to be moved off the main thread first. We should probably stick with pino.destination()
-  // in such cases. Using pino/file is recommended only when you're logging to multiple
-  // destinations at once, such as to a local file and a third-party log management service.
-  return logFile ? pino.transport({ targets }) : pino.destination(1);
-}
-
-function createLogger(options) {
-  // Default log level.
-  // const level = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
-  const level = 'info';
-
-  // Functions for formatting the shape of the log lines. These functions
-  // should return a JSONifiable object and should never throw an error.
-  const formatters = {
-    bindings: (bindings) => {
-      return {
-        pid: bindings.pid,
-        host: bindings.hostname,
-        node_version: process.version,
-        server_version: (options && options.serverVersion) || undefined,
-      };
-    },
+function createLogger(options = {}) {
+  const { createDestination } = require('./async-log-destination');
+  const destinations = [], targets = [];
+  const add = (destination, name, level) => {
+    const stream = createDestination({ destination, name, report: reportEmergency });
+    destinations.push(stream); targets.push({ level, stream });
   };
-
-  // Logger configuration.
-  const config = {
-    level,
-    formatters,
-    timestamp: pino.stdTimeFunctions.isoTime,
+  if (options.logStdOut !== false) add(1, 'stdout', 'info');
+  if (options.logFile) {
+    try { fs.mkdirSync('data', { recursive: true }); }
+    catch (error) { reportEmergency(error, 'cannot create logging directory; writes will retry'); }
+    const stamp = generateTimeString();
+    add(`data/${stamp}_node.access.log`, 'access file', 'info');
+    add(`data/${stamp}_node.error.log`, 'error file', 'error');
+  }
+  let logger, disabled = false, relayDisabled = false;
+  try {
+    logger = pino({ level: 'info', timestamp: pino.stdTimeFunctions.isoTime,
+      formatters: { bindings: b => ({ pid: b.pid, host: b.hostname,
+        node_version: process.version, server_version: options.serverVersion }) },
+    }, pino.multistream(targets));
+  } catch (error) { disabled = true; reportEmergency(error, 'logger initialization failed'); }
+  const facade = {
+    getStatus: () => ({ disabled, relayDisabled, destinations: destinations.map(d => d.getStatus()) }),
+    close: () => destinations.forEach(d => d.close()),
   };
-
-  // Logger transports.
-  const transport = getTransports(options);
-
-  // Custom function to execute when logging.
-  const customFn = options && options.customFn;
-
-  // Create a new Pino logger instance.
-  const logger = pino(config, transport);
-
-  return facade(logger, customFn);
+  for (const level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
+    facade[level] = (...args) => {
+      if (disabled || !logger || !logger.isLevelEnabled(level)) return;
+      try { logger[level](...args); }
+      catch (error) { reportEmergency(error, 'log serialization failed; message discarded'); return; }
+      if (!relayDisabled && typeof options.customFn === 'function') {
+        try { options.customFn(...args); }
+        catch (error) { relayDisabled = true; reportEmergency(error, 'log relay disabled'); }
+      }
+    };
+  }
+  return facade;
 }
 
-module.exports = { createLogger };
+module.exports = { createLogger, reportEmergency };
