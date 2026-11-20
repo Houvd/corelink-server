@@ -78,3 +78,24 @@ For ZIP installations, extract the new release into a new folder and transfer
 the stopped database/configuration before setup. Keep the old folder as backup.
 Do not use `npm run devinstall`, rollback or seed commands on an existing
 installation: those upstream development commands can delete its data.
+
+
+## Serial receiver channel reservations
+
+Updated NetMusic3D senders declare their maximum input layout before sending.
+Corelink assigns stable workspace output blocks in registration order: a
+9-channel sender followed by a 4-channel sender reserves 1–9 and 10–13 on
+updated receivers. Per-receiver HOA reductions use only the prefix of the
+reserved block. Manual output overrides remain local to each receiver.
+
+Muting, unsubscribing or removing a sender does not repack surviving blocks.
+The workspace allocation restarts when all declared senders leave. Receivers
+clip output beyond their track capacity; this does not reduce network bytes.
+Legacy clients without declarations remain manually routed.
+
+The server also includes bounded asynchronous logging, retry/backoff for
+interrupted writes, and traffic-byte diagnostics. Run `npm run test:receiver`
+and `node tests/logger-resilience-test.js` to check these components without
+starting a server. Stop the running server before updating and restart it
+with the usual launcher afterward; updating source does not replace a live
+Node process.

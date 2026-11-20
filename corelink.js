@@ -72,7 +72,7 @@ const https = require('https')
 const httpStatic = require('node-static')
 const config = require('./config/configure')
 const knex = require('./knex/knex.js')
-const { createLogger } = require('./logger');
+const { createLogger, reportEmergency } = require('./logger');
 
 // should the server output be piped into a corelink stream
 // to logging to file copy dockerlog.js.sample to dockerlog.js
@@ -131,6 +131,7 @@ const connections = []
 
 // all source and target streams information is stored in source and target
 const source = []
+const channelLayouts = require('./receiver/channel-layout')(source)
 /*
 source = [] // holds all source stream information
 source[ID] =  [] // stream ID
@@ -326,11 +327,13 @@ function saltHashPassword(userPassword) {
 async function run() {
   // catch exceptions
   process.on('uncaughtException', (err) => {
-    log.fatal(err, 'uncaught exception detected');
+    reportEmergency(err, 'uncaught exception; server stopping');
+    process.exit(1)
   })
 
-  process.on('unhandledRejection', (reason, promise) => {
-    log.fatal({ reason, promise }, 'unhandled rejection detected')
+  process.on('unhandledRejection', (reason) => {
+    reportEmergency(reason, 'unhandled rejection; server stopping')
+    process.exit(1)
   })
 
   function relayLogs(...args) {
@@ -363,6 +366,8 @@ async function run() {
 
   // Instantiate the logger.
   const log = createLogger({ serverVersion, logFile, logStdOut, customFn: relayLogs });
+  const loggerStatusTimer = setInterval(() => timingDiagnostics.event('logger_status', log.getStatus()), 1000)
+  loggerStatusTimer.unref()
 
   // pre-setting arrays with data while we convert the server to use only the database
   let content = await knex('workspaces')
@@ -601,6 +606,7 @@ async function run() {
           try { serverFunctions.stale.process(streamID) } catch (e) { log.warn(`stale.process failed for ${streamID}: ${e && e.message}`) }
           try { delete streamRelay[streamID] } catch (e) { /* ignore */ }
           delete source[streamID]
+          channelLayouts.remove(streamID)
           removedOwnedSources.push(streamID)
         } catch (innerErr) {
           log.error(innerErr, `cleanup source ${streamID} failed`)
@@ -2511,6 +2517,9 @@ async function run() {
         .catch((error) => {
           throw error
         })
+      let declaration
+      try { declaration = channelLayouts.validate(message) }
+      catch (error) { return { statusCode: 1, message: error.message } }
       let i
       let streamID
       let token
@@ -2559,6 +2568,8 @@ async function run() {
             if (typeof message.meta !== 'undefined') source[streamID].meta = message.meta
           }
 
+          source[streamID].audioLayout = channelLayouts.register(streamID, source[streamID], declaration)
+
           // if exists, remove streamID from streams in this tokens streamList
           for (token in tokens) {
             if (token) {
@@ -2590,6 +2601,7 @@ async function run() {
           response.statusCode = 0
           response.port = port[message.proto]
           response.streamID = streamID
+          response.audioLayout = source[streamID].audioLayout
           response.MTU = MTU
           return (response)
         }
@@ -2709,6 +2721,7 @@ async function run() {
                   streamListElement.apps = userApps.apps
                   streamListElement.type = source[key].type
                   streamListElement.meta = source[key].meta
+                  streamListElement.audioLayout = source[key].audioLayout || null
                   streamListElement.workspace = source[key].workspace
                   response.senderList.push({ ...streamListElement })
                 }
@@ -2809,6 +2822,7 @@ async function run() {
             if (typeof response.info.port !== 'undefined') response.info.port = source[streamID].port
             if (typeof response.info.IP !== 'undefined') response.info.IP = source[streamID].IP
             response.info.meta = source[streamID].meta
+            response.info.audioLayout = source[streamID].audioLayout || null
             response.info.direction = 'source'
           }
           if (typeof target[streamID] !== 'undefined') {
@@ -2986,6 +3000,7 @@ async function run() {
               streamListElement.streamID = parseInt(senderID, 10)
               streamListElement.type = source[senderID].type
               streamListElement.meta = source[senderID].meta
+                  streamListElement.audioLayout = source[senderID].audioLayout || null
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
@@ -3234,6 +3249,7 @@ async function run() {
               streamListElement.streamID = parseInt(senderID, 10)
               streamListElement.type = source[senderID].type
               streamListElement.meta = source[senderID].meta
+                  streamListElement.audioLayout = source[senderID].audioLayout || null
 
               // add apps processing list for streams that are processed, otherwise leave empty
               // walk through source from tags until we find user, add apps and user
@@ -3642,6 +3658,7 @@ async function run() {
 
                 delete streamRelay[streamID]
                 delete source[streamID]
+                channelLayouts.remove(streamID)
                 // *** ToDo: also delete all receivers that have only this source?
               }
             }
@@ -4791,6 +4808,7 @@ async function run() {
         // remove stream information from the relay
         delete streamRelay[ID]
         delete source[ID]
+        channelLayouts.remove(ID)
       }
     }
 
