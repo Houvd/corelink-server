@@ -1,17 +1,14 @@
 'use strict'
 
-// Workspace-wide source slots: every receiver sees the same arrival order.
-// Muting, unsubscribing or HOA reductions never repack existing slots. Slots
-// restart at one only after all declared senders in that workspace have left.
+// Workspace-wide source slots: reuse the first sufficiently large free block.
+// Active reservations never move or shrink on mute, unsubscribe or HOA changes.
 module.exports = function createChannelLayouts(source) {
-  const entries = new Map(), workspaces = new Map()
+  const entries = new Map()
   let serial = 0
   function prune() {
     for (const [id, entry] of entries) {
       if (source[id] !== entry.owner) entries.delete(id)
     }
-    const active = new Set([...entries.values()].map(e => e.owner.workspace))
-    for (const workspace of workspaces.keys()) if (!active.has(workspace)) workspaces.delete(workspace)
   }
   function validate(message) {
     if (message.nmLayoutVersion === undefined) return null // Legacy sender: manual routing.
@@ -29,9 +26,16 @@ module.exports = function createChannelLayouts(source) {
     const previous = entries.get(id)
     if (previous) return { ...previous.layout }
     const workspace = owner.workspace
-    const next = workspaces.get(workspace) || 1
+    const occupied = [...entries.values()]
+      .filter(e => e.owner.workspace === workspace)
+      .map(e => e.layout)
+      .sort((a, b) => a.firstOutput - b.firstOutput)
+    let next = 1
+    for (const block of occupied) {
+      if (next + declaration.maxChannels <= block.firstOutput) break
+      next = Math.max(next, block.firstOutput + block.maxChannels)
+    }
     const layout = { ...declaration, firstOutput: next, joinIndex: ++serial }
-    workspaces.set(workspace, next + declaration.maxChannels)
     entries.set(id, { owner, layout })
     return { ...layout }
   }
@@ -39,8 +43,6 @@ module.exports = function createChannelLayouts(source) {
     const entry = entries.get(Number(id))
     if (!entry) return
     entries.delete(Number(id))
-    const workspace = entry.owner.workspace
-    if (![...entries.values()].some(e => e.owner.workspace === workspace)) workspaces.delete(workspace)
   }
   return { validate, register, remove }
 }
