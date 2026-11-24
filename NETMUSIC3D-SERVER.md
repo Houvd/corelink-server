@@ -83,13 +83,18 @@ installation: those upstream development commands can delete its data.
 ## Serial receiver channel reservations
 
 Updated NetMusic3D senders declare their maximum input layout before sending.
-Corelink assigns stable workspace output blocks in registration order: a
+Corelink assigns stable workspace output blocks using the first contiguous free
+range large enough for the declared maximum. Without departures, a
 9-channel sender followed by a 4-channel sender reserves 1–9 and 10–13 on
 updated receivers. Per-receiver HOA reductions use only the prefix of the
 reserved block. Manual output overrides remain local to each receiver.
 
-Muting, unsubscribing or removing a sender does not repack surviving blocks.
-The workspace allocation restarts when all declared senders leave. Receivers
+Muting, unsubscribing and HOA reductions retain the complete reservation.
+Removing a sender releases its block without moving surviving sources. A new
+or returning sender reuses the lowest suitable gap, or follows existing blocks
+when none fits. For example, a sender leaving 1–4 can reclaim 1–4 on reconnect
+while a peer stays at 5–8, provided the free range has not been taken meanwhile.
+Separated smaller gaps cannot be combined into one split source. Receivers
 clip output beyond their track capacity; this does not reduce network bytes.
 Legacy clients without declarations remain manually routed.
 
